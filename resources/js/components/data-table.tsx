@@ -35,11 +35,11 @@ export function DataTable<T>({ columns, paginator, rowKey, emptyMessage = 'No re
     const { data, current_page, last_page, total, from, to } = paginator;
 
     return (
-        <div>
-            <div className="overflow-x-auto">
+        <div className="flex flex-col flex-1 min-h-0">
+            <div className="flex-1 overflow-auto min-h-0">
                 <table className="w-full text-sm">
-                    <thead>
-                        <tr className="bg-muted/40 text-muted-foreground border-b text-left text-xs font-medium tracking-wider uppercase">
+                    <thead className="sticky top-0 z-10">
+                        <tr className="bg-card text-muted-foreground border-b text-left text-xs font-medium tracking-wider uppercase">
                             {columns.map((col) => (
                                 <th key={col.key} className={`px-6 py-3 ${col.headerClassName ?? ''}`}>
                                     {col.header}
@@ -69,7 +69,7 @@ export function DataTable<T>({ columns, paginator, rowKey, emptyMessage = 'No re
                 </table>
             </div>
 
-            <div className="flex items-center justify-between border-t px-6 py-3">
+            <div className="flex shrink-0 items-center justify-between border-t px-6 py-3">
                 <p className="text-muted-foreground text-xs">{total === 0 ? 'No results' : `Showing ${from ?? 0}–${to ?? 0} of ${total}`}</p>
 
                 {last_page > 1 && (

@@ -199,7 +199,7 @@ export default function UsersIndex({ users }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Users" />
 
-            <div className="flex flex-1 flex-col gap-6 p-6">
+            <div className="flex flex-1 flex-col min-h-0 gap-6 p-6">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-semibold">Users</h1>
@@ -211,11 +211,11 @@ export default function UsersIndex({ users }: Props) {
                     </Button>
                 </div>
 
-                <Card>
-                    <CardHeader>
+                <Card className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                    <CardHeader className="shrink-0">
                         <CardTitle className="text-base font-semibold">All Users ({users.total})</CardTitle>
                     </CardHeader>
-                    <CardContent className="p-0">
+                    <CardContent className="flex flex-col flex-1 min-h-0 p-0">
                         <DataTable
                             columns={columns}
                             paginator={users}
