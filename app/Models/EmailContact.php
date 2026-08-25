@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EmailContact extends Model
 {
-    protected $fillable = ['email_list_id', 'email'];
+    protected $fillable = ['email_list_id', 'email', 'name'];
 
     public function emailList(): BelongsTo
     {

@@ -14,11 +14,12 @@ class UploadEmailListRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'list_name' => ['required', 'string', 'max:255'],
             'file' => [
                 'required',
                 'file',
                 'mimes:xlsx,xls,csv',
-                'max:10240', // 10 MB
+                'max:10240',
             ],
         ];
     }
@@ -26,6 +27,7 @@ class UploadEmailListRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'list_name.required' => 'Please provide a name for this list.',
             'file.mimes' => 'Only .xlsx, .xls, and .csv files are supported.',
             'file.max' => 'File size must not exceed 10 MB.',
         ];

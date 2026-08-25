@@ -6,6 +6,7 @@ use App\Http\Requests\UploadEmailListRequest;
 use App\Models\EmailList;
 use App\Services\EmailExtractionService;
 use App\Services\FileStorageService;
+use App\Services\SendGridService;
 use Inertia\Inertia;
 
 class EmailListController extends Controller
@@ -13,6 +14,7 @@ class EmailListController extends Controller
     public function __construct(
         private FileStorageService $fileStorage,
         private EmailExtractionService $emailExtraction,
+        private SendGridService $sendGrid,
     ) {}
 
     public function index()
@@ -25,7 +27,7 @@ class EmailListController extends Controller
 
         return Inertia::render('email-lists/index', [
             'emailLists' => Inertia::defer(fn () => $query->paginate(15, [
-                'id', 'user_id', 'original_name', 'disk', 'size', 'email_count', 'created_at',
+                'id', 'user_id', 'original_name', 'list_name', 'disk', 'size', 'email_count', 'sendgrid_list_id', 'created_at',
             ])),
             'isAdmin'    => $user->isAdmin(),
         ]);
@@ -35,6 +37,7 @@ class EmailListController extends Controller
     {
         $uploadedFile = $request->file('file');
         $originalName = $uploadedFile->getClientOriginalName();
+        $listName     = $request->input('list_name');
 
         // Duplicate filename guard
         if (EmailList::where('user_id', auth()->id())->where('original_name', $originalName)->exists()) {
@@ -47,29 +50,40 @@ class EmailListController extends Controller
         $storedPath = $this->fileStorage->store($uploadedFile);
 
         try {
-            $emails = $this->emailExtraction->extractFromFile(
+            $contacts = $this->emailExtraction->extractFromFile(
                 $this->fileStorage->fullPath($storedPath)
             );
 
-            // No emails found — discard the file
-            if (count($emails) === 0) {
+            if (count($contacts) === 0) {
                 $this->fileStorage->delete($storedPath);
 
                 return back()->with('error', 'No valid email addresses were found in the uploaded file. Please check the file and try again.');
             }
 
+            // Create SendGrid marketing list and upload contacts
+            try {
+                $sendgridListId = $this->sendGrid->createMarketingList($listName);
+                $this->sendGrid->addContactsToList($sendgridListId, $contacts);
+            } catch (\RuntimeException $e) {
+                $this->fileStorage->delete($storedPath);
+
+                return back()->with('error', 'SendGrid sync failed: ' . $e->getMessage());
+            }
+
             $emailList = EmailList::create([
-                'user_id' => auth()->id(),
-                'original_name' => $originalName,
-                'stored_path' => $storedPath,
-                'disk' => 'local',
-                'size' => $uploadedFile->getSize(),
-                'email_count' => count($emails),
+                'user_id'           => auth()->id(),
+                'original_name'     => $originalName,
+                'list_name'         => $listName,
+                'stored_path'       => $storedPath,
+                'disk'              => 'local',
+                'size'              => $uploadedFile->getSize(),
+                'email_count'       => count($contacts),
+                'sendgrid_list_id'  => $sendgridListId,
             ]);
 
-            $this->emailExtraction->persistEmails($emailList->id, $emails);
+            $this->emailExtraction->persistContacts($emailList->id, $contacts);
 
-            return back()->with('success', "Uploaded successfully — {$emailList->email_count} email(s) extracted.");
+            return back()->with('success', "Uploaded successfully — {$emailList->email_count} contact(s) synced to SendGrid list \"{$listName}\".");
         } catch (\RuntimeException $e) {
             $this->fileStorage->delete($storedPath);
 

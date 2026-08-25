@@ -2,33 +2,24 @@ import { type Column, DataTable, DataTableSkeleton, type Paginator } from '@/com
 import { FileDropzone } from '@/components/file-dropzone';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetFooter,
-    SheetHeader,
-    SheetTitle,
-} from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Deferred, Head, useForm, usePage } from '@inertiajs/react';
-import { Download, FileSpreadsheet, Mail, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle2, Download, FileSpreadsheet, Mail, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface EmailListFile {
     id: number;
     user_id: number;
     original_name: string;
+    list_name: string;
     size: number;
     email_count: number;
+    sendgrid_list_id: string | null;
     created_at: string;
     user?: { id: number; name: string; email: string };
 }
@@ -58,8 +49,11 @@ function getExtBadgeColor(filename: string): string {
 
 function formatDate(dateStr: string) {
     return new Intl.DateTimeFormat('en-US', {
-        month: 'short', day: 'numeric', year: 'numeric',
-        hour: '2-digit', minute: '2-digit',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
     }).format(new Date(dateStr));
 }
 
@@ -70,18 +64,18 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [deletingFile, setDeletingFile] = useState<EmailListFile | null>(null);
 
-    const uploadForm = useForm<{ file: File | null }>({ file: null });
+    const uploadForm = useForm<{ list_name: string; file: File | null }>({ list_name: '', file: null });
     const deleteForm = useForm({});
 
     // Close the sheet when upload succeeds
     useEffect(() => {
         if (flash?.success && uploadOpen) {
-            uploadForm.setData('file', null);
+            uploadForm.setData({ list_name: '', file: null });
             setUploadOpen(false);
         }
     }, [flash?.success]);
 
-    // Show error inline when upload fails (flash.error set by server)
+    // Show error inline when upload fails
     useEffect(() => {
         if (flash?.error && uploadOpen) {
             setUploadError(flash.error);
@@ -90,14 +84,14 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
 
     function handleUpload(e: React.FormEvent) {
         e.preventDefault();
-        if (!uploadForm.data.file) return;
+        if (!uploadForm.data.file || !uploadForm.data.list_name.trim()) return;
         setUploadError(null);
         uploadForm.post(route('email-lists.store'), { forceFormData: true });
     }
 
     function handleSheetClose(open: boolean) {
         if (!open && !uploadForm.processing) {
-            uploadForm.setData('file', null);
+            uploadForm.setData({ list_name: '', file: null });
             uploadForm.clearErrors();
             setUploadError(null);
             setUploadOpen(false);
@@ -113,16 +107,18 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
 
     const columns: Column<EmailListFile>[] = [
         {
-            key: 'original_name',
-            header: 'File',
+            key: 'list_name',
+            header: 'List Name',
             render: (f) => (
                 <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted">
-                        <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
+                    <div className="bg-muted flex h-8 w-8 shrink-0 items-center justify-center rounded-md">
+                        <FileSpreadsheet className="text-muted-foreground h-4 w-4" />
                     </div>
                     <div className="min-w-0">
-                        <p className="truncate font-medium">{f.original_name}</p>
-                        <p className="text-xs text-muted-foreground">{formatBytes(f.size)}</p>
+                        <p className="truncate font-medium">{f.list_name}</p>
+                        <p className="text-muted-foreground text-xs">
+                            {f.original_name} · {formatBytes(f.size)}
+                        </p>
                     </div>
                 </div>
             ),
@@ -141,25 +137,40 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
         },
         {
             key: 'email_count',
-            header: 'Emails',
+            header: 'Contacts',
             render: (f) => (
                 <div className="flex items-center gap-1.5">
-                    <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Mail className="text-muted-foreground h-3.5 w-3.5" />
                     <span className="font-medium">{f.email_count.toLocaleString()}</span>
                 </div>
             ),
         },
-        ...(isAdmin
-            ? [{
-                key: 'uploaded_by',
-                header: 'Uploaded by',
-                render: (f: EmailListFile) => (
-                    <div className="flex flex-col">
-                        <span className="text-sm font-medium">{f.user?.name ?? '—'}</span>
-                        <span className="text-xs text-muted-foreground">{f.user?.email}</span>
+        {
+            key: 'sendgrid_list_id',
+            header: 'SendGrid',
+            render: (f) =>
+                f.sendgrid_list_id ? (
+                    <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        <span className="text-xs font-medium">Synced</span>
                     </div>
+                ) : (
+                    <span className="text-muted-foreground text-xs">—</span>
                 ),
-            }]
+        },
+        ...(isAdmin
+            ? [
+                  {
+                      key: 'uploaded_by',
+                      header: 'Uploaded by',
+                      render: (f: EmailListFile) => (
+                          <div className="flex flex-col">
+                              <span className="text-sm font-medium">{f.user?.name ?? '—'}</span>
+                              <span className="text-muted-foreground text-xs">{f.user?.email}</span>
+                          </div>
+                      ),
+                  },
+              ]
             : []),
         {
             key: 'created_at',
@@ -201,9 +212,7 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-semibold">Email Lists</h1>
-                        <p className="text-sm text-muted-foreground">
-                            Upload Excel or CSV files containing email addresses
-                        </p>
+                        <p className="text-muted-foreground text-sm">Upload Excel or CSV files — contacts are synced to SendGrid automatically</p>
                     </div>
                     <Button size="sm" onClick={() => setUploadOpen(true)}>
                         <Plus className="mr-2 h-4 w-4" />
@@ -215,11 +224,12 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base font-semibold">
-                            {isAdmin ? 'All Uploaded Files' : 'Your Files'}{emailLists?.total !== undefined && ` (${emailLists.total})`}
+                            {isAdmin ? 'All Uploaded Files' : 'Your Files'}
+                            {emailLists?.total !== undefined && ` (${emailLists.total})`}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <Deferred data="emailLists" fallback={<DataTableSkeleton columns={6} />}>
+                        <Deferred data="emailLists" fallback={<DataTableSkeleton columns={7} />}>
                             <DataTable
                                 columns={columns}
                                 paginator={emailLists!}
@@ -237,55 +247,78 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
                     <SheetHeader>
                         <SheetTitle>Upload Email List</SheetTitle>
                         <SheetDescription>
-                            Upload a .xlsx, .xls, or .csv file. Emails are extracted automatically from
-                            an "email" column, or detected from any column.
+                            Name your list, then upload a .xlsx, .xls, or .csv file. Contacts are synced to a new SendGrid marketing list
+                            automatically.
                         </SheetDescription>
                     </SheetHeader>
 
-                    <form
-                        onSubmit={handleUpload}
-                        className="flex flex-1 flex-col gap-6 overflow-y-auto py-6"
-                    >
+                    <form onSubmit={handleUpload} className="flex flex-1 flex-col gap-5 overflow-y-auto py-6">
+                        {/* List name field */}
+                        <div className="p1 flex flex-col gap-1.5 p-1">
+                            <Label htmlFor="list_name">
+                                List Name <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                                id="list_name"
+                                placeholder="e.g. Newsletter Subscribers Q3"
+                                value={uploadForm.data.list_name}
+                                onChange={(e) => {
+                                    uploadForm.setData('list_name', e.target.value);
+                                    setUploadError(null);
+                                }}
+                                disabled={uploadForm.processing}
+                            />
+                            {uploadForm.errors.list_name && <p className="text-destructive text-xs">{uploadForm.errors.list_name}</p>}
+                        </div>
+
                         <FileDropzone
                             file={uploadForm.data.file}
-                            onFileSelect={(f) => { uploadForm.setData('file', f); setUploadError(null); }}
-                            onFileClear={() => { uploadForm.setData('file', null); setUploadError(null); }}
+                            onFileSelect={(f) => {
+                                uploadForm.setData('file', f);
+                                setUploadError(null);
+                            }}
+                            onFileClear={() => {
+                                uploadForm.setData('file', null);
+                                setUploadError(null);
+                            }}
                             error={uploadForm.errors.file}
                             disabled={uploadForm.processing}
                         />
 
                         {uploadError && (
-                            <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2.5">
-                                <span className="mt-0.5 shrink-0 text-destructive">⚠</span>
-                                <p className="text-sm text-destructive">{uploadError}</p>
+                            <div className="border-destructive/30 bg-destructive/10 flex items-start gap-2 rounded-md border px-3 py-2.5">
+                                <span className="text-destructive mt-0.5 shrink-0">⚠</span>
+                                <p className="text-destructive text-sm">{uploadError}</p>
                             </div>
                         )}
 
-                        <div className="rounded-lg border bg-muted/30 p-4 text-xs text-muted-foreground space-y-1">
-                            <p className="font-medium text-foreground">Tips for best results</p>
-                            <ul className="list-disc pl-4 space-y-0.5">
-                                <li>Name your email column <span className="font-mono">email</span>, <span className="font-mono">e-mail</span>, or <span className="font-mono">mail</span></li>
-                                <li>If no column is named, all cells are scanned for valid emails</li>
+                        <div className="bg-muted/30 text-muted-foreground space-y-1 rounded-lg border p-4 text-xs">
+                            <p className="text-foreground font-medium">Tips for best results</p>
+                            <ul className="list-disc space-y-0.5 pl-4">
+                                <li>
+                                    Name your email column <span className="font-mono">email</span>, <span className="font-mono">e-mail</span>, or{' '}
+                                    <span className="font-mono">mail</span>
+                                </li>
+                                <li>
+                                    Include a <span className="font-mono">name</span>, <span className="font-mono">first_name</span>, or{' '}
+                                    <span className="font-mono">last_name</span> column to sync names to SendGrid
+                                </li>
                                 <li>Duplicate emails within the same file are ignored</li>
-                                <li>Files without any valid emails will not be saved</li>
+                                <li>Contacts are created in a new SendGrid marketing list with the name you provide</li>
                             </ul>
                         </div>
                     </form>
 
                     <SheetFooter className="border-t pt-4">
-                        <Button
-                            variant="outline"
-                            onClick={() => handleSheetClose(false)}
-                            disabled={uploadForm.processing}
-                        >
+                        <Button variant="outline" onClick={() => handleSheetClose(false)} disabled={uploadForm.processing}>
                             Cancel
                         </Button>
                         <Button
                             type="submit"
-                            disabled={!uploadForm.data.file || uploadForm.processing}
+                            disabled={!uploadForm.data.file || !uploadForm.data.list_name.trim() || uploadForm.processing}
                             onClick={handleUpload}
                         >
-                            {uploadForm.processing ? 'Uploading…' : 'Upload & Extract'}
+                            {uploadForm.processing ? 'Uploading & Syncing…' : 'Upload & Sync to SendGrid'}
                         </Button>
                     </SheetFooter>
                 </SheetContent>
@@ -297,24 +330,16 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
                     <DialogHeader>
                         <DialogTitle>Delete File</DialogTitle>
                     </DialogHeader>
-                    <p className="text-sm text-muted-foreground">
-                        Are you sure you want to delete{' '}
-                        <span className="font-medium text-foreground">"{deletingFile?.original_name}"</span>?
-                        This will also permanently delete all{' '}
-                        <span className="font-medium text-foreground">
-                            {deletingFile?.email_count.toLocaleString()}
-                        </span>{' '}
-                        extracted email(s). This action cannot be undone.
+                    <p className="text-muted-foreground text-sm">
+                        Are you sure you want to delete <span className="text-foreground font-medium">"{deletingFile?.list_name}"</span>? This will
+                        permanently delete all <span className="text-foreground font-medium">{deletingFile?.email_count.toLocaleString()}</span>{' '}
+                        extracted contact(s) from the local database. This action cannot be undone.
                     </p>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setDeletingFile(null)}>
                             Cancel
                         </Button>
-                        <Button
-                            variant="destructive"
-                            onClick={handleDelete}
-                            disabled={deleteForm.processing}
-                        >
+                        <Button variant="destructive" onClick={handleDelete} disabled={deleteForm.processing}>
                             Delete
                         </Button>
                     </DialogFooter>

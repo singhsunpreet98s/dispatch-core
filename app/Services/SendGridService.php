@@ -237,6 +237,65 @@ class SendGridService
     }
 
     /**
+     * Create a SendGrid Marketing Contacts list and return its ID.
+     *
+     * @throws \RuntimeException on API failure
+     */
+    public function createMarketingList(string $name): string
+    {
+        if (empty($this->apiKey)) {
+            throw new \RuntimeException('SendGrid API key is not configured.');
+        }
+
+        $response = Http::withToken($this->apiKey)
+            ->post(self::BASE_URL . '/marketing/lists', ['name' => $name]);
+
+        if (! $response->successful()) {
+            throw new \RuntimeException('Failed to create SendGrid list: ' . $response->body());
+        }
+
+        return $response->json('id');
+    }
+
+    /**
+     * Upsert contacts into the Marketing Contacts store and assign them to a list.
+     *
+     * @param  array{email: string, name?: string|null}[]  $contacts
+     *
+     * @throws \RuntimeException on API failure
+     */
+    public function addContactsToList(string $listId, array $contacts): void
+    {
+        if (empty($this->apiKey)) {
+            throw new \RuntimeException('SendGrid API key is not configured.');
+        }
+
+        $payload = array_map(function (array $c) {
+            $contact = ['email' => $c['email']];
+            if (! empty($c['name'])) {
+                $parts = explode(' ', $c['name'], 2);
+                $contact['first_name'] = $parts[0];
+                if (isset($parts[1])) {
+                    $contact['last_name'] = $parts[1];
+                }
+            }
+            return $contact;
+        }, $contacts);
+
+        foreach (array_chunk($payload, 1000) as $chunk) {
+            $response = Http::withToken($this->apiKey)
+                ->put(self::BASE_URL . '/marketing/contacts', [
+                    'list_ids' => [$listId],
+                    'contacts' => $chunk,
+                ]);
+
+            if (! $response->successful()) {
+                throw new \RuntimeException('Failed to add contacts to SendGrid list: ' . $response->body());
+            }
+        }
+    }
+
+    /**
      * Upsert contacts from an email list, create a single-send campaign, and send it immediately.
      *
      * @param  array{email: string, first_name?: string, last_name?: string}[]  $contacts

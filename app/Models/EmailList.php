@@ -11,10 +11,12 @@ class EmailList extends Model
     protected $fillable = [
         'user_id',
         'original_name',
+        'list_name',
         'stored_path',
         'disk',
         'size',
         'email_count',
+        'sendgrid_list_id',
     ];
 
     public function user(): BelongsTo
