@@ -1,18 +1,14 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { DatePickerWithRange } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import AppLayout from '@/layouts/app-layout';
-import { cn } from '@/lib/utils';
 import { type BreadcrumbItem, type DashboardUser } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { format } from 'date-fns';
 import {
     AlertTriangle,
-    CalendarIcon,
     CalendarOff,
     Check,
     CheckCircle2,
@@ -523,29 +519,13 @@ export default function Dashboard({ stats, dailyStats, recentCampaigns, actionIt
                             </button>
                         ))}
                         <span className="text-border hidden sm:block">|</span>
-                        <Popover open={open} onOpenChange={setOpen}>
-                            <PopoverTrigger asChild>
-                                <Button variant="outline" className={cn('justify-start text-left font-normal', !range && 'text-muted-foreground')}>
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {range?.from ? (
-                                        range.to
-                                            ? <>{format(range.from, 'LLL dd, y')} – {format(range.to, 'LLL dd, y')}</>
-                                            : format(range.from, 'LLL dd, y')
-                                    ) : <span>Pick a date range</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                    initialFocus
-                                    mode="range"
-                                    defaultMonth={range?.from}
-                                    selected={range}
-                                    onSelect={handleRangeSelect}
-                                    numberOfMonths={2}
-                                    disabled={{ after: new Date() }}
-                                />
-                            </PopoverContent>
-                        </Popover>
+                        <DatePickerWithRange
+                            value={range}
+                            onChange={handleRangeSelect}
+                            open={open}
+                            onOpenChange={setOpen}
+                            disabled={{ after: new Date() }}
+                        />
                     </div>
                 </div>
 
