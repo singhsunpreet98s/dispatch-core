@@ -9,3 +9,6 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('attendance:close-open-shifts')->everyMinute();
+
+Schedule::command('campaigns:check-schedules')->everyMinute();
+Schedule::command('campaigns:dispatch-queue')->everyMinute();

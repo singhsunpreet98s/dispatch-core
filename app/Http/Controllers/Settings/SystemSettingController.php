@@ -6,7 +6,10 @@ use App\Enums\FeatureFlag as FeatureFlagEnum;
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceHoliday;
 use App\Models\FeatureFlag;
+use App\Models\ScheduleDispatchQueue;
 use App\Models\SystemSetting;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -36,7 +39,13 @@ class SystemSettingController extends Controller
                 'date' => $h->date->format('Y-m-d'),
                 'name' => $h->name,
             ]),
+            'commandStatus'      => $this->buildCommandStatus(),
         ]);
+    }
+
+    public function commandStatus(): JsonResponse
+    {
+        return response()->json($this->buildCommandStatus());
     }
 
     // ── Logo ──────────────────────────────────────────────────────────────────
@@ -91,6 +100,40 @@ class SystemSettingController extends Controller
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private function buildCommandStatus(): array
+    {
+        $staleCutoff = Carbon::now()->subMinutes(3);
+
+        $checkLastRun    = SystemSetting::get('cmd_check_schedules_last_run');
+        $dispatchLastRun = SystemSetting::get('cmd_dispatch_campaigns_last_run');
+
+        $queueCounts = ScheduleDispatchQueue::selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status')
+            ->toArray();
+
+        return [
+            'check_schedules' => [
+                'label'        => 'campaigns:check-schedules',
+                'description'  => 'Checks active schedule triggers and enqueues campaigns for dispatch.',
+                'last_run'     => $checkLastRun,
+                'is_running'   => $checkLastRun && Carbon::parse($checkLastRun)->isAfter($staleCutoff),
+            ],
+            'dispatch_campaigns' => [
+                'label'        => 'campaigns:dispatch-queue',
+                'description'  => 'Picks pending queue items and sends them via SendGrid.',
+                'last_run'     => $dispatchLastRun,
+                'is_running'   => $dispatchLastRun && Carbon::parse($dispatchLastRun)->isAfter($staleCutoff),
+            ],
+            'queue' => [
+                'pending'    => (int) ($queueCounts['pending']    ?? 0),
+                'processing' => (int) ($queueCounts['processing'] ?? 0),
+                'sent'       => (int) ($queueCounts['sent']       ?? 0),
+                'failed'     => (int) ($queueCounts['failed']     ?? 0),
+            ],
+        ];
+    }
 
     private function syncFeatureFlags(): void
     {

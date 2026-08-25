@@ -35,5 +35,6 @@ Route::middleware('auth')->group(function () {
         Route::patch('settings/system/flags/{featureFlag}/toggle', [SystemSettingController::class, 'toggleFlag'])->name('system-settings.flags.toggle');
 
         Route::patch('settings/attendance', [AttendanceSettingController::class, 'update'])->name('attendance-settings.update');
+        Route::get('settings/system/command-status', [SystemSettingController::class, 'commandStatus'])->name('system-settings.command-status');
     });
 });

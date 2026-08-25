@@ -236,6 +236,63 @@ class SendGridService
         ], $response->json('results', []));
     }
 
+    /**
+     * Upsert contacts from an email list, create a single-send campaign, and send it immediately.
+     *
+     * @param  array{email: string, first_name?: string, last_name?: string}[]  $contacts
+     * @return string  The SendGrid single-send ID
+     *
+     * @throws \RuntimeException on any API failure
+     */
+    public function sendMarketingCampaign(
+        string $campaignName,
+        string $subject,
+        string $htmlContent,
+        array $contacts,
+    ): string {
+        if (empty($this->apiKey)) {
+            throw new \RuntimeException('SendGrid API key is not configured.');
+        }
+
+        // 1. Upsert contacts so they exist in the Marketing Contacts store
+        $contactsRes = Http::withToken($this->apiKey)
+            ->put(self::BASE_URL . '/marketing/contacts', ['contacts' => $contacts]);
+
+        if (! $contactsRes->successful()) {
+            throw new \RuntimeException('Failed to upsert contacts: ' . $contactsRes->body());
+        }
+
+        // 2. Create a single-send
+        $createRes = Http::withToken($this->apiKey)
+            ->post(self::BASE_URL . '/marketing/singlesends', [
+                'name'         => $campaignName,
+                'send_to'      => ['all' => true],
+                'email_config' => [
+                    'subject'                => $subject,
+                    'html_content'           => $htmlContent,
+                    'generate_plain_content' => true,
+                ],
+            ]);
+
+        if (! $createRes->successful()) {
+            throw new \RuntimeException('Failed to create single-send: ' . $createRes->body());
+        }
+
+        $singlesendId = $createRes->json('id');
+
+        // 3. Schedule it to send now
+        $sendRes = Http::withToken($this->apiKey)
+            ->put(self::BASE_URL . "/marketing/singlesends/{$singlesendId}/schedule", [
+                'send_at' => 'now',
+            ]);
+
+        if (! $sendRes->successful()) {
+            throw new \RuntimeException('Failed to send single-send: ' . $sendRes->body());
+        }
+
+        return $singlesendId;
+    }
+
     private function emptyStats(): array
     {
         return [

@@ -15,6 +15,7 @@ use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DemoController;
 use App\Http\Controllers\EmailController;
+use App\Http\Controllers\GeminiController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -35,6 +36,8 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth'])->group(function () {
+    Route::post('ai/email', [GeminiController::class, 'generate'])->name('ai.email');
+
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('campaigns/{singlesendId}/detail', [DashboardController::class, 'campaignDetail'])->name('campaigns.detail');
     Route::get('emails', [EmailController::class, 'index'])->name('emails.index');

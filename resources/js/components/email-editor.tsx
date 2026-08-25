@@ -32,6 +32,7 @@ import { Separator } from './ui/separator';
 interface EmailEditorProps {
     content?: string;
     onChange?: (html: string) => void;
+    onEditorReady?: (setContent: (html: string) => void) => void;
     placeholder?: string;
     className?: string;
 }
@@ -60,7 +61,7 @@ function ToolbarButton({ onClick, active, disabled, title, children }: ToolbarBu
     );
 }
 
-export function EmailEditor({ content = '', onChange, placeholder = 'Write your email content here…', className }: EmailEditorProps) {
+export function EmailEditor({ content = '', onChange, onEditorReady, placeholder = 'Write your email content here…', className }: EmailEditorProps) {
     const editor = useEditor({
         extensions: [
             StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
@@ -79,6 +80,11 @@ export function EmailEditor({ content = '', onChange, placeholder = 'Write your 
             attributes: {
                 class: 'min-h-[400px] px-6 py-4 focus:outline-none',
             },
+        },
+        onCreate: ({ editor }) => {
+            onEditorReady?.((html) => {
+                editor.commands.setContent(html, true);
+            });
         },
     });
 

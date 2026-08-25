@@ -1,3 +1,4 @@
+import { AiEmailAssistant } from '@/components/ai-email-assistant';
 import { EmailEditor } from '@/components/email-editor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -5,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { useRef } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -20,7 +22,8 @@ interface FormData {
 }
 
 export default function CreateTemplate() {
-    const form = useForm<FormData>({ title: '', subject: '', body: '' });
+    const form            = useForm<FormData>({ title: '', subject: '', body: '' });
+    const setEditorContent = useRef<((html: string) => void) | null>(null);
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -77,10 +80,20 @@ export default function CreateTemplate() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Email Body</Label>
+                        <div className="flex items-center justify-between">
+                            <Label>Email Body</Label>
+                            <AiEmailAssistant
+                                currentContent={form.data.body}
+                                onResult={(html) => {
+                                    form.setData('body', html);
+                                    setEditorContent.current?.(html);
+                                }}
+                            />
+                        </div>
                         <EmailEditor
                             content={form.data.body}
                             onChange={(html) => form.setData('body', html)}
+                            onEditorReady={(fn) => { setEditorContent.current = fn; }}
                             placeholder="Write your email content here…"
                         />
                         {form.errors.body && (

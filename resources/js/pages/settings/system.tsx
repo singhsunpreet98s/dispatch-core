@@ -3,6 +3,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type AttendanceHoliday, type AttendanceSettings, type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import AttendanceTab from './system/attendance-tab';
+import CampaignsTab, { type CampaignCommandStatus } from './system/campaigns-tab';
 import { type FeatureFlag } from './system/feature-flags-tab';
 import FeatureFlagsTab from './system/feature-flags-tab';
 import HolidaysTab from './system/holidays-tab';
@@ -13,6 +14,7 @@ interface Props {
     featureFlags: FeatureFlag[];
     attendanceSettings: AttendanceSettings;
     holidays: AttendanceHoliday[];
+    commandStatus: CampaignCommandStatus;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -20,7 +22,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'System Settings', href: '/settings/system' },
 ];
 
-export default function SystemSettings({ logoUrl, featureFlags, attendanceSettings, holidays }: Props) {
+export default function SystemSettings({ logoUrl, featureFlags, attendanceSettings, holidays, commandStatus }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="System Settings" />
@@ -37,6 +39,7 @@ export default function SystemSettings({ logoUrl, featureFlags, attendanceSettin
                         <TabsTrigger value="feature-flags">Feature Flags</TabsTrigger>
                         <TabsTrigger value="attendance">Attendance</TabsTrigger>
                         <TabsTrigger value="holidays">Holidays</TabsTrigger>
+                        <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="settings" className="mt-4">
@@ -53,6 +56,10 @@ export default function SystemSettings({ logoUrl, featureFlags, attendanceSettin
 
                     <TabsContent value="holidays" className="mt-4">
                         <HolidaysTab holidays={holidays} />
+                    </TabsContent>
+
+                    <TabsContent value="campaigns" className="mt-4">
+                        <CampaignsTab commandStatus={commandStatus} />
                     </TabsContent>
                 </Tabs>
             </div>

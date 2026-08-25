@@ -1,3 +1,4 @@
+import { AiEmailAssistant } from '@/components/ai-email-assistant';
 import { EmailEditor } from '@/components/email-editor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -5,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { useRef } from 'react';
 
 interface Template {
     id: number;
@@ -31,11 +33,12 @@ interface FormData {
 }
 
 export default function EditTemplate({ template }: Props) {
-    const form = useForm<FormData>({
-        title: template.title,
+    const form             = useForm<FormData>({
+        title:   template.title,
         subject: template.subject,
-        body: template.body,
+        body:    template.body,
     });
+    const setEditorContent = useRef<((html: string) => void) | null>(null);
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -92,10 +95,20 @@ export default function EditTemplate({ template }: Props) {
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Email Body</Label>
+                        <div className="flex items-center justify-between">
+                            <Label>Email Body</Label>
+                            <AiEmailAssistant
+                                currentContent={form.data.body}
+                                onResult={(html) => {
+                                    form.setData('body', html);
+                                    setEditorContent.current?.(html);
+                                }}
+                            />
+                        </div>
                         <EmailEditor
                             content={form.data.body}
                             onChange={(html) => form.setData('body', html)}
+                            onEditorReady={(fn) => { setEditorContent.current = fn; }}
                             placeholder="Write your email content here…"
                         />
                         {form.errors.body && (
