@@ -241,7 +241,7 @@ export default function CampaignsIndex({ campaigns, templates, emailLists, isAdm
                     {c.type === 'manual' && c.status && <ManualStatusBadge status={c.status} />}
                     {c.type === 'automation' && c.schedule_status && <ScheduleStatusBadge status={c.schedule_status} />}
                     {c.type === 'automation' && c.triggers && <p className="text-muted-foreground text-xs">{formatTriggers(c.triggers)}</p>}
-                    {c.status === 'failed' && c.error_message && <p className="text-destructive line-clamp-2 max-w-48 text-xs">{c.error_message}</p>}
+                    {c.status === 'failed' && c.error_message && <p className="text-destructive line-clamp-2 max-w-48 text-xs"></p>}
                 </div>
             ),
         },

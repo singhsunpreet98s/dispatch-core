@@ -1,6 +1,6 @@
+import { DCMark } from '@/components/app-logo';
 import { type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Truck } from 'lucide-react';
 
 interface AuthLayoutProps {
     children: React.ReactNode;
@@ -21,7 +21,7 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
                             {logoUrl ? (
                                 <img src={logoUrl} alt="Logo" className="mb-1 h-12 w-auto object-contain" />
                             ) : (
-                                <Truck size={40} className="mb-1" />
+                                <DCMark className="text-primary size-8" />
                             )}
                             <span className="sr-only">{title}</span>
                         </Link>
