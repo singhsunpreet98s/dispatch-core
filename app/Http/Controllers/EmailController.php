@@ -33,15 +33,13 @@ class EmailController extends Controller
                 ->all();
         }
 
-        $emails = $this->sendGrid->getEmailActivity(
-            $dateFrom,
-            $dateTo,
-            $status !== 'all' ? $status : null,
-            $campaignIds,
-        );
-
         return Inertia::render('emails/index', [
-            'emails'  => $emails,
+            'emails'  => Inertia::defer(fn () => $this->sendGrid->getEmailActivity(
+                $dateFrom,
+                $dateTo,
+                $status !== 'all' ? $status : null,
+                $campaignIds,
+            )),
             'filters' => [
                 'date_from' => $dateFrom,
                 'date_to'   => $dateTo,

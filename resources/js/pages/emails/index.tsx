@@ -5,7 +5,7 @@ import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { Inbox, MailOpen } from 'lucide-react';
+import { Inbox, Loader2, MailOpen } from 'lucide-react';
 import { useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 
@@ -29,7 +29,7 @@ interface Filters {
 }
 
 interface Props {
-    emails: EmailMessage[];
+    emails?: EmailMessage[];
     filters: Filters;
 }
 
@@ -38,41 +38,50 @@ interface Props {
 const STATUS_FILTERS: { value: string; label: string }[] = [
     { value: 'all',               label: 'All' },
     { value: 'delivered',         label: 'Delivered' },
+    { value: 'not_delivered',     label: 'Not Delivered' },
+    { value: 'pending',           label: 'Pending' },
     { value: 'bounce',            label: 'Bounced' },
     { value: 'open',              label: 'Opened' },
     { value: 'click',             label: 'Clicked' },
     { value: 'unsubscribe',       label: 'Unsubscribed' },
     { value: 'group_unsubscribe', label: 'Group Unsubscribed' },
-    { value: 'spam_report',       label: 'Spam Reports' },
+    { value: 'spamreport',        label: 'Spam Reports' },
     { value: 'deferred',          label: 'Deferred' },
-    { value: 'blocked',           label: 'Blocked' },
+    { value: 'block',             label: 'Blocked' },
+    { value: 'dropped',           label: 'Dropped' },
     { value: 'processed',         label: 'Processed' },
 ];
 
 const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
     delivered:         'default',
+    not_delivered:     'destructive',
+    pending:           'outline',
     bounce:            'destructive',
     open:              'secondary',
     click:             'secondary',
     unsubscribe:       'outline',
     group_unsubscribe: 'outline',
-    spam_report:       'destructive',
+    spamreport:        'destructive',
     deferred:          'outline',
-    blocked:           'destructive',
+    block:             'destructive',
     processed:         'outline',
+    dropped:           'destructive',
 };
 
 const STATUS_LABELS: Record<string, string> = {
     delivered:         'Delivered',
+    not_delivered:     'Not Delivered',
+    pending:           'Pending',
     bounce:            'Bounced',
     open:              'Opened',
     click:             'Clicked',
     unsubscribe:       'Unsubscribed',
     group_unsubscribe: 'Group Unsubscribed',
-    spam_report:       'Spam Report',
+    spamreport:        'Spam Report',
     deferred:          'Deferred',
-    blocked:           'Blocked',
+    block:             'Blocked',
     processed:         'Processed',
+    dropped:           'Dropped',
 };
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Emails', href: '/emails' }];
@@ -175,13 +184,20 @@ export default function EmailsIndex({ emails, filters }: Props) {
                 <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="text-base font-semibold">
-                            {emails.length === 0
-                                ? 'No emails found'
-                                : `${emails.length.toLocaleString()} email${emails.length === 1 ? '' : 's'}`}
+                            {emails === undefined
+                                ? 'Loading…'
+                                : emails.length === 0
+                                  ? 'No emails found'
+                                  : `${emails.length.toLocaleString()} email${emails.length === 1 ? '' : 's'}`}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                        {emails.length === 0 ? (
+                        {emails === undefined ? (
+                            <div className="flex flex-col items-center gap-2 py-16 text-muted-foreground">
+                                <Loader2 className="h-10 w-10 animate-spin opacity-40" />
+                                <p className="text-sm">Loading email activity…</p>
+                            </div>
+                        ) : emails.length === 0 ? (
                             <div className="flex flex-col items-center gap-2 py-16 text-muted-foreground">
                                 <Inbox className="h-10 w-10 opacity-30" />
                                 <p className="text-sm">No email activity for the selected period.</p>

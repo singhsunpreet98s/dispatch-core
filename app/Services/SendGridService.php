@@ -212,8 +212,12 @@ class SendGridService
         $endTs   = $endDate   . 'T23:59:59.000Z';
         $query   = "last_event_time BETWEEN TIMESTAMP \"{$startTs}\" AND TIMESTAMP \"{$endTs}\"";
 
-        if ($status) {
-            $query = "status={$status} AND {$query}";
+        if ($status === 'not_delivered') {
+            $query = '(status="bounce" OR status="block" OR status="dropped") AND ' . $query;
+        } elseif ($status === 'pending') {
+            $query = '(status="processed" OR status="deferred") AND ' . $query;
+        } elseif ($status) {
+            $query = "status=\"{$status}\" AND {$query}";
         }
 
         if (! empty($campaignIds)) {
