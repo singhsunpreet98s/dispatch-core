@@ -15,12 +15,11 @@ class CheckSchedules extends Command
 
     public function handle(): int
     {
-        $now = Carbon::now();
+        $now = Carbon::now('Asia/Kolkata');
         $currentMinute = $now->format('H:i');
         $currentWeekday = (int) $now->format('w'); // 0=Sun … 6=Sat
         $queuedAt = $now->startOfMinute()->copy();
 
-        $queued = 0;
 
         Schedule::with(['triggers'])
             ->where('status', 'active')

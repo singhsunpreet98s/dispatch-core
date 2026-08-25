@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Http;
 
 class GeminiController extends Controller
 {
-    private const MODEL   = 'gemini-2.0-flash';
+    private const MODEL   = 'gemini-3.6-flash';
     private const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' . self::MODEL . ':generateContent';
 
     private const SYSTEM_PROMPT = <<<'PROMPT'

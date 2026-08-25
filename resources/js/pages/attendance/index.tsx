@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { type AttendanceSettings, type AttendanceShift, type BreadcrumbItem, type ChecklistItem, type HeatmapDay, type LeaveRequest } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { CalendarCheck, CalendarPlus, ChevronLeft, ChevronRight, Plus, Save, Trash2, X } from 'lucide-react';
+import { AlertCircle, CalendarCheck, CalendarPlus, ChevronLeft, ChevronRight, Clock, Coffee, LogIn, LogOut, Plus, Save, Timer, Trash2, Wifi, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface Props {
@@ -178,62 +178,147 @@ function AttendanceHeatmap({ days, year, month, onDayClick }: {
 
 // ── ShiftDetailSheet ──────────────────────────────────────────────────────────
 
+const SHIFT_STATUS_BADGE: Record<string, string> = {
+    present: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    partial: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    absent:  'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    open:    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    holiday: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    leave:   'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
+};
+
+const SHIFT_STATUS_LABEL: Record<string, string> = {
+    present: 'Present', partial: 'Partial', absent: 'Absent',
+    open: 'Active', holiday: 'Holiday', leave: 'On Leave',
+};
+
 function ShiftDetailSheet({ day, open, onClose }: { day: HeatmapDay | null; open: boolean; onClose: () => void }) {
     const shift = day?.shift ?? null;
+    const statusBadgeCls = day?.status ? (SHIFT_STATUS_BADGE[day.status] ?? '') : '';
+    const statusLabel    = day?.status ? (SHIFT_STATUS_LABEL[day.status] ?? day.status) : '';
+
     return (
         <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-            <SheetContent>
-                <SheetHeader>
-                    <SheetTitle>{day ? formatDate(day.date) : ''}</SheetTitle>
+            <SheetContent className="w-full sm:max-w-md overflow-y-auto font-sans">
+                {/* Header — badge sits BELOW the title to avoid the Sheet close button */}
+                <SheetHeader className="pb-4 border-b pr-8">
+                    <SheetTitle className="font-sans text-sm font-semibold leading-snug tracking-normal">
+                        {day ? formatDate(day.date) : ''}
+                    </SheetTitle>
+                    {statusLabel && (
+                        <span className={`mt-1.5 inline-flex w-fit rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${statusBadgeCls}`}>
+                            {statusLabel}
+                        </span>
+                    )}
                 </SheetHeader>
+
                 {day?.holiday_name && (
-                    <p className="mt-2 text-xs font-medium text-purple-600">Holiday: {day.holiday_name}</p>
+                    <div className="mt-4 flex items-center gap-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 px-3 py-2.5">
+                        <CalendarCheck className="h-4 w-4 shrink-0 text-purple-600 dark:text-purple-400" />
+                        <span className="text-sm font-medium text-purple-700 dark:text-purple-300">{day.holiday_name}</span>
+                    </div>
                 )}
+
                 {!shift ? (
-                    <p className="text-muted-foreground mt-6 text-sm">No shift recorded for this day.</p>
+                    <div className="mt-16 flex flex-col items-center gap-3 text-center">
+                        <div className="rounded-full bg-muted p-4">
+                            <Clock className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <p className="text-sm font-medium">No shift recorded</p>
+                        <p className="text-muted-foreground text-xs max-w-[18rem]">No attendance data was logged for this day.</p>
+                    </div>
                 ) : (
-                    <div className="mt-6 space-y-4 text-sm">
-                        <div className="grid grid-cols-2 gap-2">
-                            <span className="text-muted-foreground">Clock in</span>
-                            <span className="font-mono">{shift.clocked_in_at ? formatTime(shift.clocked_in_at) : '—'}</span>
-                            <span className="text-muted-foreground">Clock out</span>
-                            <span className="font-mono">{shift.clocked_out_at ? formatTime(shift.clocked_out_at) : 'Still open'}</span>
-                            <span className="text-muted-foreground">Worked</span>
-                            <span className="font-mono">{formatSeconds(shift.total_worked_seconds)}</span>
-                            <span className="text-muted-foreground">Breaks</span>
-                            <span className="font-mono">{formatSeconds(shift.total_break_seconds)}</span>
-                            <span className="text-muted-foreground">IP address</span>
-                            <span className="font-mono text-xs">{shift.ip_address ?? '—'}</span>
+                    <div className="mt-5 space-y-4">
+
+                        {/* Clock in / Clock out */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="rounded-xl border bg-card p-3 space-y-1.5">
+                                <div className="flex items-center gap-1.5 text-muted-foreground">
+                                    <LogIn className="h-3.5 w-3.5" />
+                                    <span className="text-[10px] font-semibold uppercase tracking-widest">Clock In</span>
+                                </div>
+                                <p className="font-mono text-base font-semibold tabular-nums">
+                                    {shift.clocked_in_at ? formatTime(shift.clocked_in_at) : '—'}
+                                </p>
+                            </div>
+                            <div className="rounded-xl border bg-card p-3 space-y-1.5">
+                                <div className="flex items-center gap-1.5 text-muted-foreground">
+                                    <LogOut className="h-3.5 w-3.5" />
+                                    <span className="text-[10px] font-semibold uppercase tracking-widest">Clock Out</span>
+                                </div>
+                                <p className={`font-mono text-base font-semibold tabular-nums ${!shift.clocked_out_at ? 'text-blue-500 dark:text-blue-400' : ''}`}>
+                                    {shift.clocked_out_at ? formatTime(shift.clocked_out_at) : 'Active'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Duration stats */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="rounded-xl bg-green-50 dark:bg-green-900/20 p-3 space-y-1">
+                                <div className="flex items-center gap-1.5 text-green-700 dark:text-green-400">
+                                    <Timer className="h-3.5 w-3.5" />
+                                    <span className="text-[10px] font-semibold uppercase tracking-widest">Worked</span>
+                                </div>
+                                <p className="font-mono text-base font-semibold tabular-nums text-green-800 dark:text-green-300">
+                                    {formatSeconds(shift.total_worked_seconds)}
+                                </p>
+                            </div>
+                            <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 p-3 space-y-1">
+                                <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400">
+                                    <Coffee className="h-3.5 w-3.5" />
+                                    <span className="text-[10px] font-semibold uppercase tracking-widest">Break</span>
+                                </div>
+                                <p className="font-mono text-base font-semibold tabular-nums text-amber-800 dark:text-amber-300">
+                                    {formatSeconds(shift.total_break_seconds)}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Secondary metadata */}
+                        <div className="rounded-xl border bg-muted/30 px-4 py-3 space-y-2.5">
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-1.5 text-muted-foreground">
+                                    <Wifi className="h-3.5 w-3.5" />
+                                    <span className="text-xs">IP Address</span>
+                                </div>
+                                <span className="font-mono text-xs">{shift.ip_address ?? '—'}</span>
+                            </div>
                             {shift.auto_closed && (
-                                <>
-                                    <span className="text-muted-foreground">Auto-closed</span>
-                                    <span className="text-xs text-amber-600">Yes</span>
-                                </>
+                                <div className="flex items-center gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 px-2.5 py-2">
+                                    <AlertCircle className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                                    <span className="text-xs text-amber-700 dark:text-amber-300">Shift was auto-closed by the system</span>
+                                </div>
                             )}
                         </div>
+
+                        {/* Breaks timeline */}
                         {shift.breaks.length > 0 && (
-                            <div>
-                                <p className="mb-2 font-medium">Breaks</p>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Start</TableHead>
-                                            <TableHead>End</TableHead>
-                                            <TableHead>Duration</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {shift.breaks.map((b) => (
-                                            <TableRow key={b.id}>
-                                                <TableCell className="font-mono text-xs">{formatTime(b.started_at)}</TableCell>
-                                                <TableCell className="font-mono text-xs">{b.ended_at ? formatTime(b.ended_at) : 'Open'}</TableCell>
-                                                <TableCell className="font-mono text-xs">{formatSeconds(b.duration_seconds)}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                            <div className="space-y-2">
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                    Breaks · {shift.breaks.length}
+                                </p>
+                                <div className="space-y-1.5">
+                                    {shift.breaks.map((b, idx) => (
+                                        <div key={b.id} className="flex items-center gap-3 rounded-xl border bg-card px-3 py-2.5">
+                                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
+                                                {idx + 1}
+                                            </span>
+                                            <div className="flex flex-1 items-center gap-1.5 font-mono text-xs tabular-nums">
+                                                <span>{formatTime(b.started_at)}</span>
+                                                <span className="text-muted-foreground/50">→</span>
+                                                <span className={b.ended_at ? '' : 'text-blue-500 dark:text-blue-400'}>
+                                                    {b.ended_at ? formatTime(b.ended_at) : 'Open'}
+                                                </span>
+                                            </div>
+                                            <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-[11px] tabular-nums text-muted-foreground">
+                                                {formatSeconds(b.duration_seconds)}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
+
                     </div>
                 )}
             </SheetContent>
