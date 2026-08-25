@@ -9,10 +9,36 @@ class SendGridService
     private const BASE_URL = 'https://api.sendgrid.com/v3';
 
     private string $apiKey;
+    private ?int $unsubscribeGroupId;
 
     public function __construct()
     {
-        $this->apiKey = config('services.sendgrid.api_key', '');
+        $this->apiKey             = config('services.sendgrid.api_key', '');
+        $unsubGroupId             = config('services.sendgrid.unsubscribe_group_id');
+        $this->unsubscribeGroupId = $unsubGroupId ? (int) $unsubGroupId : null;
+    }
+
+    /**
+     * Build the email_config block required by every single-send.
+     *
+     * @param  int  $senderId  The numeric SendGrid sender ID from the sending user's profile.
+     */
+    private function buildEmailConfig(string $subject, string $htmlContent, int $senderId): array
+    {
+        $config = [
+            'subject'                => $subject,
+            'html_content'           => $htmlContent,
+            'generate_plain_content' => true,
+            'sender_id'              => $senderId,
+        ];
+
+        if ($this->unsubscribeGroupId) {
+            $config['suppression_group_id'] = $this->unsubscribeGroupId;
+        } else {
+            $config['custom_unsubscribe_url'] = config('app.url') . '/unsubscribe';
+        }
+
+        return $config;
     }
 
     public function getDailyStats(string $startDate, string $endDate): array
@@ -237,6 +263,27 @@ class SendGridService
     }
 
     /**
+     * Delete a SendGrid Marketing Contacts list by its ID.
+     *
+     * @throws \RuntimeException on API failure
+     */
+    public function deleteMarketingList(string $listId): void
+    {
+        if (empty($this->apiKey)) {
+            throw new \RuntimeException('SendGrid API key is not configured.');
+        }
+
+        $response = Http::withToken($this->apiKey)
+            ->delete(self::BASE_URL . '/marketing/lists/' . $listId, [
+                'delete_contacts' => false,
+            ]);
+
+        if (! $response->successful()) {
+            throw new \RuntimeException('Failed to delete SendGrid list: ' . $response->body());
+        }
+    }
+
+    /**
      * Create a SendGrid Marketing Contacts list and return its ID.
      *
      * @throws \RuntimeException on API failure
@@ -296,6 +343,49 @@ class SendGridService
     }
 
     /**
+     * Create a single-send targeting a specific marketing list and dispatch it immediately.
+     *
+     * @return string  The SendGrid single-send ID
+     *
+     * @throws \RuntimeException on any API failure
+     */
+    public function sendToList(
+        string $campaignName,
+        string $subject,
+        string $htmlContent,
+        string $listId,
+        int $senderId,
+    ): string {
+        if (empty($this->apiKey)) {
+            throw new \RuntimeException('SendGrid API key is not configured.');
+        }
+
+        $createRes = Http::withToken($this->apiKey)
+            ->post(self::BASE_URL . '/marketing/singlesends', [
+                'name'         => $campaignName,
+                'send_to'      => ['list_ids' => [$listId]],
+                'email_config' => $this->buildEmailConfig($subject, $htmlContent, $senderId),
+            ]);
+
+        if (! $createRes->successful()) {
+            throw new \RuntimeException('Failed to create single-send: ' . $createRes->body());
+        }
+
+        $singlesendId = $createRes->json('id');
+
+        $sendRes = Http::withToken($this->apiKey)
+            ->put(self::BASE_URL . "/marketing/singlesends/{$singlesendId}/schedule", [
+                'send_at' => 'now',
+            ]);
+
+        if (! $sendRes->successful()) {
+            throw new \RuntimeException('Failed to schedule single-send: ' . $sendRes->body());
+        }
+
+        return $singlesendId;
+    }
+
+    /**
      * Upsert contacts from an email list, create a single-send campaign, and send it immediately.
      *
      * @param  array{email: string, first_name?: string, last_name?: string}[]  $contacts
@@ -308,6 +398,7 @@ class SendGridService
         string $subject,
         string $htmlContent,
         array $contacts,
+        int $senderId,
     ): string {
         if (empty($this->apiKey)) {
             throw new \RuntimeException('SendGrid API key is not configured.');
@@ -326,11 +417,7 @@ class SendGridService
             ->post(self::BASE_URL . '/marketing/singlesends', [
                 'name'         => $campaignName,
                 'send_to'      => ['all' => true],
-                'email_config' => [
-                    'subject'                => $subject,
-                    'html_content'           => $htmlContent,
-                    'generate_plain_content' => true,
-                ],
+                'email_config' => $this->buildEmailConfig($subject, $htmlContent, $senderId),
             ]);
 
         if (! $createRes->successful()) {

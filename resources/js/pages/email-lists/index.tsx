@@ -63,6 +63,7 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
     const [uploadOpen, setUploadOpen] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [deletingFile, setDeletingFile] = useState<EmailListFile | null>(null);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
 
     const uploadForm = useForm<{ list_name: string; file: File | null }>({ list_name: '', file: null });
     const deleteForm = useForm({});
@@ -79,6 +80,9 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
     useEffect(() => {
         if (flash?.error && uploadOpen) {
             setUploadError(flash.error);
+        }
+        if (flash?.error && deletingFile) {
+            setDeleteError(flash.error);
         }
     }, [flash?.error]);
 
@@ -100,8 +104,9 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
 
     function handleDelete() {
         if (!deletingFile) return;
+        setDeleteError(null);
         deleteForm.delete(route('email-lists.destroy', deletingFile.id), {
-            onSuccess: () => setDeletingFile(null),
+            onSuccess: () => { setDeletingFile(null); setDeleteError(null); },
         });
     }
 
@@ -325,22 +330,35 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
             </Sheet>
 
             {/* Delete confirmation */}
-            <Dialog open={!!deletingFile} onOpenChange={(open) => !open && setDeletingFile(null)}>
+            <Dialog open={!!deletingFile} onOpenChange={(open) => { if (!open) { setDeletingFile(null); setDeleteError(null); } }}>
                 <DialogContent className="sm:max-w-sm">
                     <DialogHeader>
-                        <DialogTitle>Delete File</DialogTitle>
+                        <DialogTitle>Delete List</DialogTitle>
                     </DialogHeader>
                     <p className="text-muted-foreground text-sm">
-                        Are you sure you want to delete <span className="text-foreground font-medium">"{deletingFile?.list_name}"</span>? This will
-                        permanently delete all <span className="text-foreground font-medium">{deletingFile?.email_count.toLocaleString()}</span>{' '}
-                        extracted contact(s) from the local database. This action cannot be undone.
+                        Are you sure you want to delete{' '}
+                        <span className="text-foreground font-medium">"{deletingFile?.list_name}"</span>?
+                        This will permanently remove the list from{' '}
+                        {deletingFile?.sendgrid_list_id ? (
+                            <><span className="text-foreground font-medium">SendGrid</span> and the local database</>
+                        ) : (
+                            <>the local database</>
+                        )}, along with all{' '}
+                        <span className="text-foreground font-medium">{deletingFile?.email_count.toLocaleString()}</span>{' '}
+                        contact(s). This action cannot be undone.
                     </p>
+                    {deleteError && (
+                        <div className="border-destructive/30 bg-destructive/10 flex items-start gap-2 rounded-md border px-3 py-2.5">
+                            <span className="text-destructive mt-0.5 shrink-0">⚠</span>
+                            <p className="text-destructive text-sm">{deleteError}</p>
+                        </div>
+                    )}
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setDeletingFile(null)}>
+                        <Button variant="outline" onClick={() => { setDeletingFile(null); setDeleteError(null); }}>
                             Cancel
                         </Button>
                         <Button variant="destructive" onClick={handleDelete} disabled={deleteForm.processing}>
-                            Delete
+                            {deleteForm.processing ? 'Deleting…' : 'Delete'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

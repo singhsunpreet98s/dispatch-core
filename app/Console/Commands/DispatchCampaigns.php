@@ -21,6 +21,7 @@ class DispatchCampaigns extends Command
         $pending = ScheduleDispatchQueue::with([
             'schedule.template',
             'schedule.emailList.contacts',
+            'schedule.user:id,sendgrid_contact_id',
         ])
             ->where('status', 'pending')
             ->orderBy('queued_at')
@@ -39,6 +40,14 @@ class DispatchCampaigns extends Command
                     throw new \RuntimeException('Schedule, template, or email list no longer exists.');
                 }
 
+                $senderId = $schedule->user?->sendgrid_contact_id
+                    ? (int) $schedule->user->sendgrid_contact_id
+                    : null;
+
+                if (! $senderId) {
+                    throw new \RuntimeException("User #{$schedule->user_id} does not have a SendGrid Sender ID configured.");
+                }
+
                 $contacts = $schedule->emailList->contacts->map(fn ($c) => array_filter([
                     'email'      => $c->email,
                     'first_name' => $c->first_name ?? null,
@@ -50,6 +59,7 @@ class DispatchCampaigns extends Command
                     subject:      $schedule->template->subject,
                     htmlContent:  $schedule->template->body,
                     contacts:     $contacts,
+                    senderId:     $senderId,
                 );
 
                 $schedule->update(['sendgrid_singlesend_id' => $singlesendId]);

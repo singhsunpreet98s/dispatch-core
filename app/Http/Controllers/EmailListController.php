@@ -106,10 +106,18 @@ class EmailListController extends Controller
     {
         $this->authorizeAccess($emailList);
 
+        if ($emailList->sendgrid_list_id) {
+            try {
+                $this->sendGrid->deleteMarketingList($emailList->sendgrid_list_id);
+            } catch (\RuntimeException $e) {
+                return back()->with('error', 'Could not delete SendGrid list — deletion cancelled: ' . $e->getMessage());
+            }
+        }
+
         $this->fileStorage->delete($emailList->stored_path, $emailList->disk);
         $emailList->delete(); // cascades to email_contacts via FK
 
-        return back()->with('success', 'File deleted.');
+        return back()->with('success', 'List deleted from SendGrid and local database.');
     }
 
     private function authorizeAccess(EmailList $emailList): void

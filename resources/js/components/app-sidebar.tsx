@@ -3,7 +3,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { CalendarClock, ClipboardList, Clock, FileText, LayoutGrid, MailOpen, Package, Settings2, Upload, Users } from 'lucide-react';
+import { CalendarClock, ClipboardList, Clock, FileText, LayoutGrid, MailOpen, Package, Send, Settings2, Upload, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 export function AppSidebar() {
@@ -15,6 +15,7 @@ export function AppSidebar() {
         { title: 'Attendance', url: '/attendance', icon: Clock },
         { title: 'Email Lists', url: '/email-lists', icon: Upload },
         { title: 'Templates', url: '/templates', icon: FileText },
+        { title: 'Campaigns', url: '/campaigns', icon: Send },
         { title: 'Schedules', url: '/schedules', icon: CalendarClock },
         { title: 'Carrier Packets', url: '/carrier-packets', icon: Package },
         { title: 'Emails', url: '/emails', icon: MailOpen },

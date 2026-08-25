@@ -8,6 +8,7 @@ use App\Http\Controllers\AttendanceNoteController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\CarrierPacketController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\EmailListController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\PublicCarrierPacketController;
@@ -50,6 +51,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('carrier-packets/{carrierPacket}', [CarrierPacketController::class, 'show'])->name('carrier-packets.show');
     Route::delete('carrier-packets/{carrierPacket}', [CarrierPacketController::class, 'destroy'])->name('carrier-packets.destroy');
     Route::get('carrier-packets/{carrierPacket}/documents/{document}/download', [CarrierPacketController::class, 'downloadDocument'])->name('carrier-packets.documents.download');
+
+    Route::get('campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
+    Route::post('campaigns', [CampaignController::class, 'store'])->name('campaigns.store');
 
     Route::get('email-lists', [EmailListController::class, 'index'])->name('email-lists.index');
     Route::post('email-lists', [EmailListController::class, 'store'])->name('email-lists.store');
