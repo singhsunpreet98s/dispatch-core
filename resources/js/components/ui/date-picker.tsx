@@ -33,6 +33,7 @@ interface DatePickerWithRangeProps {
     disabled?: DisabledMatcher
     numberOfMonths?: number
     placeholder?: string
+    align?: "start" | "end"
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -121,9 +122,9 @@ function CalendarMonth({ month, from, to, onDayClick, onDayHover, disabled, onPr
                             key={i}
                             className={cn(
                                 "relative flex h-8 items-center justify-center",
-                                inRange && "bg-indigo-100 dark:bg-indigo-950/40",
-                                isStart && !isEnd && "rounded-l-full bg-indigo-100 dark:bg-indigo-950/40",
-                                isEnd   && !isStart && "rounded-r-full bg-indigo-100 dark:bg-indigo-950/40",
+                                inRange && "bg-primary/10",
+                                isStart && !isEnd && "rounded-l-full bg-primary/10",
+                                isEnd   && !isStart && "rounded-r-full bg-primary/10",
                             )}
                         >
                             <button
@@ -134,11 +135,11 @@ function CalendarMonth({ month, from, to, onDayClick, onDayHover, disabled, onPr
                                 onMouseLeave={() => onDayHover(undefined)}
                                 className={cn(
                                     "relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium transition-colors",
-                                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1",
+                                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
                                     !inCurrentMonth && "invisible",
                                     inCurrentMonth && !isSelected && !isDisabled && "hover:bg-accent hover:text-accent-foreground",
-                                    isTodayDay && !isSelected && "ring-1 ring-indigo-400",
-                                    isSelected && "bg-indigo-600 text-white hover:bg-indigo-700",
+                                    isTodayDay && !isSelected && "ring-1 ring-primary",
+                                    isSelected && "bg-primary text-primary-foreground hover:bg-primary/90",
                                     isDisabled && inCurrentMonth && "cursor-not-allowed text-muted-foreground/40",
                                 )}
                             >
@@ -163,6 +164,7 @@ export function DatePickerWithRange({
     disabled,
     numberOfMonths = 2,
     placeholder = "Pick a date range",
+    align = "start",
 }: DatePickerWithRangeProps) {
     const isControlled = controlledOpen !== undefined
 
@@ -244,7 +246,8 @@ export function DatePickerWithRange({
             {/* Dropdown */}
             {open && (
                 <div className={cn(
-                    "absolute left-0 top-full z-50 mt-1 min-w-max rounded-lg border border-border bg-popover shadow-lg",
+                    "absolute top-full z-50 mt-1 min-w-max rounded-lg border border-border bg-popover shadow-lg",
+                    align === "end" ? "right-0" : "left-0",
                     "divide-x divide-border",
                     numberOfMonths > 1 ? "flex" : "",
                 )}>

@@ -1,13 +1,13 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { DatePickerWithRange } from '@/components/ui/date-picker';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { Inbox, MailOpen } from 'lucide-react';
 import { useState } from 'react';
+import type { DateRange } from 'react-day-picker';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -101,18 +101,24 @@ function fmtLabel(date: string) {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function EmailsIndex({ emails, filters }: Props) {
-    const [dateFrom, setDateFrom] = useState(filters.date_from);
-    const [dateTo, setDateTo]     = useState(filters.date_to);
-
     const today = new Date().toISOString().slice(0, 10);
+
+    const [range, setRange] = useState<DateRange | undefined>({
+        from: new Date(filters.date_from + 'T00:00:00'),
+        to:   new Date(filters.date_to   + 'T00:00:00'),
+    });
 
     function navigate(params: Partial<Filters>) {
         router.get(route('emails.index'), { ...filters, ...params }, { preserveState: false });
     }
 
-    function handleDateChange(from: string, to: string) {
-        if (from && to && to >= from) {
-            navigate({ date_from: from, date_to: to });
+    function handleRangeChange(r: DateRange | undefined) {
+        setRange(r);
+        if (r?.from && r?.to) {
+            navigate({
+                date_from: r.from.toISOString().slice(0, 10),
+                date_to:   r.to.toISOString().slice(0, 10),
+            });
         }
     }
 
@@ -156,38 +162,13 @@ export default function EmailsIndex({ emails, filters }: Props) {
                         ))}
                     </div>
 
-                    {/* Date range pickers */}
-                    <div className="flex shrink-0 flex-wrap items-end gap-3">
-                        <div className="grid gap-1.5">
-                            <Label htmlFor="date-from" className="text-xs">From</Label>
-                            <Input
-                                id="date-from"
-                                type="date"
-                                value={dateFrom}
-                                max={dateTo}
-                                onChange={(e) => {
-                                    setDateFrom(e.target.value);
-                                    handleDateChange(e.target.value, dateTo);
-                                }}
-                                className="w-[160px]"
-                            />
-                        </div>
-                        <div className="grid gap-1.5">
-                            <Label htmlFor="date-to" className="text-xs">To</Label>
-                            <Input
-                                id="date-to"
-                                type="date"
-                                value={dateTo}
-                                min={dateFrom}
-                                max={today}
-                                onChange={(e) => {
-                                    setDateTo(e.target.value);
-                                    handleDateChange(dateFrom, e.target.value);
-                                }}
-                                className="w-[160px]"
-                            />
-                        </div>
-                    </div>
+                    {/* Date range picker */}
+                    <DatePickerWithRange
+                        value={range}
+                        onChange={handleRangeChange}
+                        disabled={{ after: new Date() }}
+                        align="end"
+                    />
                 </div>
 
                 {/* Table */}
