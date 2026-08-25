@@ -24,10 +24,10 @@ class EmailListController extends Controller
             : EmailList::where('user_id', $user->id)->orderBy('created_at', 'desc');
 
         return Inertia::render('email-lists/index', [
-            'emailLists' => $query->paginate(15, [
+            'emailLists' => Inertia::defer(fn () => $query->paginate(15, [
                 'id', 'user_id', 'original_name', 'disk', 'size', 'email_count', 'created_at',
-            ]),
-            'isAdmin' => $user->isAdmin(),
+            ])),
+            'isAdmin'    => $user->isAdmin(),
         ]);
     }
 

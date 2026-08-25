@@ -19,8 +19,8 @@ class CarrierPacketController extends Controller
             : CarrierPacket::where('user_id', $user->id)->with(['documents']);
 
         return Inertia::render('carrier-packets/index', [
-            'packets'  => $query->orderBy('created_at', 'desc')->paginate(15),
-            'isAdmin'  => $user->isAdmin(),
+            'packets' => Inertia::defer(fn () => $query->orderBy('created_at', 'desc')->paginate(15)),
+            'isAdmin' => $user->isAdmin(),
         ]);
     }
 

@@ -18,8 +18,8 @@ class EmailTemplateController extends Controller
             : EmailTemplate::where('user_id', $user->id)->orderBy('created_at', 'desc');
 
         return Inertia::render('templates/index', [
-            'templates' => $query->paginate(15, ['id', 'user_id', 'title', 'subject', 'created_at', 'updated_at']),
-            'isAdmin' => $user->isAdmin(),
+            'templates' => Inertia::defer(fn () => $query->paginate(15, ['id', 'user_id', 'title', 'subject', 'created_at', 'updated_at'])),
+            'isAdmin'   => $user->isAdmin(),
         ]);
     }
 

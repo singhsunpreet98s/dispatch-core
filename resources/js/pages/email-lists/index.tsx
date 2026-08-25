@@ -1,4 +1,4 @@
-import { type Column, DataTable, type Paginator } from '@/components/data-table';
+import { type Column, DataTable, DataTableSkeleton, type Paginator } from '@/components/data-table';
 import { FileDropzone } from '@/components/file-dropzone';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/sheet';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Deferred, Head, useForm, usePage } from '@inertiajs/react';
 import { Download, FileSpreadsheet, Mail, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -34,7 +34,7 @@ interface EmailListFile {
 }
 
 interface Props {
-    emailLists: Paginator<EmailListFile>;
+    emailLists?: Paginator<EmailListFile>;
     isAdmin: boolean;
 }
 
@@ -215,16 +215,18 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base font-semibold">
-                            {isAdmin ? 'All Uploaded Files' : 'Your Files'} ({emailLists.total})
+                            {isAdmin ? 'All Uploaded Files' : 'Your Files'}{emailLists?.total !== undefined && ` (${emailLists.total})`}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <DataTable
-                            columns={columns}
-                            paginator={emailLists}
-                            rowKey={(f) => f.id}
-                            emptyMessage='No files uploaded yet. Click "Upload File" to get started.'
-                        />
+                        <Deferred data="emailLists" fallback={<DataTableSkeleton columns={6} />}>
+                            <DataTable
+                                columns={columns}
+                                paginator={emailLists!}
+                                rowKey={(f) => f.id}
+                                emptyMessage='No files uploaded yet. Click "Upload File" to get started.'
+                            />
+                        </Deferred>
                     </CardContent>
                 </Card>
             </div>

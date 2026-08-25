@@ -1,5 +1,11 @@
 <?php
 
+use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController;
+use App\Http\Controllers\Admin\AttendanceHolidayController;
+use App\Http\Controllers\Admin\LeaveController as AdminLeaveController;
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AttendanceNoteController;
+use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\CarrierPacketController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmailListController;
@@ -7,6 +13,8 @@ use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\PublicCarrierPacketController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\DemoController;
+use App\Http\Controllers\EmailController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -18,7 +26,7 @@ Route::prefix('p')->name('packet.')->group(function () {
     Route::post('{uuid}/sign', [PublicCarrierPacketController::class, 'sign'])->name('sign');
     Route::get('{uuid}/done', [PublicCarrierPacketController::class, 'done'])->name('done');
 });
-
+Route::get('/demo', [DemoController::class, 'index'])->name('demo.index');
 Route::get('/', function () {
     if (auth()->user()) {
         return redirect()->route('dashboard');
@@ -28,6 +36,8 @@ Route::get('/', function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('campaigns/{singlesendId}/detail', [DashboardController::class, 'campaignDetail'])->name('campaigns.detail');
+    Route::get('emails', [EmailController::class, 'index'])->name('emails.index');
 
     Route::resource('templates', EmailTemplateController::class)->except(['show']);
     Route::resource('schedules', ScheduleController::class)->except(['create', 'edit']);
@@ -43,8 +53,29 @@ Route::middleware(['auth'])->group(function () {
     Route::get('email-lists/{emailList}/download', [EmailListController::class, 'download'])->name('email-lists.download');
     Route::delete('email-lists/{emailList}', [EmailListController::class, 'destroy'])->name('email-lists.destroy');
 
+    Route::middleware(['attendance'])->prefix('attendance')->name('attendance.')->group(function () {
+        Route::get('/', [AttendanceController::class, 'index'])->name('index');
+        Route::post('clock-in', [AttendanceController::class, 'clockIn'])->name('clock-in');
+        Route::post('clock-out', [AttendanceController::class, 'clockOut'])->name('clock-out');
+        Route::post('break/start', [AttendanceController::class, 'startBreak'])->name('break.start');
+        Route::post('break/end', [AttendanceController::class, 'endBreak'])->name('break.end');
+        Route::post('notes', [AttendanceNoteController::class, 'save'])->name('notes.save');
+        Route::post('leave', [LeaveController::class, 'store'])->name('leave.store');
+        Route::delete('leave/{leave}', [LeaveController::class, 'destroy'])->name('leave.destroy');
+    });
+
     Route::middleware(['admin'])->group(function () {
+        Route::middleware(['attendance'])->group(function () {
+            Route::get('attendance/admin', [AdminAttendanceController::class, 'index'])->name('attendance.admin.index');
+            Route::get('attendance/admin/{user}', [AdminAttendanceController::class, 'show'])->name('attendance.admin.show');
+            Route::post('attendance/holidays', [AttendanceHolidayController::class, 'store'])->name('attendance.holidays.store');
+            Route::delete('attendance/holidays/{holiday}', [AttendanceHolidayController::class, 'destroy'])->name('attendance.holidays.destroy');
+            Route::patch('attendance/leave/{leave}/approve', [AdminLeaveController::class, 'approve'])->name('attendance.leave.approve');
+            Route::patch('attendance/leave/{leave}/reject', [AdminLeaveController::class, 'reject'])->name('attendance.leave.reject');
+        });
+
         Route::get('users', [UserController::class, 'index'])->name('users.index');
+        Route::get('users/senders', [UserController::class, 'senders'])->name('users.senders');
         Route::post('users', [UserController::class, 'store'])->name('users.store');
         Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');

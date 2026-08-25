@@ -2,6 +2,52 @@ import { Button } from '@/components/ui/button';
 import { router } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+
+const CELL_WIDTHS = ['w-32', 'w-24', 'w-20', 'w-28', 'w-16', 'w-20', 'w-12'];
+
+export function DataTableSkeleton({ columns, rows = 8 }: { columns: number; rows?: number }) {
+    return (
+        <div className="flex flex-col flex-1 min-h-0 animate-pulse">
+            <div className="flex-1 overflow-auto min-h-0">
+                <table className="w-full text-sm">
+                    <thead>
+                        <tr className="bg-card border-b">
+                            {Array.from({ length: columns }).map((_, i) => (
+                                <th key={i} className="px-6 py-3">
+                                    <div className={`h-2.5 rounded-sm bg-muted ${CELL_WIDTHS[i % CELL_WIDTHS.length]}`} />
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                        {Array.from({ length: rows }).map((_, rowIdx) => (
+                            <tr key={rowIdx}>
+                                {Array.from({ length: columns }).map((_, colIdx) => (
+                                    <td key={colIdx} className="px-6 py-4">
+                                        <div
+                                            className={`h-3 rounded-sm bg-muted ${
+                                                colIdx === 0
+                                                    ? 'w-36'
+                                                    : colIdx === columns - 1
+                                                      ? 'w-10 ml-auto'
+                                                      : CELL_WIDTHS[colIdx % CELL_WIDTHS.length]
+                                            }`}
+                                        />
+                                    </td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+            <div className="flex shrink-0 items-center justify-between border-t px-6 py-3">
+                <div className="h-2.5 w-28 rounded-sm bg-muted" />
+            </div>
+        </div>
+    );
+}
+
 export interface Column<T> {
     key: string;
     header: string;
@@ -28,10 +74,12 @@ interface DataTableProps<T> {
 }
 
 function goToPage(page: number) {
-    router.get(window.location.pathname, { page }, { preserveState: true, preserveScroll: true, replace: true });
+    router.get(window.location.pathname, { page }, { preserveScroll: true, replace: true });
 }
 
 export function DataTable<T>({ columns, paginator, rowKey, emptyMessage = 'No records found.' }: DataTableProps<T>) {
+    if (!paginator) return null;
+
     const { data, current_page, last_page, total, from, to } = paginator;
 
     return (

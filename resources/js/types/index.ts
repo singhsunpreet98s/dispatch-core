@@ -31,7 +31,67 @@ export interface SharedData {
     quote: { message: string; author: string };
     auth: Auth;
     flash: Flash;
+    logoUrl: string | null;
     [key: string]: unknown;
+}
+
+export interface AttendanceBreak {
+    id: number;
+    started_at: string;
+    ended_at: string | null;
+    duration_seconds: number;
+}
+
+export interface AttendanceShift {
+    id: number;
+    date: string;
+    clocked_in_at: string | null;
+    clocked_out_at: string | null;
+    ip_address: string | null;
+    auto_closed: boolean;
+    total_worked_seconds: number;
+    total_break_seconds: number;
+    breaks: AttendanceBreak[];
+}
+
+export interface HeatmapDay {
+    date: string;
+    status: 'present' | 'partial' | 'absent' | 'future' | 'open' | 'weekend' | 'holiday' | 'leave';
+    shift: AttendanceShift | null;
+    holiday_name: string | null;
+}
+
+export interface LeaveRequest {
+    id: number;
+    date_from: string;
+    date_to: string;
+    reason: string;
+    status: 'pending' | 'approved' | 'rejected';
+}
+
+export interface AttendanceHoliday {
+    id: number;
+    date: string;
+    name: string;
+}
+
+export interface ChecklistItem {
+    text: string;
+    checked: boolean;
+}
+
+export interface AttendanceSettings {
+    clock_in_start: string;
+    clock_in_end: string;
+    shift_end: string;
+    min_break_minutes: number;
+    ip_whitelist: string;
+}
+
+export interface DashboardUser {
+    id: number;
+    name: string;
+    email: string;
 }
 
 export interface User {

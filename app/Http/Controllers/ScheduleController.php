@@ -22,10 +22,10 @@ class ScheduleController extends Controller
                 ->with(['template:id,title', 'emailList:id,original_name,email_count', 'triggers']);
 
         return Inertia::render('schedules/index', [
-            'schedules' => $query->orderBy('created_at', 'desc')->paginate(15),
-            'templates' => $this->availableTemplates($user),
+            'schedules'  => Inertia::defer(fn () => $query->orderBy('created_at', 'desc')->paginate(15)),
+            'templates'  => $this->availableTemplates($user),
             'emailLists' => $this->availableEmailLists($user),
-            'isAdmin' => $user->isAdmin(),
+            'isAdmin'    => $user->isAdmin(),
         ]);
     }
 

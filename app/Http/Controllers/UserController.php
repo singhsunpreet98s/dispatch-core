@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
+use App\Services\SendGridService;
 use Inertia\Inertia;
 
 class UserController extends Controller
@@ -12,8 +13,8 @@ class UserController extends Controller
     public function index()
     {
         return Inertia::render('users/index', [
-            'users' => User::orderBy('created_at', 'desc')
-                ->paginate(10, ['id', 'name', 'email', 'role', 'sendgrid_contact_id', 'two_factor_confirmed_at', 'mfa_required', 'created_at']),
+            'users' => Inertia::defer(fn () => User::orderBy('created_at', 'desc')
+                ->paginate(10, ['id', 'name', 'email', 'role', 'sendgrid_contact_id', 'two_factor_confirmed_at', 'mfa_required', 'created_at'])),
         ]);
     }
 
@@ -35,6 +36,11 @@ class UserController extends Controller
         $user->update($data);
 
         return back()->with('success', 'User updated.');
+    }
+
+    public function senders(SendGridService $sendGrid)
+    {
+        return response()->json($sendGrid->getVerifiedSenders());
     }
 
     public function destroy(User $user)

@@ -1,4 +1,4 @@
-import { type Column, DataTable, type Paginator } from '@/components/data-table';
+import { type Column, DataTable, DataTableSkeleton, type Paginator } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Deferred, Head, Link, useForm } from '@inertiajs/react';
 import { Check, Copy, Eye, Package, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -28,7 +28,7 @@ interface CarrierPacket {
 }
 
 interface Props {
-    packets: Paginator<CarrierPacket>;
+    packets?: Paginator<CarrierPacket>;
     isAdmin: boolean;
 }
 
@@ -184,16 +184,18 @@ export default function CarrierPacketsIndex({ packets, isAdmin }: Props) {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-base font-semibold">
                             <Package className="h-4 w-4 text-muted-foreground" />
-                            {isAdmin ? 'All Packets' : 'Your Packets'} ({packets.total})
+                            {isAdmin ? 'All Packets' : 'Your Packets'}{packets?.total !== undefined && ` (${packets.total})`}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <DataTable
-                            columns={columns}
-                            paginator={packets}
-                            rowKey={(p) => p.id}
-                            emptyMessage="No carrier packets yet. Click 'New Packet' to create one."
-                        />
+                        <Deferred data="packets" fallback={<DataTableSkeleton columns={6} />}>
+                            <DataTable
+                                columns={columns}
+                                paginator={packets!}
+                                rowKey={(p) => p.id}
+                                emptyMessage="No carrier packets yet. Click 'New Packet' to create one."
+                            />
+                        </Deferred>
                     </CardContent>
                 </Card>
             </div>

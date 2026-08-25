@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Schedule extends Model
 {
-    protected $fillable = ['user_id', 'template_id', 'email_list_id', 'name', 'type', 'status'];
+    protected $fillable = ['user_id', 'template_id', 'email_list_id', 'name', 'type', 'status', 'sendgrid_singlesend_id'];
 
     public function user(): BelongsTo
     {

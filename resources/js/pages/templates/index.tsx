@@ -1,4 +1,4 @@
-import { type Column, DataTable, type Paginator } from '@/components/data-table';
+import { type Column, DataTable, DataTableSkeleton, type Paginator } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Head, Link, router, usePage, useForm } from '@inertiajs/react';
+import { Deferred, Head, Link, router, usePage, useForm } from '@inertiajs/react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -26,7 +26,7 @@ interface Template {
 }
 
 interface Props {
-    templates: Paginator<Template>;
+    templates?: Paginator<Template>;
     isAdmin: boolean;
 }
 
@@ -142,16 +142,18 @@ export default function TemplatesIndex({ templates, isAdmin }: Props) {
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base font-semibold">
-                            Templates ({templates.total})
+                            Templates {templates?.total !== undefined && `(${templates.total})`}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <DataTable
-                            columns={columns}
-                            paginator={templates}
-                            rowKey={(t) => t.id}
-                            emptyMessage="No templates yet. Create your first template to get started."
-                        />
+                        <Deferred data="templates" fallback={<DataTableSkeleton columns={6} />}>
+                            <DataTable
+                                columns={columns}
+                                paginator={templates!}
+                                rowKey={(t) => t.id}
+                                emptyMessage="No templates yet. Create your first template to get started."
+                            />
+                        </Deferred>
                     </CardContent>
                 </Card>
             </div>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\EnsureAttendanceEnabled;
 use App\Http\Middleware\EnsureMfaSetup;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -22,8 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
-            'admin' => EnsureAdmin::class,
-            'mfa.setup' => EnsureMfaSetup::class,
+            'admin'      => EnsureAdmin::class,
+            'mfa.setup'  => EnsureMfaSetup::class,
+            'attendance' => EnsureAttendanceEnabled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

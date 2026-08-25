@@ -1,4 +1,4 @@
-import { type Column, DataTable, type Paginator } from '@/components/data-table';
+import { type Column, DataTable, DataTableSkeleton, type Paginator } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Deferred, Head, Link, useForm } from '@inertiajs/react';
 import { CalendarClock, Eye, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 
@@ -51,7 +51,7 @@ interface Schedule {
 }
 
 interface Props {
-    schedules: Paginator<Schedule>;
+    schedules?: Paginator<Schedule>;
     templates: Template[];
     emailLists: EmailListOption[];
     isAdmin: boolean;
@@ -347,16 +347,18 @@ export default function SchedulesIndex({ schedules, templates, emailLists, isAdm
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base font-semibold">
-                            {isAdmin ? 'All Schedules' : 'Your Schedules'} ({schedules.total})
+                            {isAdmin ? 'All Schedules' : 'Your Schedules'}{schedules?.total !== undefined && ` (${schedules.total})`}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <DataTable
-                            columns={columns}
-                            paginator={schedules}
-                            rowKey={(s) => s.id}
-                            emptyMessage="No schedules yet. Click 'New Schedule' to create one."
-                        />
+                        <Deferred data="schedules" fallback={<DataTableSkeleton columns={8} />}>
+                            <DataTable
+                                columns={columns}
+                                paginator={schedules!}
+                                rowKey={(s) => s.id}
+                                emptyMessage="No schedules yet. Click 'New Schedule' to create one."
+                            />
+                        </Deferred>
                     </CardContent>
                 </Card>
             </div>

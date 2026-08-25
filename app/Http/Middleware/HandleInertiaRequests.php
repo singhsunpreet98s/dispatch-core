@@ -2,8 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\SystemSetting;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -49,6 +51,10 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => session('success'),
                 'error' => fn () => session('error'),
             ],
+            'logoUrl' => fn () => rescue(function () {
+                $path = SystemSetting::get('logo_path');
+                return $path ? Storage::disk('public')->url($path) : null;
+            }, null),
         ]);
     }
 }

@@ -1,4 +1,4 @@
-import { type Column, DataTable, type Paginator } from '@/components/data-table';
+import { type Column, DataTable, DataTableSkeleton, type Paginator } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,11 +10,17 @@ import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetT
 import { Switch } from '@/components/ui/switch';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { Deferred, Head, useForm } from '@inertiajs/react';
+import { Check, ChevronsUpDown, Pencil, Plus, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 type Role = 'admin' | 'manager' | 'user';
+
+interface SendGridSender {
+    id: number;
+    from_email: string;
+    from_name: string;
+}
 
 interface User {
     id: number;
@@ -28,7 +34,7 @@ interface User {
 }
 
 interface Props {
-    users: Paginator<User>;
+    users?: Paginator<User>;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -66,6 +72,25 @@ export default function UsersIndex({ users }: Props) {
     const [mode, setMode] = useState<FormMode>('create');
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [deletingUser, setDeletingUser] = useState<User | null>(null);
+
+    const [senders, setSenders] = useState<SendGridSender[]>([]);
+    const [sendersLoading, setSendersLoading] = useState(false);
+    const sendersLoaded = useRef(false);
+
+    const [senderOpen, setSenderOpen] = useState(false);
+
+    useEffect(() => {
+        if (!sheetOpen || sendersLoaded.current) return;
+        setSendersLoading(true);
+        fetch(route('users.senders'))
+            .then((r) => r.json())
+            .then((data: SendGridSender[]) => {
+                setSenders(data);
+                sendersLoaded.current = true;
+            })
+            .catch(() => {})
+            .finally(() => setSendersLoading(false));
+    }, [sheetOpen]);
 
     const form = useForm<UserFormData>({
         name: '',
@@ -105,6 +130,7 @@ export default function UsersIndex({ users }: Props) {
         if (!open && !form.processing) {
             form.reset();
             form.clearErrors();
+            setSenderOpen(false);
             setSheetOpen(false);
         }
     }
@@ -213,15 +239,19 @@ export default function UsersIndex({ users }: Props) {
 
                 <Card className="flex flex-col flex-1 min-h-0 overflow-hidden">
                     <CardHeader className="shrink-0">
-                        <CardTitle className="text-base font-semibold">All Users ({users.total})</CardTitle>
+                        <CardTitle className="text-base font-semibold">
+                            All Users {users?.total !== undefined && `(${users.total})`}
+                        </CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-col flex-1 min-h-0 p-0">
-                        <DataTable
-                            columns={columns}
-                            paginator={users}
-                            rowKey={(u) => u.id}
-                            emptyMessage="No users found. Add the first user to get started."
-                        />
+                        <Deferred data="users" fallback={<DataTableSkeleton columns={7} rows={10} />}>
+                            <DataTable
+                                columns={columns}
+                                paginator={users!}
+                                rowKey={(u) => u.id}
+                                emptyMessage="No users found. Add the first user to get started."
+                            />
+                        </Deferred>
                     </CardContent>
                 </Card>
             </div>
@@ -294,13 +324,56 @@ export default function UsersIndex({ users }: Props) {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="sendgrid_contact_id">SendGrid Contact ID</Label>
-                            <Input
-                                id="sendgrid_contact_id"
-                                value={form.data.sendgrid_contact_id}
-                                onChange={(e) => form.setData('sendgrid_contact_id', e.target.value)}
-                                placeholder="Optional — SendGrid contact UUID"
-                            />
+                            <Label>SendGrid Sender</Label>
+                            <div className="relative">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={senderOpen}
+                                    className="w-full justify-between font-normal"
+                                    disabled={sendersLoading}
+                                    onClick={() => setSenderOpen((o) => !o)}
+                                >
+                                    <span className="truncate">
+                                        {sendersLoading
+                                            ? 'Loading senders…'
+                                            : form.data.sendgrid_contact_id
+                                            ? senders.find((s) => String(s.id) === form.data.sendgrid_contact_id)?.from_name ?? form.data.sendgrid_contact_id
+                                            : 'Select a sender…'}
+                                    </span>
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                                {senderOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setSenderOpen(false)} />
+                                        <div className="bg-popover text-popover-foreground absolute bottom-full left-0 right-0 z-50 mb-1 max-h-56 overflow-y-auto rounded-md border py-1 shadow-md">
+                                            {senders.length === 0 && (
+                                                <p className="text-muted-foreground p-3 text-center text-sm">No senders found.</p>
+                                            )}
+                                            <button
+                                                type="button"
+                                                className="hover:bg-accent flex w-full items-center gap-2 px-3 py-2 text-left text-sm"
+                                                onMouseDown={(e) => { e.preventDefault(); form.setData('sendgrid_contact_id', ''); setSenderOpen(false); }}
+                                            >
+                                                <Check className={`h-4 w-4 shrink-0 ${!form.data.sendgrid_contact_id ? 'opacity-100' : 'opacity-0'}`} />
+                                                <span className="text-muted-foreground">None</span>
+                                            </button>
+                                            {senders.map((s) => (
+                                                <button
+                                                    key={s.id}
+                                                    type="button"
+                                                    className="hover:bg-accent flex w-full items-center gap-2 px-3 py-2 text-left text-sm"
+                                                    onMouseDown={(e) => { e.preventDefault(); form.setData('sendgrid_contact_id', String(s.id)); setSenderOpen(false); }}
+                                                >
+                                                    <Check className={`h-4 w-4 shrink-0 ${String(s.id) === form.data.sendgrid_contact_id ? 'opacity-100' : 'opacity-0'}`} />
+                                                    {s.from_name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                             {form.errors.sendgrid_contact_id && <p className="text-destructive text-xs">{form.errors.sendgrid_contact_id}</p>}
                         </div>
 
