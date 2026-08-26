@@ -50,6 +50,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('carrier-packets', [CarrierPacketController::class, 'store'])->name('carrier-packets.store');
     Route::get('carrier-packets/{carrierPacket}', [CarrierPacketController::class, 'show'])->name('carrier-packets.show');
     Route::delete('carrier-packets/{carrierPacket}', [CarrierPacketController::class, 'destroy'])->name('carrier-packets.destroy');
+    Route::get('carrier-packets/{carrierPacket}/agreement/download', [CarrierPacketController::class, 'downloadAgreement'])->name('carrier-packets.agreement.download');
     Route::get('carrier-packets/{carrierPacket}/documents/{document}/download', [CarrierPacketController::class, 'downloadDocument'])->name('carrier-packets.documents.download');
 
     Route::get('campaigns', [CampaignController::class, 'index'])->name('campaigns.index');

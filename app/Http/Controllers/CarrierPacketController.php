@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCarrierPacketRequest;
 use App\Models\CarrierPacket;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -64,6 +65,29 @@ class CarrierPacketController extends Controller
         $carrierPacket->delete();
 
         return back()->with('success', 'Carrier packet deleted.');
+    }
+
+    public function downloadAgreement(CarrierPacket $carrierPacket)
+    {
+        $this->authorizeAccess($carrierPacket);
+
+        abort_if($carrierPacket->status !== 'signed', 404, 'Agreement not yet signed.');
+
+        $formData = (object) [
+            'company_name'   => $carrierPacket->company_name,
+            'name'           => $carrierPacket->full_name,
+            'address'        => $carrierPacket->address,
+            'phone'          => $carrierPacket->phone,
+            'email'          => $carrierPacket->email,
+            'signature_path' => $carrierPacket->signature_path,
+        ];
+
+        $pdf = Pdf::loadView('carrier-packets.agreement-pdf', compact('formData'))
+            ->setPaper('a4', 'portrait');
+
+        $filename = 'broker-carrier-agreement-' . Str::slug($carrierPacket->company_name) . '.pdf';
+
+        return $pdf->download($filename);
     }
 
     public function downloadDocument(CarrierPacket $carrierPacket, int $documentId)

@@ -185,6 +185,22 @@ export default function CarrierPacketShow({ packet, isAdmin }: Props) {
                     </Card>
                 )}
 
+                {/* Download Agreement */}
+                {packet.status === 'signed' && packet.signature_path && (
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">Agreement</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Button variant="outline" size="sm" asChild className="gap-2">
+                                <a href={route('carrier-packets.agreement.download', { carrierPacket: packet.id })}>
+                                    <Download className="h-3.5 w-3.5" /> Download Signed Agreement (PDF)
+                                </a>
+                            </Button>
+                        </CardContent>
+                    </Card>
+                )}
+
                 {/* Documents + Signature */}
                 {packet.documents.length > 0 && (
                     <Card>

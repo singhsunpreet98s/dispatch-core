@@ -309,8 +309,8 @@ export default function EmailsIndex({ emails, filters, isAdmin, users }: Props) 
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
-                                        {emails.map((email) => (
-                                            <tr key={email.msg_id} className="hover:bg-muted/30 transition-colors">
+                                        {emails.map((email, i) => (
+                                            <tr key={email.msg_id || i} className="hover:bg-muted/30 transition-colors">
                                                 <td className="max-w-[200px] truncate px-6 py-3 font-medium">{email.to_email}</td>
                                                 <td className="text-muted-foreground max-w-[180px] truncate px-6 py-3">{email.from_email}</td>
                                                 <td className="max-w-[220px] truncate px-6 py-3">
