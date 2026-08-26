@@ -23,10 +23,26 @@ interface ShiftRow {
     clocked_out_at: string | null;
     total_worked_seconds: number;
     total_break_seconds: number;
+    total_shift_seconds: number;
+    day_status: 'present' | 'short_leave' | 'partial' | 'half_day';
     break_count: number;
     auto_closed: boolean;
     breaks: BreakRow[];
 }
+
+const DAY_STATUS_BADGE: Record<string, string> = {
+    present:     'border-green-500 text-green-600',
+    short_leave: 'border-yellow-500 text-yellow-600',
+    partial:     'border-amber-500 text-amber-600',
+    half_day:    'border-orange-500 text-orange-600',
+};
+
+const DAY_STATUS_LABEL: Record<string, string> = {
+    present:     'Present',
+    short_leave: 'Short Leave',
+    partial:     'Partial',
+    half_day:    'Half Day',
+};
 
 interface Props {
     user: { id: number; name: string };
@@ -200,7 +216,7 @@ export default function AttendanceAdminDetail({ user, shifts, dateFrom, dateTo }
                                     <TableHead className="px-4">Worked</TableHead>
                                     <TableHead className="px-4">Break Time</TableHead>
                                     <TableHead className="px-4">Breaks</TableHead>
-                                    <TableHead className="px-4">Status</TableHead>
+                                    <TableHead className="px-4">Day Status</TableHead>
                                     <TableHead className="px-4">Flags</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -237,27 +253,19 @@ export default function AttendanceAdminDetail({ user, shifts, dateFrom, dateTo }
                                                     <TableCell className="px-4 py-3 font-mono text-sm">{fmtSeconds(row.total_break_seconds)}</TableCell>
                                                     <TableCell className="px-4 py-3 text-sm">{row.break_count}</TableCell>
                                                     <TableCell className="px-4 py-3">
-                                                        {row.auto_closed ? (
-                                                            <Badge variant="outline" className="border-amber-500 text-amber-600 text-xs">Auto-closed</Badge>
-                                                        ) : row.clocked_out_at ? (
-                                                            <Badge variant="outline" className="border-green-500 text-green-600 text-xs">Closed</Badge>
-                                                        ) : (
-                                                            <Badge variant="outline" className="border-blue-500 text-blue-600 text-xs">Open</Badge>
-                                                        )}
+                                                        <Badge
+                                                            variant="outline"
+                                                            className={`text-xs ${DAY_STATUS_BADGE[row.day_status] ?? ''}`}
+                                                        >
+                                                            {DAY_STATUS_LABEL[row.day_status] ?? row.day_status}
+                                                        </Badge>
                                                     </TableCell>
                                                     <TableCell className="px-4 py-3">
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {(row.total_worked_seconds + row.total_break_seconds) < 9 * 3600 && (
-                                                                <Badge variant="outline" className="border-red-500 text-red-600 text-xs whitespace-nowrap">
-                                                                    &lt; 9h total
-                                                                </Badge>
-                                                            )}
-                                                            {row.total_worked_seconds < 8 * 3600 && (
-                                                                <Badge variant="outline" className="border-red-500 text-red-600 text-xs whitespace-nowrap">
-                                                                    &lt; 8h worked
-                                                                </Badge>
-                                                            )}
-                                                        </div>
+                                                        {row.auto_closed ? (
+                                                            <Badge variant="outline" className="border-amber-500 text-amber-600 text-xs">Auto-closed</Badge>
+                                                        ) : !row.clocked_out_at ? (
+                                                            <Badge variant="outline" className="border-blue-500 text-blue-600 text-xs">Open</Badge>
+                                                        ) : null}
                                                     </TableCell>
                                                 </TableRow>
 

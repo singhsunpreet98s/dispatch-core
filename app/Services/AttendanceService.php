@@ -150,18 +150,19 @@ class AttendanceService
                 return 'open';
             }
 
-            $clockInStart = $settings['clock_in_start'];
-            $shiftEnd     = $settings['shift_end'];
+            $totalSeconds = $shift->totalShiftSeconds();
 
-            if ($clockInStart && $shiftEnd) {
-                $expected = Carbon::parse($dateStr.' '.$shiftEnd)
-                    ->diffInSeconds(Carbon::parse($dateStr.' '.$clockInStart));
-                $worked = $shift->totalWorkedSeconds();
-
-                return ($expected > 0 && $worked >= $expected * 0.75) ? 'present' : 'partial';
+            if ($totalSeconds >= 9 * 3600) {
+                return 'present';
+            }
+            if ($totalSeconds >= 7 * 3600) {
+                return 'short_leave';
+            }
+            if ($totalSeconds >= 5 * 3600) {
+                return 'partial';
             }
 
-            return 'present';
+            return 'half_day';
         }
 
         // No shift — check holiday > leave > weekend > absent
@@ -191,6 +192,7 @@ class AttendanceService
             'auto_closed'          => $shift->auto_closed,
             'total_worked_seconds' => $shift->totalWorkedSeconds(),
             'total_break_seconds'  => $shift->totalBreakSeconds(),
+            'total_shift_seconds'  => $shift->totalShiftSeconds(),
             'breaks'               => $shift->breaks->map(fn ($b) => [
                 'id'               => $b->id,
                 'started_at'       => $b->started_at->toIso8601String(),

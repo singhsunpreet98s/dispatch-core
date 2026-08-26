@@ -112,14 +112,16 @@ function BreakTimer({ startedAt, minBreakMinutes, onEnd, processing }: {
 // ── Heatmap ───────────────────────────────────────────────────────────────────
 
 const STATUS_CLASS: Record<string, string> = {
-    future:  'bg-muted opacity-30 cursor-default',
-    weekend: 'bg-muted/60 cursor-default',
-    holiday: 'bg-purple-100 dark:bg-purple-900/30 hover:brightness-95 cursor-pointer',
-    absent:  'bg-red-100 dark:bg-red-900/20 hover:brightness-95 cursor-pointer',
-    partial: 'bg-amber-200 dark:bg-amber-700/40 hover:brightness-95 cursor-pointer',
-    present: 'bg-green-400 dark:bg-green-600/70 hover:brightness-95 cursor-pointer',
-    open:    'bg-blue-400 dark:bg-blue-600/70 animate-pulse cursor-pointer',
-    leave:   'bg-sky-200 dark:bg-sky-700/40 hover:brightness-95 cursor-pointer',
+    future:      'bg-muted opacity-30 cursor-default',
+    weekend:     'bg-muted/60 cursor-default',
+    holiday:     'bg-purple-100 dark:bg-purple-900/30 hover:brightness-95 cursor-pointer',
+    absent:      'bg-red-100 dark:bg-red-900/20 hover:brightness-95 cursor-pointer',
+    half_day:    'bg-orange-200 dark:bg-orange-700/40 hover:brightness-95 cursor-pointer',
+    partial:     'bg-amber-200 dark:bg-amber-700/40 hover:brightness-95 cursor-pointer',
+    short_leave: 'bg-yellow-300 dark:bg-yellow-600/50 hover:brightness-95 cursor-pointer',
+    present:     'bg-green-400 dark:bg-green-600/70 hover:brightness-95 cursor-pointer',
+    open:        'bg-blue-400 dark:bg-blue-600/70 animate-pulse cursor-pointer',
+    leave:       'bg-sky-200 dark:bg-sky-700/40 hover:brightness-95 cursor-pointer',
 };
 
 function AttendanceHeatmap({ days, year, month, onDayClick }: {
@@ -158,13 +160,15 @@ function AttendanceHeatmap({ days, year, month, onDayClick }: {
             {/* Legend */}
             <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5">
                 {[
-                    { label: 'Present',  cls: 'bg-green-400 dark:bg-green-600/70' },
-                    { label: 'Partial',  cls: 'bg-amber-200 dark:bg-amber-700/40' },
-                    { label: 'Absent',   cls: 'bg-red-100 dark:bg-red-900/20' },
-                    { label: 'Open',     cls: 'bg-blue-400 dark:bg-blue-600/70' },
-                    { label: 'Holiday',  cls: 'bg-purple-100 dark:bg-purple-900/30' },
-                    { label: 'Leave',    cls: 'bg-sky-200 dark:bg-sky-700/40' },
-                    { label: 'Weekend',  cls: 'bg-muted/60' },
+                    { label: 'Present',     cls: 'bg-green-400 dark:bg-green-600/70' },
+                    { label: 'Short Leave', cls: 'bg-yellow-300 dark:bg-yellow-600/50' },
+                    { label: 'Partial',     cls: 'bg-amber-200 dark:bg-amber-700/40' },
+                    { label: 'Half Day',    cls: 'bg-orange-200 dark:bg-orange-700/40' },
+                    { label: 'Absent',      cls: 'bg-red-100 dark:bg-red-900/20' },
+                    { label: 'Open',        cls: 'bg-blue-400 dark:bg-blue-600/70' },
+                    { label: 'Holiday',     cls: 'bg-purple-100 dark:bg-purple-900/30' },
+                    { label: 'Leave',       cls: 'bg-sky-200 dark:bg-sky-700/40' },
+                    { label: 'Weekend',     cls: 'bg-muted/60' },
                 ].map((item) => (
                     <span key={item.label} className="flex items-center gap-1 text-[10px] text-muted-foreground">
                         <span className={`inline-block h-2.5 w-2.5 rounded-sm ${item.cls}`} />
@@ -179,17 +183,25 @@ function AttendanceHeatmap({ days, year, month, onDayClick }: {
 // ── ShiftDetailSheet ──────────────────────────────────────────────────────────
 
 const SHIFT_STATUS_BADGE: Record<string, string> = {
-    present: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    partial: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    absent:  'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    open:    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    holiday: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-    leave:   'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
+    present:     'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    short_leave: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+    partial:     'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    half_day:    'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+    absent:      'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    open:        'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    holiday:     'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    leave:       'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
 };
 
 const SHIFT_STATUS_LABEL: Record<string, string> = {
-    present: 'Present', partial: 'Partial', absent: 'Absent',
-    open: 'Active', holiday: 'Holiday', leave: 'On Leave',
+    present:     'Present',
+    short_leave: 'Short Leave',
+    partial:     'Partial',
+    half_day:    'Half Day',
+    absent:      'Absent',
+    open:        'Active',
+    holiday:     'Holiday',
+    leave:       'On Leave',
 };
 
 function ShiftDetailSheet({ day, open, onClose }: { day: HeatmapDay | null; open: boolean; onClose: () => void }) {

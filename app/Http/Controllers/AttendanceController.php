@@ -139,8 +139,8 @@ class AttendanceController extends Controller
         }
 
         $minMinutes = (int) \App\Models\SystemSetting::get('attendance_min_break_minutes', 15);
-        $elapsed    = (int) now()->diffInMinutes($break->started_at);
-
+        $elapsed    = (int) $break->started_at->diffInMinutes(now());
+        
         if ($elapsed < $minMinutes) {
             $remaining = $minMinutes - $elapsed;
 

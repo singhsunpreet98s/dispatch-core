@@ -28,6 +28,6 @@ class AttendanceBreak extends Model
     {
         $end = $this->ended_at ?? now();
 
-        return (int) $end->diffInSeconds($this->started_at);
+        return (int) $this->started_at->diffInSeconds($end);
     }
 }

@@ -50,6 +50,16 @@ class AttendanceShift extends Model
         return $this->breaks->first(fn($b) => $b->ended_at === null);
     }
 
+    public function totalShiftSeconds(): int
+    {
+        if (! $this->clocked_in_at) {
+            return 0;
+        }
+        $end = $this->clocked_out_at ?? now();
+
+        return (int) $this->clocked_in_at->diffInSeconds($end);
+    }
+
     public function totalBreakSeconds(): int
     {
         return (int) $this->breaks->sum(function (AttendanceBreak $break) {
@@ -58,7 +68,7 @@ class AttendanceShift extends Model
             }
             $end = $break->ended_at ?? now();
 
-            return $end->diffInSeconds($break->started_at);
+            return $break->started_at->diffInSeconds($end);
         });
     }
 
@@ -69,6 +79,6 @@ class AttendanceShift extends Model
         }
         $end = $this->clocked_out_at ?? now();
 
-        return max(0, - ($end->diffInSeconds($this->clocked_in_at)) - $this->totalBreakSeconds());
+        return max(0, $this->clocked_in_at->diffInSeconds($end) - $this->totalBreakSeconds());
     }
 }

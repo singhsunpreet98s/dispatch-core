@@ -65,24 +65,39 @@ class AttendanceController extends Controller
             ->whereBetween('date', [$dateFrom, $dateTo])
             ->orderBy('date')
             ->get()
-            ->map(fn(AttendanceShift $s) => [
-                'id'                   => $s->id,
-                'date'                 => $s->date->format('Y-m-d'),
-                'clocked_in_at'        => $s->clocked_in_at?->format('H:i:s'),
-                'clocked_out_at'       => $s->clocked_out_at?->format('H:i:s'),
-                'total_worked_seconds' => $s->totalWorkedSeconds(),
-                'total_break_seconds'  => $s->totalBreakSeconds(),
-                'break_count'          => $s->breaks->count(),
-                'auto_closed'          => $s->auto_closed,
-                'breaks'               => $s->breaks->map(fn(AttendanceBreak $b) => [
-                    'id'               => $b->id,
-                    'started_at'       => $b->started_at?->format('H:i:s'),
-                    'ended_at'         => $b->ended_at?->format('H:i:s'),
-                    'duration_seconds' => $b->ended_at
-                        ? (int) $b->ended_at->diffInSeconds($b->started_at)
-                        : null,
-                ]),
-            ]);
+            ->map(function (AttendanceShift $s) {
+                $totalShift = $s->totalShiftSeconds();
+                if ($totalShift >= 9 * 3600) {
+                    $dayStatus = 'present';
+                } elseif ($totalShift >= 7 * 3600) {
+                    $dayStatus = 'short_leave';
+                } elseif ($totalShift >= 5 * 3600) {
+                    $dayStatus = 'partial';
+                } else {
+                    $dayStatus = 'half_day';
+                }
+
+                return [
+                    'id'                   => $s->id,
+                    'date'                 => $s->date->format('Y-m-d'),
+                    'clocked_in_at'        => $s->clocked_in_at?->format('H:i:s'),
+                    'clocked_out_at'       => $s->clocked_out_at?->format('H:i:s'),
+                    'total_worked_seconds' => $s->totalWorkedSeconds(),
+                    'total_break_seconds'  => $s->totalBreakSeconds(),
+                    'total_shift_seconds'  => $totalShift,
+                    'day_status'           => $dayStatus,
+                    'break_count'          => $s->breaks->count(),
+                    'auto_closed'          => $s->auto_closed,
+                    'breaks'               => $s->breaks->map(fn(AttendanceBreak $b) => [
+                        'id'               => $b->id,
+                        'started_at'       => $b->started_at?->format('H:i:s'),
+                        'ended_at'         => $b->ended_at?->format('H:i:s'),
+                        'duration_seconds' => $b->ended_at
+                            ? (int) $b->started_at->diffInSeconds($b->ended_at)
+                            : null,
+                    ]),
+                ];
+            });
         return Inertia::render('attendance/admin-detail', [
             'user'     => ['id' => $user->id, 'name' => $user->name],
             'shifts'   => $shifts,
