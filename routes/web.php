@@ -46,6 +46,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('templates', EmailTemplateController::class)->except(['show']);
     Route::resource('schedules', ScheduleController::class)->except(['create', 'edit']);
 
+    Route::get('carrier-packets/lookup-mc', [CarrierPacketController::class, 'lookupMc'])->name('carrier-packets.lookup-mc');
     Route::get('carrier-packets', [CarrierPacketController::class, 'index'])->name('carrier-packets.index');
     Route::post('carrier-packets', [CarrierPacketController::class, 'store'])->name('carrier-packets.store');
     Route::get('carrier-packets/{carrierPacket}', [CarrierPacketController::class, 'show'])->name('carrier-packets.show');

@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetT
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Deferred, Head, Link, useForm } from '@inertiajs/react';
-import { Check, Copy, Eye, Package, Plus, Trash2 } from 'lucide-react';
+import { Check, Copy, Eye, Loader2, Package, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -83,9 +83,30 @@ interface FormData { email: string; mc_number: string; company_name: string; [ke
 export default function CarrierPacketsIndex({ packets, isAdmin }: Props) {
     const [sheetOpen, setSheetOpen] = useState(false);
     const [deleting, setDeleting] = useState<CarrierPacket | null>(null);
+    const [mcLookupLoading, setMcLookupLoading] = useState(false);
 
     const form = useForm<FormData>({ email: '', mc_number: '', company_name: '' });
     const deleteForm = useForm({});
+
+    async function handleMcBlur() {
+        const mc = form.data.mc_number.trim();
+        if (!mc || form.data.company_name) return;
+
+        setMcLookupLoading(true);
+        try {
+            const res = await fetch(route('carrier-packets.lookup-mc') + `?mc=${encodeURIComponent(mc)}`);
+            if (res.ok) {
+                const json = await res.json();
+                if (json.company_name) {
+                    form.setData('company_name', json.company_name);
+                }
+            }
+        } catch {
+            // silently ignore lookup failures
+        } finally {
+            setMcLookupLoading(false);
+        }
+    }
 
     function openCreate() {
         form.reset();
@@ -214,26 +235,34 @@ export default function CarrierPacketsIndex({ packets, isAdmin }: Props) {
 
                     <form onSubmit={handleSubmit} className="flex flex-col gap-5 py-6">
                         <div className="space-y-2">
-                            <Label htmlFor="cp-company">Company Name</Label>
-                            <Input
-                                id="cp-company"
-                                value={form.data.company_name}
-                                onChange={(e) => form.setData('company_name', e.target.value)}
-                                placeholder="Acme Trucking LLC"
-                                autoFocus
-                            />
-                            {form.errors.company_name && <p className="text-xs text-destructive">{form.errors.company_name}</p>}
-                        </div>
-
-                        <div className="space-y-2">
                             <Label htmlFor="cp-mc">MC Number</Label>
                             <Input
                                 id="cp-mc"
                                 value={form.data.mc_number}
                                 onChange={(e) => form.setData('mc_number', e.target.value)}
+                                onBlur={handleMcBlur}
                                 placeholder="MC-123456"
+                                autoFocus
                             />
                             {form.errors.mc_number && <p className="text-xs text-destructive">{form.errors.mc_number}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="cp-company">Company Name</Label>
+                            <div className="relative">
+                                <Input
+                                    id="cp-company"
+                                    value={form.data.company_name}
+                                    onChange={(e) => form.setData('company_name', e.target.value)}
+                                    placeholder={mcLookupLoading ? 'Looking up carrier…' : 'Acme Trucking LLC'}
+                                    disabled={mcLookupLoading}
+                                    className={mcLookupLoading ? 'pr-9' : ''}
+                                />
+                                {mcLookupLoading && (
+                                    <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                                )}
+                            </div>
+                            {form.errors.company_name && <p className="text-xs text-destructive">{form.errors.company_name}</p>}
                         </div>
 
                         <div className="space-y-2">

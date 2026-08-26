@@ -4,13 +4,28 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCarrierPacketRequest;
 use App\Models\CarrierPacket;
+use App\Services\MotusService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class CarrierPacketController extends Controller
 {
+    public function lookupMc(Request $request, MotusService $motus)
+    {
+        $mc = $request->query('mc', '');
+
+        if (! $mc) {
+            return response()->json(['company_name' => null]);
+        }
+
+        $name = $motus->lookupByMcNumber($mc);
+
+        return response()->json(['company_name' => $name]);
+    }
+
     public function index()
     {
         $user = auth()->user();
