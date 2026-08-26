@@ -27,7 +27,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Attendance Admin', href: '/attendance/admin' },
+    { title: 'Attendance', href: '/attendance/admin' },
 ];
 
 function fmtSeconds(s: number): string {
@@ -85,11 +85,11 @@ export default function AttendanceAdmin({ summary, users, filters }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Attendance Admin" />
+            <Head title="Attendance" />
             <div className="flex flex-1 flex-col gap-6 p-6">
                 <div>
                     <h1 className="text-xl font-semibold">Attendance</h1>
-                    <p className="text-muted-foreground text-sm">Monthly summary of user attendance records</p>
+                    <p className="text-muted-foreground text-sm">Monthly summary of attendance records</p>
                 </div>
 
                 <Card>

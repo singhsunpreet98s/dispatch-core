@@ -115,7 +115,7 @@ export default function AttendanceAdminDetail({ user, shifts, dateFrom, dateTo }
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Attendance Admin', href: backHref },
+        { title: 'Attendance', href: backHref },
         { title: user.name, href: '#' },
     ];
 

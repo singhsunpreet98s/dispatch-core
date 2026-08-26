@@ -12,7 +12,11 @@ export function AppSidebar() {
 
     const mainNavItems: NavItem[] = [
         { title: 'Dashboard', url: '/dashboard', icon: LayoutGrid },
-        { title: 'Attendance', url: '/attendance', icon: Clock },
+        {
+            title: 'Attendance',
+            url: role === 'admin' ? '/attendance/admin' : '/attendance',
+            icon: role === 'admin' ? ClipboardList : Clock,
+        },
         { title: 'Email Lists', url: '/email-lists', icon: Upload },
         { title: 'Templates', url: '/templates', icon: FileText },
         { title: 'Campaigns', url: '/campaigns', icon: Send },
@@ -21,7 +25,6 @@ export function AppSidebar() {
         { title: 'Emails', url: '/emails', icon: MailOpen },
         ...(role === 'admin'
             ? [
-                  { title: 'Attendance Admin', url: '/attendance/admin', icon: ClipboardList },
                   { title: 'Users', url: '/users', icon: Users },
                   { title: 'System Settings', url: '/settings/system', icon: Settings2 },
               ]
