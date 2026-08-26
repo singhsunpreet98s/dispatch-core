@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Campaign;
 use App\Models\LeaveRequest;
 use App\Models\Schedule;
 use App\Models\User;
@@ -50,7 +51,8 @@ class DashboardController extends Controller
         $dateFrom = $request->date_from ?? now()->subDays(29)->format('Y-m-d');
         $dateTo   = $request->date_to   ?? now()->format('Y-m-d');
 
-        $isAdmin        = $request->user()?->isAdmin();
+        $authUser       = $request->user();
+        $isAdmin        = $authUser->isAdmin();
         $selectedUserId = $isAdmin ? ($request->integer('user_id') ?: null) : null;
 
         $users = $isAdmin
@@ -61,7 +63,33 @@ class DashboardController extends Controller
         $recentCampaigns = [];
         $dailyStats      = [];
 
-        if ($selectedUserId) {
+        if (! $isAdmin) {
+            // Scope to the authenticated user's own campaigns only
+            $singlesendIds = Campaign::where('user_id', $authUser->id)
+                ->whereNotNull('sendgrid_singlesend_id')
+                ->latest('sent_at')
+                ->limit(20)
+                ->pluck('sendgrid_singlesend_id')
+                ->merge(
+                    Schedule::where('user_id', $authUser->id)
+                        ->whereNotNull('sendgrid_singlesend_id')
+                        ->latest()
+                        ->limit(10)
+                        ->pluck('sendgrid_singlesend_id')
+                )
+                ->unique()
+                ->values()
+                ->all();
+
+            $stats = Cache::remember(
+                "dashboard.user.{$authUser->id}.stats",
+                now()->addMinutes(5),
+                fn () => $this->sendGrid->getAggregateStatsForSingleSends($singlesendIds)
+            );
+
+            $recentCampaigns = $this->sendGrid->getSingleSendsByIds($singlesendIds);
+
+        } elseif ($selectedUserId) {
             $singlesendIds = Schedule::where('user_id', $selectedUserId)
                 ->whereNotNull('sendgrid_singlesend_id')
                 ->latest()
@@ -72,7 +100,7 @@ class DashboardController extends Controller
             $stats = Cache::remember(
                 "dashboard.user.{$selectedUserId}.stats",
                 now()->addMinutes(5),
-                fn() => $this->sendGrid->getAggregateStatsForSingleSends($singlesendIds)
+                fn () => $this->sendGrid->getAggregateStatsForSingleSends($singlesendIds)
             );
 
             $recentCampaigns = $this->sendGrid->getSingleSendsByIds($singlesendIds);
@@ -122,6 +150,7 @@ class DashboardController extends Controller
             'filters'         => ['date_from' => $dateFrom, 'date_to' => $dateTo, 'user_id' => $selectedUserId],
             'users'           => $users,
             'selectedUser'    => $selectedUser,
+            'isAdmin'         => $isAdmin,
         ]);
     }
 }

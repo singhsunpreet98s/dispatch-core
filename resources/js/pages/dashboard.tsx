@@ -85,6 +85,7 @@ interface Props {
     filters: DashboardFilters;
     users: DashboardUser[];
     selectedUser: DashboardUser | null;
+    isAdmin: boolean;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -419,7 +420,7 @@ function UserFilter({ users, selectedUser, onChange }: { users: DashboardUser[];
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
-export default function Dashboard({ stats, dailyStats, recentCampaigns, actionItems, filters, users, selectedUser }: Props) {
+export default function Dashboard({ stats, dailyStats, recentCampaigns, actionItems, filters, users, selectedUser, isAdmin }: Props) {
     const [open, setOpen] = useState(false);
     const [range, setRange] = useState<DateRange | undefined>({
         from: new Date(filters.date_from + 'T00:00:00'),
@@ -489,7 +490,9 @@ export default function Dashboard({ stats, dailyStats, recentCampaigns, actionIt
                         <div>
                             <h1 className="text-xl font-semibold tracking-tight">Overview</h1>
                             <p className="text-muted-foreground text-sm">
-                                {fmtLabel(filters.date_from)} – {fmtLabel(filters.date_to)} · SendGrid
+                                {isAdmin
+                                    ? `${fmtLabel(filters.date_from)} – ${fmtLabel(filters.date_to)} · SendGrid`
+                                    : 'Your campaign statistics · SendGrid'}
                             </p>
                             {selectedUser && (
                                 <p className="mt-1 flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400">
@@ -500,33 +503,35 @@ export default function Dashboard({ stats, dailyStats, recentCampaigns, actionIt
                                 </p>
                             )}
                         </div>
-                        <UserFilter users={users} selectedUser={selectedUser} onChange={uid => navigate(filters.date_from, filters.date_to, uid)} />
+                        {isAdmin && <UserFilter users={users} selectedUser={selectedUser} onChange={uid => navigate(filters.date_from, filters.date_to, uid)} />}
                     </div>
 
-                    {/* Preset chips + custom range */}
-                    <div className="flex flex-wrap items-center gap-2">
-                        {PRESETS.map(p => (
-                            <button
-                                key={p.label}
-                                onClick={() => { navigate(subDays(p.days), today()); setOpen(false); }}
-                                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                                    activePreset === p.label
-                                        ? 'border-primary bg-primary text-primary-foreground'
-                                        : 'border-border bg-transparent text-muted-foreground hover:border-primary/50 hover:text-foreground'
-                                }`}
-                            >
-                                Last {p.label}
-                            </button>
-                        ))}
-                        <span className="text-border hidden sm:block">|</span>
-                        <DatePickerWithRange
-                            value={range}
-                            onChange={handleRangeSelect}
-                            open={open}
-                            onOpenChange={setOpen}
-                            disabled={{ after: new Date() }}
-                        />
-                    </div>
+                    {/* Preset chips + custom range — admin only */}
+                    {isAdmin && (
+                        <div className="flex flex-wrap items-center gap-2">
+                            {PRESETS.map(p => (
+                                <button
+                                    key={p.label}
+                                    onClick={() => { navigate(subDays(p.days), today()); setOpen(false); }}
+                                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                                        activePreset === p.label
+                                            ? 'border-primary bg-primary text-primary-foreground'
+                                            : 'border-border bg-transparent text-muted-foreground hover:border-primary/50 hover:text-foreground'
+                                    }`}
+                                >
+                                    Last {p.label}
+                                </button>
+                            ))}
+                            <span className="text-border hidden sm:block">|</span>
+                            <DatePickerWithRange
+                                value={range}
+                                onChange={handleRangeSelect}
+                                open={open}
+                                onOpenChange={setOpen}
+                                disabled={{ after: new Date() }}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Stat cards — 4 wide */}
@@ -544,8 +549,8 @@ export default function Dashboard({ stats, dailyStats, recentCampaigns, actionIt
                     ))}
                 </div>
 
-                {/* Area chart */}
-                {!selectedUser && (
+                {/* Area chart — global admin view only */}
+                {isAdmin && !selectedUser && (
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-base font-semibold">Email Delivery Trends</CardTitle>
@@ -565,7 +570,11 @@ export default function Dashboard({ stats, dailyStats, recentCampaigns, actionIt
                     <CardContent className="p-0">
                         {recentCampaigns.length === 0 ? (
                             <p className="px-6 py-8 text-center text-sm text-muted-foreground">
-                                {selectedUser ? `No campaigns found for ${selectedUser.name}.` : 'No campaigns found.'}
+                                {selectedUser
+                                    ? `No campaigns found for ${selectedUser.name}.`
+                                    : !isAdmin
+                                      ? 'You have no campaigns yet.'
+                                      : 'No campaigns found.'}
                             </p>
                         ) : (
                             <div className="overflow-x-auto">

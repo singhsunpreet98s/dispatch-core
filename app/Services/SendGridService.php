@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
+use Carbon\Carbon;
 
 class SendGridService
 {
@@ -197,48 +198,54 @@ class SendGridService
         string $startDate,
         string $endDate,
         ?string $status = null,
-        ?array $campaignIds = null,
-        int $limit = 100,
+        ?string $toEmail = null,
+        ?string $fromEmail = null,
+        int $limit = 200,
     ): array {
         if (empty($this->apiKey)) {
             return [];
         }
 
-        if ($campaignIds !== null && empty($campaignIds)) {
-            return [];
-        }
+
 
         $startTs = $startDate . 'T00:00:00.000Z';
         $endTs   = $endDate   . 'T23:59:59.000Z';
-        $query   = "last_event_time BETWEEN TIMESTAMP \"{$startTs}\" AND TIMESTAMP \"{$endTs}\"";
+        $now = Carbon::now('UTC');
 
-        if ($status === 'not_delivered') {
-            $query = '(status="bounce" OR status="block" OR status="dropped") AND ' . $query;
-        } elseif ($status === 'pending') {
-            $query = '(status="processed" OR status="deferred") AND ' . $query;
-        } elseif ($status) {
-            $query = "status=\"{$status}\" AND {$query}";
+        if (Carbon::parse($endDate, 'UTC')->isSameDay($now)) {
+            // Start date is today → use today's date with current UTC time
+            $endTs = Carbon::parse($endDate, 'UTC')
+                ->setTime($now->hour, $now->minute, $now->second, $now->micro)
+                ->format('Y-m-d\TH:i:s.v\Z');
         }
 
-        if (! empty($campaignIds)) {
-            $ids       = array_map(fn ($id) => "marketing_campaign_id={$id}", $campaignIds);
-            $campaignQ = '(' . implode(' OR ', $ids) . ')';
-            $query     = "{$campaignQ} AND {$query}";
-        }
-
+        $query = $this->buildEmailFilter(
+            $toEmail,
+            $fromEmail,
+            $status,
+            $startTs,
+            $endTs
+        );
         $response = Http::withToken($this->apiKey)
-            ->get(self::BASE_URL . '/messages', [
+            ->post(self::BASE_URL . '/logs', [
                 'limit' => $limit,
                 'query' => $query,
             ]);
 
+        if ($response->failed()) {
+            dd([
+                'status' => $response->status(),
+                'error' => $response->json(),
+                'body' => $response->body(),
+            ]);
+        }
         if (! $response->successful()) {
             return [];
         }
 
         $messages = $response->json('messages', []);
 
-        usort($messages, fn ($a, $b) => strcmp(
+        usort($messages, fn($a, $b) => strcmp(
             $b['last_event_time'] ?? '',
             $a['last_event_time'] ?? '',
         ));
@@ -259,7 +266,7 @@ class SendGridService
             return [];
         }
 
-        return array_map(fn ($s) => [
+        return array_map(fn($s) => [
             'id'         => $s['id'],
             'from_email' => $s['from_email'] ?? '',
             'from_name'  => $s['from_name'] ?? '',
@@ -456,5 +463,59 @@ class SendGridService
             'spam_reports' => 0,
             'unsubscribes' => 0,
         ];
+    }
+    private function buildEmailFilter(
+        ?string $toEmail = null,
+        ?string $fromEmail = null,
+        ?string $statuses = null,
+        ?string $startDate = null,
+        ?string $endDate = null
+    ): string {
+        $conditions = [];
+
+        if ($statuses === "all") {
+            $statuses = [
+                'processed',
+                'delivered',
+                'deferred',
+                'dropped',
+                'bounced',
+                'blocked',
+            ];
+        } elseif (!empty($statuses)) {
+            $statuses = [$statuses];
+        } else {
+            $statuses = [];
+        }
+
+        if (!empty($toEmail)) {
+            $conditions[] = "to_email LIKE '" . addslashes($toEmail) . "%'";
+        }
+
+        if (!empty($fromEmail)) {
+            $conditions[] = "from_email LIKE '" . addslashes($fromEmail) . "%'";
+        }
+
+        if (!empty($statuses)) {
+            $statusList = implode(
+                ', ',
+                array_map(
+                    fn($status) => "'" . addslashes($status) . "'",
+                    $statuses
+                )
+            );
+
+            $conditions[] = "status IN ($statusList)";
+        }
+
+        if (!empty($startDate)) {
+            $conditions[] = 'sg_message_id_created_at > TIMESTAMP "' . $startDate . '"';
+        }
+
+        if (!empty($endDate)) {
+            $conditions[] = 'sg_message_id_created_at < TIMESTAMP "' . $endDate . '"';
+        }
+
+        return implode(' AND ', $conditions);
     }
 }
