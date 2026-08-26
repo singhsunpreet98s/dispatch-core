@@ -235,13 +235,13 @@ export default function CarrierPacketsIndex({ packets, isAdmin }: Props) {
 
                     <form onSubmit={handleSubmit} className="flex flex-col gap-5 py-6">
                         <div className="space-y-2">
-                            <Label htmlFor="cp-mc">MC Number</Label>
+                            <Label htmlFor="cp-mc">USDOT Number</Label>
                             <Input
                                 id="cp-mc"
                                 value={form.data.mc_number}
                                 onChange={(e) => form.setData('mc_number', e.target.value)}
                                 onBlur={handleMcBlur}
-                                placeholder="MC-123456"
+                                placeholder="1234567"
                                 autoFocus
                             />
                             {form.errors.mc_number && <p className="text-xs text-destructive">{form.errors.mc_number}</p>}
