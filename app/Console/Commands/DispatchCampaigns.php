@@ -20,7 +20,7 @@ class DispatchCampaigns extends Command
 
         $pending = ScheduleDispatchQueue::with([
             'schedule.template',
-            'schedule.emailList.contacts',
+            'schedule.emailList',
             'schedule.user:id,sendgrid_contact_id',
         ])
             ->where('status', 'pending')
@@ -48,18 +48,17 @@ class DispatchCampaigns extends Command
                     throw new \RuntimeException("User #{$schedule->user_id} does not have a SendGrid Sender ID configured.");
                 }
 
-                $contacts = $schedule->emailList->contacts->map(fn ($c) => array_filter([
-                    'email'      => $c->email,
-                    'first_name' => $c->first_name ?? null,
-                    'last_name'  => $c->last_name  ?? null,
-                ]))->values()->toArray();
+                $listId = $schedule->emailList->sendgrid_list_id ?? null;
+                if (! $listId) {
+                    throw new \RuntimeException("Email list has no SendGrid list ID configured.");
+                }
 
-                $singlesendId = $sendGrid->sendMarketingCampaign(
+                $singlesendId = $sendGrid->sendToList(
                     campaignName: $schedule->name . ' — ' . $now->format('Y-m-d H:i'),
-                    subject:      $schedule->template->subject,
-                    htmlContent:  $schedule->template->body,
-                    contacts:     $contacts,
-                    senderId:     $senderId,
+                    subject: $schedule->template->subject,
+                    htmlContent: $schedule->template->body,
+                    listId: $listId,
+                    senderId: $senderId,
                 );
 
                 $schedule->update(['sendgrid_singlesend_id' => $singlesendId]);
