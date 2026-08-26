@@ -43,6 +43,10 @@ class ScheduleController extends Controller
 
     public function store(StoreScheduleRequest $request)
     {
+        if (! auth()->user()->sendgrid_contact_id) {
+            return back()->with('error', 'Your SendGrid Sender ID is not configured. Ask an admin to set it up before creating schedules.');
+        }
+
         $schedule = Schedule::create([
             'user_id' => auth()->id(),
             'name' => $request->validated('name'),

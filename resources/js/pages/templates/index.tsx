@@ -1,5 +1,5 @@
 import { type Column, DataTable, DataTableSkeleton, type Paginator } from '@/components/data-table';
-import { Badge } from '@/components/ui/badge';
+import { SenderNotConfiguredBanner } from '@/components/sender-not-configured-banner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Deferred, Head, Link, router, usePage, useForm } from '@inertiajs/react';
+import { Deferred, Head, Link, usePage, useForm } from '@inertiajs/react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -43,6 +43,7 @@ function formatDate(dateStr: string) {
 
 export default function TemplatesIndex({ templates, isAdmin }: Props) {
     const { auth } = usePage<SharedData>().props;
+    const senderConfigured = !!auth.user.sendgrid_contact_id;
     const [deletingTemplate, setDeletingTemplate] = useState<Template | null>(null);
     const deleteForm = useForm({});
 
@@ -131,13 +132,22 @@ export default function TemplatesIndex({ templates, isAdmin }: Props) {
                             {isAdmin ? 'All templates across all users' : 'Your email templates'}
                         </p>
                     </div>
-                    <Button asChild size="sm">
-                        <Link href={route('templates.create')}>
+                    {senderConfigured ? (
+                        <Button asChild size="sm">
+                            <Link href={route('templates.create')}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                New Template
+                            </Link>
+                        </Button>
+                    ) : (
+                        <Button size="sm" disabled title="Sender ID not configured">
                             <Plus className="mr-2 h-4 w-4" />
                             New Template
-                        </Link>
-                    </Button>
+                        </Button>
+                    )}
                 </div>
+
+                {!senderConfigured && <SenderNotConfiguredBanner isAdmin={isAdmin} />}
 
                 <Card>
                     <CardHeader>

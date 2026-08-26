@@ -35,6 +35,10 @@ class EmailListController extends Controller
 
     public function store(UploadEmailListRequest $request)
     {
+        if (! auth()->user()->sendgrid_contact_id) {
+            return back()->with('error', 'Your SendGrid Sender ID is not configured. Ask an admin to set it up before uploading email lists.');
+        }
+
         $uploadedFile = $request->file('file');
         $originalName = $uploadedFile->getClientOriginalName();
         $listName     = $request->input('list_name');

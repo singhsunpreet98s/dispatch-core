@@ -1,4 +1,5 @@
 import { type Column, DataTable, DataTableSkeleton, type Paginator } from '@/components/data-table';
+import { SenderNotConfiguredBanner } from '@/components/sender-not-configured-banner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,8 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { Deferred, Head, Link, useForm } from '@inertiajs/react';
+import { type BreadcrumbItem, type SharedData } from '@/types';
+import { Deferred, Head, Link, useForm, usePage } from '@inertiajs/react';
 import { CalendarClock, Eye, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 
@@ -140,6 +141,9 @@ interface ScheduleFormData {
 }
 
 export default function SchedulesIndex({ schedules, templates, emailLists, isAdmin }: Props) {
+    const { auth } = usePage<SharedData>().props;
+    const senderConfigured = !!auth.user.sendgrid_contact_id;
+
     const [sheetOpen, setSheetOpen] = useState(false);
     const [formMode, setFormMode] = useState<FormMode>('create');
     const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
@@ -338,11 +342,18 @@ export default function SchedulesIndex({ schedules, templates, emailLists, isAdm
                             {isAdmin ? 'All scheduled email campaigns' : 'Your scheduled email campaigns'}
                         </p>
                     </div>
-                    <Button size="sm" onClick={openCreate}>
+                    <Button
+                        size="sm"
+                        onClick={openCreate}
+                        disabled={!senderConfigured}
+                        title={!senderConfigured ? 'Sender ID not configured' : undefined}
+                    >
                         <Plus className="mr-2 h-4 w-4" />
                         New Schedule
                     </Button>
                 </div>
+
+                {!senderConfigured && <SenderNotConfiguredBanner isAdmin={isAdmin} />}
 
                 <Card>
                     <CardHeader>

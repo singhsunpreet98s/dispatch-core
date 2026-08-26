@@ -1,5 +1,6 @@
 import { type Column, DataTable, DataTableSkeleton, type Paginator } from '@/components/data-table';
 import { FileDropzone } from '@/components/file-dropzone';
+import { SenderNotConfiguredBanner } from '@/components/sender-not-configured-banner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -58,7 +59,8 @@ function formatDate(dateStr: string) {
 }
 
 export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
-    const { flash } = usePage<SharedData>().props;
+    const { flash, auth } = usePage<SharedData>().props;
+    const senderConfigured = !!auth.user.sendgrid_contact_id;
 
     const [uploadOpen, setUploadOpen] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
@@ -219,11 +221,18 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
                         <h1 className="text-xl font-semibold">Email Lists</h1>
                         <p className="text-muted-foreground text-sm">Upload Excel or CSV files — contacts are synced to SendGrid automatically</p>
                     </div>
-                    <Button size="sm" onClick={() => setUploadOpen(true)}>
+                    <Button
+                        size="sm"
+                        onClick={() => setUploadOpen(true)}
+                        disabled={!senderConfigured}
+                        title={!senderConfigured ? 'Sender ID not configured' : undefined}
+                    >
                         <Plus className="mr-2 h-4 w-4" />
                         Upload File
                     </Button>
                 </div>
+
+                {!senderConfigured && <SenderNotConfiguredBanner isAdmin={isAdmin} />}
 
                 {/* Files table */}
                 <Card>

@@ -1,4 +1,5 @@
 import { type Column, DataTable, DataTableSkeleton, type Paginator } from '@/components/data-table';
+import { SenderNotConfiguredBanner } from '@/components/sender-not-configured-banner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -150,7 +151,8 @@ function formatTriggers(triggers: CampaignRow['triggers']): string {
 type TypeFilter = 'all' | 'manual' | 'automation';
 
 export default function CampaignsIndex({ campaigns, templates, emailLists, isAdmin, users, filters }: Props) {
-    const { flash } = usePage<SharedData>().props;
+    const { flash, auth } = usePage<SharedData>().props;
+    const senderConfigured = !!auth.user.sendgrid_contact_id;
 
     const [sendOpen, setSendOpen] = useState(false);
     const [sendError, setSendError] = useState<string | null>(null);
@@ -294,7 +296,7 @@ export default function CampaignsIndex({ campaigns, templates, emailLists, isAdm
         },
     ];
 
-    const canSend = templates.length > 0 && emailLists.length > 0;
+    const canSend = senderConfigured && templates.length > 0 && emailLists.length > 0;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -311,15 +313,24 @@ export default function CampaignsIndex({ campaigns, templates, emailLists, isAdm
                         size="sm"
                         onClick={() => setSendOpen(true)}
                         disabled={!canSend}
-                        title={!canSend ? 'You need at least one template and one synced email list' : undefined}
+                        title={
+                            !senderConfigured
+                                ? 'Sender ID not configured'
+                                : !canSend
+                                  ? 'You need at least one template and one synced email list'
+                                  : undefined
+                        }
                     >
                         <Plus className="mr-2 h-4 w-4" />
                         New Campaign
                     </Button>
                 </div>
 
+                {/* Sender not configured warning */}
+                {!senderConfigured && <SenderNotConfiguredBanner isAdmin={isAdmin} />}
+
                 {/* Prerequisite nudge */}
-                {!canSend && (
+                {senderConfigured && !canSend && (
                     <div className="bg-muted/40 flex items-start gap-3 rounded-lg border border-dashed p-4">
                         <AlertCircle className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
                         <div className="text-sm">

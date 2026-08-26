@@ -25,11 +25,20 @@ class EmailTemplateController extends Controller
 
     public function create()
     {
+        if (! auth()->user()->sendgrid_contact_id) {
+            return redirect()->route('templates.index')
+                ->with('error', 'Your SendGrid Sender ID is not configured. Ask an admin to set it up before creating templates.');
+        }
+
         return Inertia::render('templates/create');
     }
 
     public function store(StoreEmailTemplateRequest $request)
     {
+        if (! auth()->user()->sendgrid_contact_id) {
+            return back()->with('error', 'Your SendGrid Sender ID is not configured. Ask an admin to set it up before creating templates.');
+        }
+
         EmailTemplate::create([
             ...$request->validated(),
             'user_id' => auth()->id(),
