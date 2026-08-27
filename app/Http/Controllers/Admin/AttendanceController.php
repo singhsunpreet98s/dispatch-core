@@ -72,9 +72,9 @@ class AttendanceController extends Controller
                 } elseif ($totalShift >= 7 * 3600) {
                     $dayStatus = 'short_leave';
                 } elseif ($totalShift >= 5 * 3600) {
-                    $dayStatus = 'partial';
-                } else {
                     $dayStatus = 'half_day';
+                } else {
+                    $dayStatus = 'absent';
                 }
 
                 return [

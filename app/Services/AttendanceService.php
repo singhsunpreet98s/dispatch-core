@@ -159,10 +159,10 @@ class AttendanceService
                 return 'short_leave';
             }
             if ($totalSeconds >= 5 * 3600) {
-                return 'partial';
+                return 'half_day';
             }
 
-            return 'half_day';
+            return 'absent';
         }
 
         // No shift — check holiday > leave > weekend > absent

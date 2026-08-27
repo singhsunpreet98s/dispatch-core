@@ -11,7 +11,8 @@ import { Switch } from '@/components/ui/switch';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Deferred, Head, useForm } from '@inertiajs/react';
-import { Check, ChevronsUpDown, Pencil, Plus, Trash2 } from 'lucide-react';
+import { router } from '@inertiajs/react';
+import { Banknote, Check, ChevronsUpDown, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 type Role = 'admin' | 'manager' | 'user';
@@ -205,6 +206,16 @@ export default function UsersIndex({ users }: Props) {
                     <Button variant="ghost" size="icon" onClick={() => openEdit(u)}>
                         <Pencil className="h-4 w-4" />
                     </Button>
+                    {u.role !== 'admin' && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => router.visit(route('users.salary.show', u.id))}
+                            title="Manage Salary"
+                        >
+                            <Banknote className="h-4 w-4" />
+                        </Button>
+                    )}
                     <Button
                         variant="ghost"
                         size="icon"

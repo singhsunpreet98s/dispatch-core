@@ -109,3 +109,28 @@ export interface User {
     updated_at: string;
     [key: string]: unknown;
 }
+
+export interface Salary {
+    id: number;
+    user_id: number;
+    ctc: number;
+    per_month: number;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface SalaryHistory {
+    id: number;
+    user_id: number;
+    changed_by: number;
+    changed_by_user: { id: number; name: string } | null;
+    changed_field: 'ctc' | 'per_month';
+    change_type: 'percentage' | 'amount' | 'absolute';
+    direction: 'increase' | 'decrease' | null;
+    change_value: number;
+    old_ctc: number;
+    new_ctc: number;
+    old_per_month: number;
+    new_per_month: number;
+    created_at: string;
+}

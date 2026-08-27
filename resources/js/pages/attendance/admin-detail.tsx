@@ -24,7 +24,7 @@ interface ShiftRow {
     total_worked_seconds: number;
     total_break_seconds: number;
     total_shift_seconds: number;
-    day_status: 'present' | 'short_leave' | 'partial' | 'half_day';
+    day_status: 'present' | 'short_leave' | 'half_day' | 'absent';
     break_count: number;
     auto_closed: boolean;
     breaks: BreakRow[];
@@ -33,15 +33,15 @@ interface ShiftRow {
 const DAY_STATUS_BADGE: Record<string, string> = {
     present:     'border-green-500 text-green-600',
     short_leave: 'border-yellow-500 text-yellow-600',
-    partial:     'border-amber-500 text-amber-600',
     half_day:    'border-orange-500 text-orange-600',
+    absent:      'border-red-500 text-red-600',
 };
 
 const DAY_STATUS_LABEL: Record<string, string> = {
     present:     'Present',
     short_leave: 'Short Leave',
-    partial:     'Partial',
     half_day:    'Half Day',
+    absent:      'Absent',
 };
 
 interface Props {

@@ -3,7 +3,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { CalendarClock, ClipboardList, Clock, FileText, LayoutGrid, MailOpen, Package, Send, Settings2, Upload, Users } from 'lucide-react';
+import { Banknote, CalendarClock, ClipboardList, Clock, FileText, LayoutGrid, MailOpen, Package, Send, Settings2, Upload, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 export function AppSidebar() {
@@ -28,7 +28,7 @@ export function AppSidebar() {
                   { title: 'Users', url: '/users', icon: Users },
                   { title: 'System Settings', url: '/settings/system', icon: Settings2 },
               ]
-            : []),
+            : [{ title: 'Remuneration', url: '/remuneration', icon: Banknote }]),
     ];
 
     return (

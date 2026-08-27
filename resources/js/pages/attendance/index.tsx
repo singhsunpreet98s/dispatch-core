@@ -117,7 +117,6 @@ const STATUS_CLASS: Record<string, string> = {
     holiday:     'bg-purple-100 dark:bg-purple-900/30 hover:brightness-95 cursor-pointer',
     absent:      'bg-red-100 dark:bg-red-900/20 hover:brightness-95 cursor-pointer',
     half_day:    'bg-orange-200 dark:bg-orange-700/40 hover:brightness-95 cursor-pointer',
-    partial:     'bg-amber-200 dark:bg-amber-700/40 hover:brightness-95 cursor-pointer',
     short_leave: 'bg-yellow-300 dark:bg-yellow-600/50 hover:brightness-95 cursor-pointer',
     present:     'bg-green-400 dark:bg-green-600/70 hover:brightness-95 cursor-pointer',
     open:        'bg-blue-400 dark:bg-blue-600/70 animate-pulse cursor-pointer',
@@ -162,7 +161,6 @@ function AttendanceHeatmap({ days, year, month, onDayClick }: {
                 {[
                     { label: 'Present',     cls: 'bg-green-400 dark:bg-green-600/70' },
                     { label: 'Short Leave', cls: 'bg-yellow-300 dark:bg-yellow-600/50' },
-                    { label: 'Partial',     cls: 'bg-amber-200 dark:bg-amber-700/40' },
                     { label: 'Half Day',    cls: 'bg-orange-200 dark:bg-orange-700/40' },
                     { label: 'Absent',      cls: 'bg-red-100 dark:bg-red-900/20' },
                     { label: 'Open',        cls: 'bg-blue-400 dark:bg-blue-600/70' },
@@ -185,7 +183,6 @@ function AttendanceHeatmap({ days, year, month, onDayClick }: {
 const SHIFT_STATUS_BADGE: Record<string, string> = {
     present:     'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
     short_leave: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-    partial:     'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
     half_day:    'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
     absent:      'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
     open:        'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -196,7 +193,6 @@ const SHIFT_STATUS_BADGE: Record<string, string> = {
 const SHIFT_STATUS_LABEL: Record<string, string> = {
     present:     'Present',
     short_leave: 'Short Leave',
-    partial:     'Partial',
     half_day:    'Half Day',
     absent:      'Absent',
     open:        'Active',

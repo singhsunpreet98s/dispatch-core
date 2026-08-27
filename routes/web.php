@@ -14,6 +14,7 @@ use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\PublicCarrierPacketController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\DemoController;
 use App\Http\Controllers\EmailController;
 use App\Http\Controllers\GeminiController;
@@ -73,6 +74,8 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('leave/{leave}', [LeaveController::class, 'destroy'])->name('leave.destroy');
     });
 
+    Route::get('remuneration', [SalaryController::class, 'myRemuneration'])->name('remuneration');
+
     Route::middleware(['admin'])->group(function () {
         Route::middleware(['attendance'])->group(function () {
             Route::get('attendance/admin', [AdminAttendanceController::class, 'index'])->name('attendance.admin.index');
@@ -88,6 +91,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('users', [UserController::class, 'store'])->name('users.store');
         Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+
+        Route::get('users/{user}/salary', [SalaryController::class, 'show'])->name('users.salary.show');
+        Route::post('users/{user}/salary', [SalaryController::class, 'update'])->name('users.salary.update');
     });
 });
 
