@@ -10,5 +10,7 @@ Artisan::command('inspire', function () {
 
 Schedule::command('attendance:close-open-shifts')->everyMinute();
 
+Schedule::command('salary:calculate-monthly')->monthlyOn(1, '12:00');
+
 Schedule::command('campaigns:check-schedules')->everyMinute();
 Schedule::command('campaigns:dispatch-queue')->everyMinute();

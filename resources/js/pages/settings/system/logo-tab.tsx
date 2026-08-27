@@ -41,7 +41,7 @@ export default function LogoTab({ logoUrl }: Props) {
     const displayLogo = preview ?? logoUrl;
 
     return (
-        <Card className="max-w-xl">
+        <Card>
             <CardHeader>
                 <CardTitle className="text-base font-semibold">Application Logo</CardTitle>
                 <CardDescription>

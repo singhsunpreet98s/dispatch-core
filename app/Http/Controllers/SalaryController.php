@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MonthlySalary;
 use App\Models\Salary;
 use App\Models\SalaryHistory;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -25,9 +29,15 @@ class SalaryController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        $monthlyPay = MonthlySalary::where('user_id', $user->id)
+            ->orderByDesc('year')
+            ->orderByDesc('month')
+            ->get();
+
         return Inertia::render('remuneration', [
-            'salary' => $salary,
-            'history' => $history,
+            'salary'      => $salary,
+            'history'     => $history,
+            'monthly_pay' => $monthlyPay,
         ]);
     }
 
@@ -42,11 +52,56 @@ class SalaryController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        $monthlyPay = MonthlySalary::where('user_id', $user->id)
+            ->orderByDesc('year')
+            ->orderByDesc('month')
+            ->get();
+
+        $totalPaid = $monthlyPay->sum(fn ($m) => (float) $m->gross_earned);
+
         return Inertia::render('users/salary', [
-            'user' => $user->only('id', 'name', 'email', 'role'),
-            'salary' => $salary,
-            'history' => $history,
+            'user'        => $user->only('id', 'name', 'email', 'role'),
+            'salary'      => $salary,
+            'history'     => $history,
+            'monthly_pay' => $monthlyPay,
+            'total_paid'  => round($totalPaid, 2),
         ]);
+    }
+
+    public function slip(User $user, MonthlySalary $monthlySalary): HttpResponse
+    {
+        abort_if($monthlySalary->user_id !== $user->id, 404);
+
+        return response()->view('salary-slip', $this->slipData($user, $monthlySalary));
+    }
+
+    public function mySlip(Request $request, MonthlySalary $monthlySalary): HttpResponse
+    {
+        $user = $request->user();
+        abort_if($monthlySalary->user_id !== $user->id, 403);
+
+        return response()->view('salary-slip', $this->slipData($user, $monthlySalary));
+    }
+
+    private function slipData(User $user, MonthlySalary $record): array
+    {
+        $monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'];
+
+        $logoPath = SystemSetting::get('logo_path');
+
+        return [
+            'user'      => $user,
+            'record'    => $record,
+            'monthName' => $monthNames[$record->month - 1],
+            'logoUrl'   => $logoPath ? Storage::disk('public')->url($logoPath) : null,
+            'company'   => [
+                'name'    => SystemSetting::get('company_name', ''),
+                'gst'     => SystemSetting::get('company_gst', ''),
+                'address' => SystemSetting::get('company_address', ''),
+                'phone'   => SystemSetting::get('company_phone', ''),
+            ],
+        ];
     }
 
     public function update(User $user, Request $request): RedirectResponse

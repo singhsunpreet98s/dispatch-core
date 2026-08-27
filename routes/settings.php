@@ -30,6 +30,7 @@ Route::middleware('auth')->group(function () {
         Route::get('settings/system', [SystemSettingController::class, 'edit'])->name('system-settings.edit');
         Route::post('settings/system/logo', [SystemSettingController::class, 'update'])->name('system-settings.logo');
         Route::delete('settings/system/logo', [SystemSettingController::class, 'removeLogo'])->name('system-settings.logo.remove');
+        Route::patch('settings/system/company', [SystemSettingController::class, 'updateCompany'])->name('system-settings.company');
 
         Route::patch('settings/system/flags/{featureFlag}', [SystemSettingController::class, 'updateFlag'])->name('system-settings.flags.update');
         Route::patch('settings/system/flags/{featureFlag}/toggle', [SystemSettingController::class, 'toggleFlag'])->name('system-settings.flags.toggle');

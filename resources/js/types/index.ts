@@ -119,6 +119,33 @@ export interface Salary {
     updated_at: string;
 }
 
+export interface SalaryBreakdownEntry {
+    date: string;
+    status: 'absent' | 'half_day' | 'short_leave';
+    per_day: number;
+    earned: number;
+    deduction: number;
+    reason: string;
+}
+
+export interface MonthlySalary {
+    id: number;
+    user_id: number;
+    year: number;
+    month: number;
+    per_month_salary: number | string;
+    total_days: number;
+    days_present: number;
+    days_half_day: number;
+    days_short_leave: number;
+    days_absent: number;
+    gross_earned: number | string;
+    breakdown: SalaryBreakdownEntry[] | null;
+    calculated_at: string;
+    created_at: string;
+    updated_at: string;
+}
+
 export interface SalaryHistory {
     id: number;
     user_id: number;

@@ -1,13 +1,17 @@
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type Salary, type SalaryHistory } from '@/types';
+import { type BreadcrumbItem, type MonthlySalary, type SalaryBreakdownEntry, type Salary, type SalaryHistory } from '@/types';
 import { Head } from '@inertiajs/react';
-import { TrendingDown, TrendingUp } from 'lucide-react';
+import { ChevronDown, ChevronRight, Printer, TrendingDown, TrendingUp } from 'lucide-react';
+import { useState } from 'react';
 
 interface Props {
     salary: Salary | null;
     history: SalaryHistory[];
+    monthly_pay: MonthlySalary[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -41,7 +45,154 @@ function parseNum(v: number | string): number {
     return typeof v === 'string' ? parseFloat(v) : v;
 }
 
-export default function Remuneration({ salary, history }: Props) {
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
+
+const STATUS_BADGE: Record<string, string> = {
+    absent:      'border-red-500 text-red-600',
+    half_day:    'border-orange-500 text-orange-600',
+    short_leave: 'border-yellow-500 text-yellow-600',
+};
+
+const STATUS_LABEL: Record<string, string> = {
+    absent:      'Absent',
+    half_day:    'Half Day',
+    short_leave: 'Short Leave',
+};
+
+function fmtDay(dateStr: string): string {
+    return new Intl.DateTimeFormat('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }).format(
+        new Date(dateStr + 'T00:00:00'),
+    );
+}
+
+function DeductionBreakdown({ entries, perDay }: { entries: SalaryBreakdownEntry[]; perDay: number }) {
+    const totalDeduction = entries.reduce((s, e) => s + e.deduction, 0);
+
+    if (entries.length === 0) {
+        return (
+            <div className="text-muted-foreground px-4 py-3 text-xs">
+                No deductions — full salary earned.
+            </div>
+        );
+    }
+
+    return (
+        <div className="bg-muted/40 border-t px-4 py-3">
+            <p className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">Deductions</p>
+            <div className="space-y-1.5">
+                {entries.map((e) => (
+                    <div key={e.date} className="flex items-center justify-between gap-4 text-xs">
+                        <span className="w-28 shrink-0 font-medium">{fmtDay(e.date)}</span>
+                        <Badge variant="outline" className={`shrink-0 text-[10px] ${STATUS_BADGE[e.status]}`}>
+                            {STATUS_LABEL[e.status]}
+                        </Badge>
+                        <span className="text-muted-foreground flex-1 truncate">{e.reason}</span>
+                        <span className="shrink-0 font-semibold text-red-600">−{formatCurrency(e.deduction)}</span>
+                    </div>
+                ))}
+            </div>
+            <div className="mt-2 flex justify-end border-t pt-2">
+                <span className="text-xs font-semibold text-red-600">Total deducted: {formatCurrency(totalDeduction)}</span>
+            </div>
+        </div>
+    );
+}
+
+function MonthlyPayTable({ records }: { records: MonthlySalary[] }) {
+    const [expanded, setExpanded] = useState<number | null>(null);
+
+    if (records.length === 0) {
+        return <p className="text-muted-foreground text-sm">No pay records yet. Salary is calculated on the 1st of each month.</p>;
+    }
+
+    return (
+        <Card>
+            <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-6" />
+                                <TableHead>Month</TableHead>
+                                <TableHead className="text-center">Days</TableHead>
+                                <TableHead className="text-center">Present</TableHead>
+                                <TableHead className="text-center">Half Day</TableHead>
+                                <TableHead className="text-center">Short Leave</TableHead>
+                                <TableHead className="text-center">Absent</TableHead>
+                                <TableHead className="text-right">Earned</TableHead>
+                                <TableHead className="w-10" />
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {records.map((r) => {
+                                const hasDeductions = (r.breakdown ?? []).length > 0;
+                                const isExpanded = expanded === r.id;
+                                const perDay = parseNum(r.per_month_salary) / r.total_days;
+
+                                return (
+                                    <>
+                                        <TableRow
+                                            key={r.id}
+                                            className={hasDeductions ? 'cursor-pointer hover:bg-muted/50' : ''}
+                                            onClick={() => hasDeductions && setExpanded(isExpanded ? null : r.id)}
+                                        >
+                                            <TableCell className="pr-0">
+                                                {hasDeductions && (
+                                                    isExpanded
+                                                        ? <ChevronDown className="text-muted-foreground h-3.5 w-3.5" />
+                                                        : <ChevronRight className="text-muted-foreground h-3.5 w-3.5" />
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="font-medium whitespace-nowrap">
+                                                {MONTH_NAMES[r.month - 1]} {r.year}
+                                            </TableCell>
+                                            <TableCell className="text-center text-muted-foreground text-sm">{r.total_days}</TableCell>
+                                            <TableCell className="text-center">
+                                                <Badge variant="outline" className="border-green-500 text-green-600">{r.days_present}</Badge>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <Badge variant="outline" className="border-orange-500 text-orange-600">{r.days_half_day}</Badge>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <Badge variant="outline" className="border-yellow-500 text-yellow-600">{r.days_short_leave}</Badge>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <Badge variant="outline" className="border-red-500 text-red-600">{r.days_absent}</Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right font-semibold">{formatCurrency(parseNum(r.gross_earned))}</TableCell>
+                                            <TableCell onClick={(e) => e.stopPropagation()}>
+                                                <a
+                                                    href={route('remuneration.slip', { monthlySalary: r.id })}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    title="Print Salary Slip"
+                                                >
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                                                        <Printer className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                </a>
+                                            </TableCell>
+                                        </TableRow>
+                                        {isExpanded && (
+                                            <tr key={`${r.id}-breakdown`}>
+                                                <td colSpan={9} className="p-0">
+                                                    <DeductionBreakdown entries={r.breakdown ?? []} perDay={perDay} />
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+export default function Remuneration({ salary, history, monthly_pay }: Props) {
     const ctc = salary ? parseNum(salary.ctc) : null;
     const perMonth = salary ? parseNum(salary.per_month) : null;
 
@@ -82,6 +233,19 @@ export default function Remuneration({ salary, history }: Props) {
                             )}
                         </CardContent>
                     </Card>
+                </div>
+
+                {/* Monthly pay records */}
+                <div className="space-y-3">
+                    <div>
+                        <h2 className="text-base font-semibold">Monthly Pay</h2>
+                        <p className="text-muted-foreground text-sm">
+                            {monthly_pay.length > 0
+                                ? `Pay for ${MONTH_NAMES[monthly_pay[0].month - 1]} ${monthly_pay[0].year}: ${formatCurrency(parseNum(monthly_pay[0].gross_earned))}`
+                                : 'Calculated on the 1st of each month based on your attendance'}
+                        </p>
+                    </div>
+                    <MonthlyPayTable records={monthly_pay} />
                 </div>
 
                 {/* Hike / revision history */}

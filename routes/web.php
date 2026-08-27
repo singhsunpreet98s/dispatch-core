@@ -75,6 +75,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::get('remuneration', [SalaryController::class, 'myRemuneration'])->name('remuneration');
+    Route::get('remuneration/{monthlySalary}/slip', [SalaryController::class, 'mySlip'])->name('remuneration.slip');
 
     Route::middleware(['admin'])->group(function () {
         Route::middleware(['attendance'])->group(function () {
@@ -94,6 +95,7 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('users/{user}/salary', [SalaryController::class, 'show'])->name('users.salary.show');
         Route::post('users/{user}/salary', [SalaryController::class, 'update'])->name('users.salary.update');
+        Route::get('users/{user}/salary/{monthlySalary}/slip', [SalaryController::class, 'slip'])->name('users.salary.slip');
     });
 });
 

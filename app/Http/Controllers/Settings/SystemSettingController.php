@@ -26,6 +26,12 @@ class SystemSettingController extends Controller
 
         return Inertia::render('settings/system', [
             'logoUrl'            => $logoPath ? Storage::disk('public')->url($logoPath) : null,
+            'companyInfo'        => [
+                'company_name'    => SystemSetting::get('company_name', ''),
+                'company_gst'     => SystemSetting::get('company_gst', ''),
+                'company_address' => SystemSetting::get('company_address', ''),
+                'company_phone'   => SystemSetting::get('company_phone', ''),
+            ],
             'featureFlags'       => FeatureFlag::orderBy('name')->get(),
             'attendanceSettings' => [
                 'clock_in_start'    => SystemSetting::get('attendance_clock_in_start', ''),
@@ -77,6 +83,24 @@ class SystemSettingController extends Controller
         SystemSetting::set('logo_path', null);
 
         return back()->with('success', 'Logo removed.');
+    }
+
+    // ── Company info ──────────────────────────────────────────────────────────
+
+    public function updateCompany(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'company_name'    => ['nullable', 'string', 'max:255'],
+            'company_gst'     => ['nullable', 'string', 'max:50'],
+            'company_address' => ['nullable', 'string', 'max:1000'],
+            'company_phone'   => ['nullable', 'string', 'max:50'],
+        ]);
+
+        foreach ($data as $key => $value) {
+            SystemSetting::set($key, $value);
+        }
+
+        return back()->with('success', 'Company information updated.');
     }
 
     // ── Feature flags ─────────────────────────────────────────────────────────

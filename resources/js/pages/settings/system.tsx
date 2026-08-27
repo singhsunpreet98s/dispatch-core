@@ -4,6 +4,7 @@ import { type AttendanceHoliday, type AttendanceSettings, type BreadcrumbItem } 
 import { Head } from '@inertiajs/react';
 import AttendanceTab from './system/attendance-tab';
 import CampaignsTab, { type CampaignCommandStatus } from './system/campaigns-tab';
+import CompanyInfoTab, { type CompanyInfo } from './system/company-info-tab';
 import { type FeatureFlag } from './system/feature-flags-tab';
 import FeatureFlagsTab from './system/feature-flags-tab';
 import HolidaysTab from './system/holidays-tab';
@@ -11,6 +12,7 @@ import LogoTab from './system/logo-tab';
 
 interface Props {
     logoUrl: string | null;
+    companyInfo: CompanyInfo;
     featureFlags: FeatureFlag[];
     attendanceSettings: AttendanceSettings;
     holidays: AttendanceHoliday[];
@@ -22,7 +24,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'System Settings', href: '/settings/system' },
 ];
 
-export default function SystemSettings({ logoUrl, featureFlags, attendanceSettings, holidays, commandStatus }: Props) {
+export default function SystemSettings({ logoUrl, companyInfo, featureFlags, attendanceSettings, holidays, commandStatus }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="System Settings" />
@@ -43,7 +45,10 @@ export default function SystemSettings({ logoUrl, featureFlags, attendanceSettin
                     </TabsList>
 
                     <TabsContent value="settings" className="mt-4">
-                        <LogoTab logoUrl={logoUrl} />
+                        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                            <LogoTab logoUrl={logoUrl} />
+                            <CompanyInfoTab companyInfo={companyInfo} />
+                        </div>
                     </TabsContent>
 
                     <TabsContent value="feature-flags" className="mt-4">
