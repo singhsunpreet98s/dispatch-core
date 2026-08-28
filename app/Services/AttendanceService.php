@@ -150,15 +150,16 @@ class AttendanceService
                 return 'open';
             }
 
-            $totalSeconds = $shift->totalShiftSeconds();
+            // Use worked seconds (excluding breaks) for status thresholds
+            $workedSeconds = $shift->totalWorkedSeconds();
 
-            if ($totalSeconds >= 9 * 3600) {
+            if ($workedSeconds >= 7 * 3600 + 40 * 60) { // > 7h 40m
                 return 'present';
             }
-            if ($totalSeconds >= 7 * 3600) {
+            if ($workedSeconds >= 6 * 3600) { // > 6h
                 return 'short_leave';
             }
-            if ($totalSeconds >= 5 * 3600) {
+            if ($workedSeconds >= 4 * 3600) { // > 4h
                 return 'half_day';
             }
 

@@ -54,15 +54,23 @@ const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
 
 const STATUS_BADGE: Record<string, string> = {
-    absent:      'border-red-500 text-red-600',
-    half_day:    'border-orange-500 text-orange-600',
-    short_leave: 'border-yellow-500 text-yellow-600',
+    absent:             'border-red-500 text-red-600',
+    half_day:           'border-orange-500 text-orange-600',
+    short_leave:        'border-yellow-500 text-yellow-600',
+    leave_unpaid:       'border-red-400 text-red-500',
+    extra_present:      'border-green-600 text-green-700',
+    extra_half_day:     'border-green-500 text-green-600',
+    extra_short_leave:  'border-green-400 text-green-500',
 };
 
 const STATUS_LABEL: Record<string, string> = {
-    absent:      'Absent',
-    half_day:    'Half Day',
-    short_leave: 'Short Leave',
+    absent:             'Absent',
+    half_day:           'Half Day',
+    short_leave:        'Short Leave',
+    leave_unpaid:       'Unpaid Leave',
+    extra_present:      'Extra Day',
+    extra_half_day:     'Extra Half Day',
+    extra_short_leave:  'Extra Short',
 };
 
 function fmtDay(dateStr: string): string {
@@ -71,31 +79,60 @@ function fmtDay(dateStr: string): string {
     );
 }
 
+const EXTRA_STATUSES = new Set(['extra_present', 'extra_half_day', 'extra_short_leave']);
+
 function DeductionBreakdown({ entries }: { entries: SalaryBreakdownEntry[] }) {
-    const totalDeduction = entries.reduce((s, e) => s + e.deduction, 0);
+    const deductions = entries.filter((e) => !EXTRA_STATUSES.has(e.status));
+    const extras     = entries.filter((e) =>  EXTRA_STATUSES.has(e.status));
+    const totalDeduction = deductions.reduce((s, e) => s + e.deduction, 0);
+    const totalExtra     = extras.reduce((s, e) => s + e.earned, 0);
 
     if (entries.length === 0) {
         return <div className="text-muted-foreground px-4 py-3 text-xs">No deductions — full salary earned.</div>;
     }
 
     return (
-        <div className="bg-muted/40 border-t px-4 py-3">
-            <p className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">Deductions</p>
-            <div className="space-y-1.5">
-                {entries.map((e) => (
-                    <div key={e.date} className="flex items-center justify-between gap-4 text-xs">
-                        <span className="w-28 shrink-0 font-medium">{fmtDay(e.date)}</span>
-                        <Badge variant="outline" className={`shrink-0 text-[10px] ${STATUS_BADGE[e.status]}`}>
-                            {STATUS_LABEL[e.status]}
-                        </Badge>
-                        <span className="text-muted-foreground flex-1 truncate">{e.reason}</span>
-                        <span className="shrink-0 font-semibold text-red-600">−{formatCurrency(e.deduction)}</span>
+        <div className="bg-muted/40 border-t px-4 py-3 space-y-3">
+            {deductions.length > 0 && (
+                <div>
+                    <p className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">Deductions</p>
+                    <div className="space-y-1.5">
+                        {deductions.map((e) => (
+                            <div key={e.date} className="flex items-center justify-between gap-4 text-xs">
+                                <span className="w-28 shrink-0 font-medium">{fmtDay(e.date)}</span>
+                                <Badge variant="outline" className={`shrink-0 text-[10px] ${STATUS_BADGE[e.status]}`}>
+                                    {STATUS_LABEL[e.status]}
+                                </Badge>
+                                <span className="text-muted-foreground flex-1 truncate">{e.reason}</span>
+                                <span className="shrink-0 font-semibold text-red-600">−{formatCurrency(e.deduction)}</span>
+                            </div>
+                        ))}
                     </div>
-                ))}
-            </div>
-            <div className="mt-2 flex justify-end border-t pt-2">
-                <span className="text-xs font-semibold text-red-600">Total deducted: {formatCurrency(totalDeduction)}</span>
-            </div>
+                    <div className="mt-2 flex justify-end border-t pt-2">
+                        <span className="text-xs font-semibold text-red-600">Total deducted: {formatCurrency(totalDeduction)}</span>
+                    </div>
+                </div>
+            )}
+            {extras.length > 0 && (
+                <div>
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-green-600">Add-ons</p>
+                    <div className="space-y-1.5">
+                        {extras.map((e) => (
+                            <div key={e.date} className="flex items-center justify-between gap-4 text-xs">
+                                <span className="w-28 shrink-0 font-medium">{fmtDay(e.date)}</span>
+                                <Badge variant="outline" className={`shrink-0 text-[10px] ${STATUS_BADGE[e.status]}`}>
+                                    {STATUS_LABEL[e.status]}
+                                </Badge>
+                                <span className="text-muted-foreground flex-1 truncate">{e.reason}</span>
+                                <span className="shrink-0 font-semibold text-green-600">+{formatCurrency(e.earned)}</span>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="mt-2 flex justify-end border-t pt-2">
+                        <span className="text-xs font-semibold text-green-600">Total add-on: +{formatCurrency(totalExtra)}</span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -116,11 +153,12 @@ function AdminMonthlyPayTable({ records, userId }: { records: MonthlySalary[]; u
                             <TableRow>
                                 <TableHead className="w-6" />
                                 <TableHead>Month</TableHead>
-                                <TableHead className="text-center">Days</TableHead>
+                                <TableHead className="text-center">Working Days</TableHead>
                                 <TableHead className="text-center">Present</TableHead>
                                 <TableHead className="text-center">Half Day</TableHead>
                                 <TableHead className="text-center">Short Leave</TableHead>
                                 <TableHead className="text-center">Absent</TableHead>
+                                <TableHead className="text-center">Paid Leave</TableHead>
                                 <TableHead className="text-right">Earned</TableHead>
                                 <TableHead className="w-10" />
                             </TableRow>
@@ -146,9 +184,9 @@ function AdminMonthlyPayTable({ records, userId }: { records: MonthlySalary[]; u
                                             <TableCell className="font-medium whitespace-nowrap">
                                                 {MONTH_NAMES[r.month - 1]} {r.year}
                                             </TableCell>
-                                            <TableCell className="text-center text-muted-foreground text-sm">{r.total_days}</TableCell>
+                                            <TableCell className="text-center text-muted-foreground text-sm">{r.working_days || r.total_days}</TableCell>
                                             <TableCell className="text-center">
-                                                <Badge variant="outline" className="border-green-500 text-green-600">{r.days_present}</Badge>
+                                                <Badge variant="outline" className="border-green-500 text-green-600">{r.days_present + (r.days_extra || 0)}</Badge>
                                             </TableCell>
                                             <TableCell className="text-center">
                                                 <Badge variant="outline" className="border-orange-500 text-orange-600">{r.days_half_day}</Badge>
@@ -158,6 +196,9 @@ function AdminMonthlyPayTable({ records, userId }: { records: MonthlySalary[]; u
                                             </TableCell>
                                             <TableCell className="text-center">
                                                 <Badge variant="outline" className="border-red-500 text-red-600">{r.days_absent}</Badge>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <Badge variant="outline" className="border-blue-500 text-blue-600">{r.days_leave_paid ?? 0}</Badge>
                                             </TableCell>
                                             <TableCell className="text-right font-semibold">{formatCurrency(Number(r.gross_earned))}</TableCell>
                                             <TableCell onClick={(e) => e.stopPropagation()}>
@@ -175,7 +216,7 @@ function AdminMonthlyPayTable({ records, userId }: { records: MonthlySalary[]; u
                                         </TableRow>
                                         {isExpanded && (
                                             <tr key={`${r.id}-bd`}>
-                                                <td colSpan={9} className="p-0">
+                                                <td colSpan={10} className="p-0">
                                                     <DeductionBreakdown entries={r.breakdown ?? []} />
                                                 </td>
                                             </tr>

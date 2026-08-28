@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Salary Slip – {{ $monthName }} {{ $record->year }}</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -76,7 +77,7 @@
             text-transform: uppercase;
         }
 
-        /* ── Info row ── */
+        /* ── Info grid ── */
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -122,7 +123,7 @@
             border: 1px solid #d0d0d0;
         }
 
-        /* ── Earnings / Deductions table ── */
+        /* ── Salary table ── */
         .slip-table {
             width: 100%;
             border-collapse: collapse;
@@ -175,17 +176,7 @@
             font-weight: 700;
         }
 
-        /* ── Footer ── */
-        .footer {
-            margin-top: 32px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            color: #888;
-            border-top: 1px solid #e0e0e0;
-            padding-top: 16px;
-        }
-
+        /* ── Signature ── */
         .signature-block {
             text-align: center;
             margin-top: 40px;
@@ -202,19 +193,68 @@
             color: #555;
         }
 
-        /* ── Print ── */
+        /* ── Footer ── */
+        .footer {
+            margin-top: 32px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #888;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 16px;
+        }
+
+        /* ── Download bar (hidden in PDF) ── */
+        .download-bar {
+            width: 794px;
+            margin: 0 auto 12px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .download-bar button {
+            background: #1a1a1a;
+            color: #fff;
+            border: none;
+            padding: 8px 20px;
+            font-size: 13px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .download-bar button:hover { background: #333; }
+
+        .no-pdf { /* hidden when generating PDF */ }
+
         @media print {
             body { background: #fff; }
-            .page { margin: 0; border: none; padding: 28px 36px; width: 100%; min-height: auto; }
-            .no-print { display: none !important; }
+            .page { margin: 0; border: none; width: 100%; min-height: auto; }
+            .no-pdf { display: none !important; }
         }
     </style>
 </head>
-<body onload="window.print()">
+<body>
 
-<div class="page">
+@php
+    $workingDays  = $record->working_days ?: $record->total_days;
+    $daysAttended = $record->days_present
+                  + ($record->days_half_day    ?? 0)
+                  + ($record->days_short_leave ?? 0)
+                  + ($record->days_leave_paid  ?? 0);
+    $daysExtra    = $record->days_extra   ?? 0;
+    $extraEarned  = (float) ($record->extra_earned ?? 0);
+    $baseSalary   = (float) $record->gross_earned - $extraEarned;
+    $filename     = 'Salary-Slip-' . $user->name . '-' . $monthName . '-' . $record->year . '.pdf';
+@endphp
 
-    {{-- Header: Logo left, company right --}}
+<div class="download-bar no-pdf">
+    <button onclick="downloadPdf()">Download PDF</button>
+</div>
+
+<div class="page" id="slip">
+
+    {{-- Header --}}
     <div class="header">
         <div class="header-logo">
             @if($logoUrl)
@@ -253,8 +293,8 @@
             <span class="info-value">{{ $user->email }}</span>
         </div>
         <div class="info-cell">
-            <span class="info-label">Working Days</span>
-            <span class="info-value">{{ $record->total_days }}</span>
+            <span class="info-label">Days Attended</span>
+            <span class="info-value">{{ $daysAttended }} / {{ $workingDays }} working days</span>
         </div>
         <div class="info-cell">
             <span class="info-label">Designation</span>
@@ -266,8 +306,8 @@
         </div>
     </div>
 
-    {{-- Salary Summary --}}
-    <div class="section-heading">Salary Summary</div>
+    {{-- Salary --}}
+    <div class="section-heading">Salary</div>
     <table class="slip-table">
         <thead>
             <tr>
@@ -280,11 +320,22 @@
                 <td>
                     Monthly Salary
                     <span style="color:#666;font-size:11px;margin-left:8px">
-                        ({{ $record->days_present }} of {{ $record->total_days }} working days)
+                        ({{ $daysAttended }} of {{ $workingDays }} working days)
                     </span>
                 </td>
-                <td class="right">{{ number_format((float)$record->gross_earned, 2) }}</td>
+                <td class="right">{{ number_format($baseSalary, 2) }}</td>
             </tr>
+            @if($daysExtra > 0)
+            <tr>
+                <td>
+                    Extra Day Pay
+                    <span style="color:#666;font-size:11px;margin-left:8px">
+                        ({{ $daysExtra }} day(s) worked on weekend/holiday)
+                    </span>
+                </td>
+                <td class="right">{{ number_format($extraEarned, 2) }}</td>
+            </tr>
+            @endif
         </tbody>
     </table>
 
@@ -309,6 +360,25 @@
     </div>
 
 </div>
+
+<script>
+    const filename = @json($filename);
+
+    function downloadPdf() {
+        const el = document.getElementById('slip');
+        const opt = {
+            margin:      0,
+            filename:    filename,
+            image:       { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, logging: false },
+            jsPDF:       { unit: 'px', format: [794, 1123], orientation: 'portrait' },
+        };
+        html2pdf().set(opt).from(el).save();
+    }
+
+    // Auto-download on load
+    window.addEventListener('load', downloadPdf);
+</script>
 
 </body>
 </html>

@@ -121,7 +121,7 @@ export interface Salary {
 
 export interface SalaryBreakdownEntry {
     date: string;
-    status: 'absent' | 'half_day' | 'short_leave';
+    status: 'absent' | 'half_day' | 'short_leave' | 'leave_unpaid' | 'extra_present' | 'extra_half_day' | 'extra_short_leave';
     per_day: number;
     earned: number;
     deduction: number;
@@ -135,10 +135,15 @@ export interface MonthlySalary {
     month: number;
     per_month_salary: number | string;
     total_days: number;
+    working_days: number;
     days_present: number;
     days_half_day: number;
     days_short_leave: number;
     days_absent: number;
+    days_leave_paid: number;
+    days_leave_unpaid: number;
+    days_extra: number;
+    extra_earned: number | string;
     gross_earned: number | string;
     breakdown: SalaryBreakdownEntry[] | null;
     calculated_at: string;

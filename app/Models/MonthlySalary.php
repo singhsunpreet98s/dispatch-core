@@ -13,10 +13,15 @@ class MonthlySalary extends Model
         'month',
         'per_month_salary',
         'total_days',
+        'working_days',
         'days_present',
         'days_half_day',
         'days_short_leave',
         'days_absent',
+        'days_leave_paid',
+        'days_leave_unpaid',
+        'days_extra',
+        'extra_earned',
         'gross_earned',
         'breakdown',
         'calculated_at',
@@ -26,6 +31,7 @@ class MonthlySalary extends Model
     {
         return [
             'per_month_salary' => 'decimal:2',
+            'extra_earned'     => 'decimal:2',
             'gross_earned'     => 'decimal:2',
             'breakdown'        => 'array',
             'calculated_at'    => 'datetime',
