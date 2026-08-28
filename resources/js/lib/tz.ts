@@ -7,5 +7,7 @@ export function formatInTz(
     tz: string,
     options: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false },
 ): string {
-    return new Intl.DateTimeFormat('en-US', { ...options, timeZone: tz || 'UTC' }).format(new Date(isoString));
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return '—';
+    return new Intl.DateTimeFormat('en-US', { ...options, timeZone: tz || 'UTC' }).format(d);
 }

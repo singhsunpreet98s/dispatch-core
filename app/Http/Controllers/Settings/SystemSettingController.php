@@ -14,12 +14,13 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class SystemSettingController extends Controller
 {
-    public function edit(): Response
+    public function edit(Request $request): Response
     {
         $this->syncFeatureFlags();
 
@@ -33,13 +34,14 @@ class SystemSettingController extends Controller
                 'company_address' => SystemSetting::get('company_address', ''),
                 'company_phone'   => SystemSetting::get('company_phone', ''),
             ],
-            'featureFlags'       => FeatureFlag::orderBy('name')->get(),
+            'featureFlagList'    => FeatureFlag::orderBy('name')->get(),
             'attendanceSettings' => [
                 'clock_in_start'    => SystemSetting::get('attendance_clock_in_start', ''),
                 'clock_in_end'      => SystemSetting::get('attendance_clock_in_end', ''),
                 'shift_end'         => SystemSetting::get('attendance_shift_end', ''),
                 'min_break_minutes' => (int) SystemSetting::get('attendance_min_break_minutes', 15),
                 'ip_whitelist'      => SystemSetting::get('attendance_ip_whitelist', ''),
+                'current_ip'        => $request->ip(),
             ],
             'holidays'           => AttendanceHoliday::orderBy('date')->get()->map(fn ($h) => [
                 'id'   => $h->id,
@@ -49,6 +51,7 @@ class SystemSettingController extends Controller
             'commandStatus'      => $this->buildCommandStatus(),
             'timezone'           => AppTimezone::get(),
             'timezones'          => \DateTimeZone::listIdentifiers(),
+            'apiToken'           => SystemSetting::get('api_bearer_token'),
         ]);
     }
 
@@ -115,6 +118,7 @@ class SystemSettingController extends Controller
         ]);
 
         SystemSetting::set('app_timezone', $data['timezone']);
+        AppTimezone::forget();
 
         return back()->with('success', 'Timezone updated.');
     }
@@ -136,7 +140,24 @@ class SystemSettingController extends Controller
     {
         $featureFlag->update(['enabled' => ! $featureFlag->enabled]);
 
-        return back()->with('success', 'Feature flag ' . ($featureFlag->enabled ? 'disabled' : 'enabled') . '.');
+        return back()->with('success', 'Feature flag ' . ($featureFlag->enabled ? 'enabled' : 'disabled') . '.');
+    }
+
+    // ── API bearer token ──────────────────────────────────────────────────────
+
+    public function generateApiToken(): RedirectResponse
+    {
+        $token = Str::random(64);
+        SystemSetting::set('api_bearer_token', $token);
+
+        return back()->with('apiToken', $token);
+    }
+
+    public function revokeApiToken(): RedirectResponse
+    {
+        SystemSetting::set('api_bearer_token', null);
+
+        return back()->with('success', 'API token revoked.');
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

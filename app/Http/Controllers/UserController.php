@@ -14,7 +14,7 @@ class UserController extends Controller
     {
         return Inertia::render('users/index', [
             'users' => Inertia::defer(fn () => User::orderBy('created_at', 'desc')
-                ->paginate(10, ['id', 'name', 'email', 'role', 'sendgrid_contact_id', 'two_factor_confirmed_at', 'mfa_required', 'created_at'])),
+                ->paginate(10, ['id', 'name', 'other_name', 'designation', 'system_id', 'email', 'role', 'sendgrid_contact_id', 'two_factor_confirmed_at', 'mfa_required', 'created_at'])),
         ]);
     }
 

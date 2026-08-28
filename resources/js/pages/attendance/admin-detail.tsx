@@ -28,6 +28,7 @@ interface ShiftRow {
     day_status: 'present' | 'short_leave' | 'half_day' | 'absent';
     break_count: number;
     auto_closed: boolean;
+    is_late: boolean;
     breaks: BreakRow[];
 }
 
@@ -263,11 +264,16 @@ export default function AttendanceAdminDetail({ user, shifts, dateFrom, dateTo }
                                                         </Badge>
                                                     </TableCell>
                                                     <TableCell className="px-4 py-3">
-                                                        {row.auto_closed ? (
-                                                            <Badge variant="outline" className="border-amber-500 text-amber-600 text-xs">Auto-closed</Badge>
-                                                        ) : !row.clocked_out_at ? (
-                                                            <Badge variant="outline" className="border-blue-500 text-blue-600 text-xs">Open</Badge>
-                                                        ) : null}
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {row.is_late && (
+                                                                <Badge variant="outline" className="border-red-500 text-red-600 text-xs">Late</Badge>
+                                                            )}
+                                                            {row.auto_closed ? (
+                                                                <Badge variant="outline" className="border-amber-500 text-amber-600 text-xs">Auto-closed</Badge>
+                                                            ) : !row.clocked_out_at ? (
+                                                                <Badge variant="outline" className="border-blue-500 text-blue-600 text-xs">Open</Badge>
+                                                            ) : null}
+                                                        </div>
                                                     </TableCell>
                                                 </TableRow>
 

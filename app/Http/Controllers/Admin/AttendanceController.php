@@ -6,6 +6,7 @@ use App\Helpers\AppTimezone;
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceBreak;
 use App\Models\AttendanceShift;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -56,6 +57,79 @@ class AttendanceController extends Controller
         ]);
     }
 
+    public function live(): Response
+    {
+        $today        = now(AppTimezone::get())->toDateString();
+        $clockInEnd   = SystemSetting::get('attendance_clock_in_end', '');
+
+        $users = User::where('role', '!=', 'admin')
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'role', 'system_id']);
+
+        $shifts = AttendanceShift::with(['breaks'])
+            ->where('date', $today)
+            ->get()
+            ->keyBy('user_id');
+
+        $liveData = $users->map(function (User $user) use ($shifts, $clockInEnd) {
+            /** @var AttendanceShift|null $shift */
+            $shift = $shifts->get($user->id);
+
+            if (! $shift) {
+                return [
+                    'user'   => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'system_id' => $user->system_id],
+                    'status' => 'absent',
+                    'shift'  => null,
+                ];
+            }
+
+            $onBreak = $shift->hasOpenBreak();
+            $isOpen  = $shift->isOpen();
+
+            $status = match (true) {
+                $onBreak => 'on_break',
+                $isOpen  => 'present',
+                default  => 'clocked_out',
+            };
+
+            $completedBreakSeconds = (int) $shift->breaks
+                ->filter(fn (AttendanceBreak $b) => $b->ended_at !== null)
+                ->sum(fn (AttendanceBreak $b) => $b->started_at->diffInSeconds($b->ended_at));
+
+            return [
+                'user'   => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'system_id' => $user->system_id],
+                'status' => $status,
+                'shift'  => [
+                    'clocked_in_at'            => $shift->clocked_in_at?->toIso8601String(),
+                    'clocked_out_at'           => $shift->clocked_out_at?->toIso8601String(),
+                    'ip_address'               => $shift->ip_address,
+                    'auto_closed'              => $shift->auto_closed,
+                    'is_late'                  => $shift->is_late,
+                    'current_break_started_at' => $shift->currentBreak()?->started_at?->toIso8601String(),
+                    'completed_break_seconds'  => $completedBreakSeconds,
+                    'total_worked_seconds'     => $shift->totalWorkedSeconds(),
+                    'break_count'              => $shift->breaks->count(),
+                    'breaks'                   => $shift->breaks->map(fn (AttendanceBreak $b) => [
+                        'id'               => $b->id,
+                        'started_at'       => $b->started_at?->toIso8601String(),
+                        'ended_at'         => $b->ended_at?->toIso8601String(),
+                        'duration_seconds' => $b->ended_at
+                            ? (int) $b->started_at->diffInSeconds($b->ended_at)
+                            : null,
+                        'is_open'          => $b->ended_at === null,
+                    ]),
+                ],
+            ];
+        })->values();
+
+        return Inertia::render('attendance/live', [
+            'liveData'    => $liveData,
+            'today'       => $today,
+            'appTimezone' => AppTimezone::get(),
+            'clockInEnd'  => $clockInEnd,
+        ]);
+    }
+
     public function show(Request $request, User $user): Response
     {
         $dateFrom = $request->date_from ?? now(AppTimezone::get())->startOfMonth()->format('Y-m-d');
@@ -89,6 +163,7 @@ class AttendanceController extends Controller
                     'day_status'           => $dayStatus,
                     'break_count'          => $s->breaks->count(),
                     'auto_closed'          => $s->auto_closed,
+                    'is_late'              => $s->is_late,
                     'breaks'               => $s->breaks->map(fn(AttendanceBreak $b) => [
                         'id'               => $b->id,
                         'started_at'       => $b->started_at?->format('H:i:s'),

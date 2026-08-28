@@ -19,6 +19,7 @@ export interface NavItem {
     url: string;
     icon?: LucideIcon | null;
     isActive?: boolean;
+    exact?: boolean;
 }
 
 export interface Flash {
@@ -33,6 +34,7 @@ export interface SharedData {
     flash: Flash;
     logoUrl: string | null;
     appTimezone: string;
+    featureFlags: Record<string, boolean>;
     [key: string]: unknown;
 }
 
@@ -50,6 +52,7 @@ export interface AttendanceShift {
     clocked_out_at: string | null;
     ip_address: string | null;
     auto_closed: boolean;
+    is_late: boolean;
     total_worked_seconds: number;
     total_break_seconds: number;
     breaks: AttendanceBreak[];
@@ -87,6 +90,7 @@ export interface AttendanceSettings {
     shift_end: string;
     min_break_minutes: number;
     ip_whitelist: string;
+    current_ip: string;
 }
 
 export interface DashboardUser {

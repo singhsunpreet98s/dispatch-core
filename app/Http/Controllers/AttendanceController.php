@@ -42,8 +42,8 @@ class AttendanceController extends Controller
         $heatmapDays   = $this->attendance->buildHeatmap($user, $year, $month, $holidays, $approvedLeaves);
 
         $ipAllowed  = $this->attendance->isIpWhitelisted($request->ip());
-        $inWindow   = $this->attendance->isWithinClockInWindow();
-        $canClockIn = $ipAllowed && $inWindow && $todayShift === null;
+        $tooEarly   = $this->attendance->isTooEarlyToClockIn();
+        $canClockIn = $ipAllowed && ! $tooEarly && $todayShift === null;
 
         $todayNote = AttendanceNote::where('user_id', $user->id)
             ->where('date', today($tz))
@@ -80,17 +80,21 @@ class AttendanceController extends Controller
             return back()->with('error', 'Clock-in not allowed from your current IP address.');
         }
 
-        if (! $this->attendance->isWithinClockInWindow()) {
-            return back()->with('error', 'Clock-in is only allowed during the configured time window.');
+        if ($this->attendance->isTooEarlyToClockIn()) {
+            return back()->with('error', 'Clock-in is not allowed yet. Please wait until the shift start time.');
         }
 
         if ($this->attendance->getTodayShift($user)) {
             return back()->with('error', 'You have already clocked in today.');
         }
 
-        $this->attendance->clockIn($user, $ip);
+        $shift = $this->attendance->clockIn($user, $ip);
 
-        return back()->with('success', 'Clocked in successfully.');
+        $message = $shift->is_late
+            ? 'Clocked in successfully. You have been marked as late.'
+            : 'Clocked in successfully.';
+
+        return back()->with('success', $message);
     }
 
     public function clockOut(Request $request): RedirectResponse

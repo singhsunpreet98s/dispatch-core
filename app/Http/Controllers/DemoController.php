@@ -2,18 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\LeaveRequest;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use App\Services\SendGridService;
+use Illuminate\Support\Facades\DB;
 
 class DemoController extends Controller
 {
-   public function __construct(private SendGridService $sendGrid) {}
-   public function index()
-   {
-      $detail = $this->sendGrid->getSingleSendDetail("54b517ed-9fda-11f1-aa9c-3608abf6a830");
-      $raw    = $this->sendGrid->getSingleSendStats("54b517ed-9fda-11f1-aa9c-3608abf6a830");
-      dd($raw);
-   }
+    public function index()
+    {
+        $rows = DB::table('cache')->orderBy('key')->get();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $result[$row->key] = [
+                'value'      => unserialize($row->value),
+                'expires_at' => date('Y-m-d H:i:s', $row->expiration),
+                'expired'    => $row->expiration < time(),
+            ];
+        }
+
+        dd($result);
+    }
 }

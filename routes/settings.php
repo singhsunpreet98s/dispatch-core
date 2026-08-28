@@ -38,5 +38,8 @@ Route::middleware('auth')->group(function () {
 
         Route::patch('settings/attendance', [AttendanceSettingController::class, 'update'])->name('attendance-settings.update');
         Route::get('settings/system/command-status', [SystemSettingController::class, 'commandStatus'])->name('system-settings.command-status');
+
+        Route::post('settings/system/api-token', [SystemSettingController::class, 'generateApiToken'])->name('system-settings.api-token.generate');
+        Route::delete('settings/system/api-token', [SystemSettingController::class, 'revokeApiToken'])->name('system-settings.api-token.revoke');
     });
 });

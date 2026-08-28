@@ -9,7 +9,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
         <SidebarGroup className="px-2 py-2">
             <SidebarMenu>
                 {items.map((item) => {
-                    const isActive = currentPath === item.url || currentPath.startsWith(item.url + '/');
+                    const isActive = item.exact ? currentPath === item.url : currentPath === item.url || currentPath.startsWith(item.url + '/');
                     return (
                         <SidebarMenuItem key={item.title}>
                             <SidebarMenuButton

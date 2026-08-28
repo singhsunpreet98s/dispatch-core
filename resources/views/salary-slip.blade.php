@@ -282,27 +282,25 @@
     <div class="info-grid">
         <div class="info-cell">
             <span class="info-label">Employee Name</span>
-            <span class="info-value">{{ $user->name }}</span>
+            <span class="info-value">{{ $user->other_name ?: $user->name }}</span>
         </div>
         <div class="info-cell">
             <span class="info-label">Pay Period</span>
             <span class="info-value">{{ $monthName }} {{ $record->year }}</span>
         </div>
         <div class="info-cell">
-            <span class="info-label">Email</span>
-            <span class="info-value">{{ $user->email }}</span>
+            <span class="info-label">Designation</span>
+            <span class="info-value">{{ $user->designation ?: ucfirst($user->role) }}</span>
         </div>
         <div class="info-cell">
             <span class="info-label">Days Attended</span>
             <span class="info-value">{{ $daysAttended }} / {{ $workingDays }} working days</span>
         </div>
         <div class="info-cell">
-            <span class="info-label">Designation</span>
-            <span class="info-value">{{ ucfirst($user->role) }}</span>
-        </div>
-        <div class="info-cell">
             <span class="info-label">Generated On</span>
             <span class="info-value">{{ now()->format('d M Y') }}</span>
+        </div>
+        <div class="info-cell">
         </div>
     </div>
 

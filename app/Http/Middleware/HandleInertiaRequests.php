@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Helpers\AppTimezone;
+use App\Models\FeatureFlag;
 use App\Models\SystemSetting;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
@@ -57,6 +58,7 @@ class HandleInertiaRequests extends Middleware
                 return $path ? Storage::disk('public')->url($path) : null;
             }, null),
             'appTimezone' => fn () => AppTimezone::get(),
+            'featureFlags' => fn () => FeatureFlag::pluck('enabled', 'name')->map(fn ($v) => (bool) $v),
         ]);
     }
 }

@@ -16,6 +16,9 @@ class UpdateUserRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'other_name' => ['nullable', 'string', 'max:255'],
+            'designation' => ['nullable', 'string', 'max:255'],
+            'system_id' => ['nullable', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$this->route('user')->id],
             'password' => ['nullable', 'string', Password::defaults()],
             'role' => ['required', 'in:admin,manager,user'],

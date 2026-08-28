@@ -19,6 +19,22 @@ export default function AttendanceTab({ attendanceSettings }: Props) {
         ip_whitelist: attendanceSettings.ip_whitelist,
     });
 
+    const currentIp = attendanceSettings.current_ip;
+
+    const isCurrentIpWhitelisted = currentIp
+        ? attendanceForm.data.ip_whitelist
+            .split('\n')
+            .map((l) => l.trim())
+            .filter(Boolean)
+            .includes(currentIp)
+        : false;
+
+    function addCurrentIp() {
+        if (!currentIp || isCurrentIpWhitelisted) return;
+        const existing = attendanceForm.data.ip_whitelist.trimEnd();
+        attendanceForm.setData('ip_whitelist', existing ? `${existing}\n${currentIp}` : currentIp);
+    }
+
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         attendanceForm.patch(route('attendance-settings.update'));
@@ -85,7 +101,26 @@ export default function AttendanceTab({ attendanceSettings }: Props) {
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label htmlFor="ip_whitelist">Allowed IPs / CIDR ranges</Label>
+                        <div className="flex items-center justify-between gap-4">
+                            <Label htmlFor="ip_whitelist">Allowed IPs / CIDR ranges</Label>
+                            {currentIp && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-muted-foreground text-xs">
+                                        Your IP: <span className="text-foreground font-mono font-medium">{currentIp}</span>
+                                    </span>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant={isCurrentIpWhitelisted ? 'secondary' : 'outline'}
+                                        onClick={addCurrentIp}
+                                        disabled={isCurrentIpWhitelisted}
+                                        className="h-7 text-xs"
+                                    >
+                                        {isCurrentIpWhitelisted ? 'Already whitelisted' : 'Whitelist my IP'}
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
                         <Textarea
                             id="ip_whitelist"
                             rows={5}

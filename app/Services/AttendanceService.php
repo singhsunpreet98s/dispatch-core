@@ -77,6 +77,28 @@ class AttendanceService
         return $now >= $start && $now <= $end;
     }
 
+    public function isTooEarlyToClockIn(): bool
+    {
+        $start = SystemSetting::get('attendance_clock_in_start', '');
+
+        if ($start === '') {
+            return false;
+        }
+
+        return now(AppTimezone::get())->format('H:i') < $start;
+    }
+
+    public function isLateClockIn(): bool
+    {
+        $end = SystemSetting::get('attendance_clock_in_end', '');
+
+        if ($end === '') {
+            return false;
+        }
+
+        return now(AppTimezone::get())->format('H:i') > $end;
+    }
+
     public function getTodayShift(User $user): ?AttendanceShift
     {
         return AttendanceShift::with('breaks')
@@ -192,6 +214,7 @@ class AttendanceService
             'clocked_out_at'       => $shift->clocked_out_at?->toIso8601String(),
             'ip_address'           => $shift->ip_address,
             'auto_closed'          => $shift->auto_closed,
+            'is_late'              => $shift->is_late,
             'total_worked_seconds' => $shift->totalWorkedSeconds(),
             'total_break_seconds'  => $shift->totalBreakSeconds(),
             'total_shift_seconds'  => $shift->totalShiftSeconds(),
@@ -211,6 +234,7 @@ class AttendanceService
             'date'          => today(AppTimezone::get()),
             'clocked_in_at' => now(),
             'ip_address'    => $ip,
+            'is_late'       => $this->isLateClockIn(),
         ]);
     }
 

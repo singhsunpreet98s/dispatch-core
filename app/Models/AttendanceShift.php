@@ -16,6 +16,7 @@ class AttendanceShift extends Model
         'clocked_out_at',
         'ip_address',
         'auto_closed',
+        'is_late',
     ];
 
     protected $casts = [
@@ -23,6 +24,7 @@ class AttendanceShift extends Model
         'clocked_in_at'  => 'datetime',
         'clocked_out_at' => 'datetime',
         'auto_closed'    => 'boolean',
+        'is_late'        => 'boolean',
     ];
 
     public function user(): BelongsTo

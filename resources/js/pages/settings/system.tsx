@@ -2,6 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import { type AttendanceHoliday, type AttendanceSettings, type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
+import ApiTokenTab from './system/api-token-tab';
 import AttendanceTab from './system/attendance-tab';
 import CampaignsTab, { type CampaignCommandStatus } from './system/campaigns-tab';
 import CompanyInfoTab, { type CompanyInfo } from './system/company-info-tab';
@@ -13,12 +14,13 @@ import LogoTab from './system/logo-tab';
 interface Props {
     logoUrl: string | null;
     companyInfo: CompanyInfo;
-    featureFlags: FeatureFlag[];
+    featureFlagList: FeatureFlag[];
     attendanceSettings: AttendanceSettings;
     holidays: AttendanceHoliday[];
     commandStatus: CampaignCommandStatus;
     timezone: string;
     timezones: string[];
+    apiToken: string | null;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -26,7 +28,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'System Settings', href: '/settings/system' },
 ];
 
-export default function SystemSettings({ logoUrl, companyInfo, featureFlags, attendanceSettings, holidays, commandStatus, timezone, timezones }: Props) {
+export default function SystemSettings({ logoUrl, companyInfo, featureFlagList, attendanceSettings, holidays, commandStatus, timezone, timezones, apiToken }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="System Settings" />
@@ -44,6 +46,7 @@ export default function SystemSettings({ logoUrl, companyInfo, featureFlags, att
                         <TabsTrigger value="attendance">Attendance</TabsTrigger>
                         <TabsTrigger value="holidays">Holidays</TabsTrigger>
                         <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
+                        <TabsTrigger value="api-token">API Token</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="settings" className="mt-4">
@@ -54,7 +57,7 @@ export default function SystemSettings({ logoUrl, companyInfo, featureFlags, att
                     </TabsContent>
 
                     <TabsContent value="feature-flags" className="mt-4">
-                        <FeatureFlagsTab featureFlags={featureFlags} />
+                        <FeatureFlagsTab featureFlags={featureFlagList} />
                     </TabsContent>
 
                     <TabsContent value="attendance" className="mt-4">
@@ -67,6 +70,10 @@ export default function SystemSettings({ logoUrl, companyInfo, featureFlags, att
 
                     <TabsContent value="campaigns" className="mt-4">
                         <CampaignsTab commandStatus={commandStatus} />
+                    </TabsContent>
+
+                    <TabsContent value="api-token" className="mt-4">
+                        <ApiTokenTab apiToken={apiToken} />
                     </TabsContent>
                 </Tabs>
             </div>

@@ -12,6 +12,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Deferred, Head, useForm } from '@inertiajs/react';
 import { router } from '@inertiajs/react';
+import { FLAGS, useFeatureFlags } from '@/hooks/use-feature-flags';
 import { Banknote, Check, ChevronsUpDown, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -26,6 +27,9 @@ interface SendGridSender {
 interface User {
     id: number;
     name: string;
+    other_name: string | null;
+    designation: string | null;
+    system_id: string | null;
     email: string;
     role: Role;
     sendgrid_contact_id: string | null;
@@ -59,6 +63,9 @@ type FormMode = 'create' | 'edit';
 
 interface UserFormData {
     name: string;
+    other_name: string;
+    designation: string;
+    system_id: string;
     email: string;
     password: string;
     role: Role;
@@ -68,6 +75,9 @@ interface UserFormData {
 }
 
 export default function UsersIndex({ users }: Props) {
+    const { isEnabled } = useFeatureFlags();
+    const salaryEnabled = isEnabled(FLAGS.SALARY);
+
     const [sheetOpen, setSheetOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [mode, setMode] = useState<FormMode>('create');
@@ -95,6 +105,9 @@ export default function UsersIndex({ users }: Props) {
 
     const form = useForm<UserFormData>({
         name: '',
+        other_name: '',
+        designation: '',
+        system_id: '',
         email: '',
         password: '',
         role: 'user',
@@ -115,6 +128,9 @@ export default function UsersIndex({ users }: Props) {
     function openEdit(user: User) {
         form.setData({
             name: user.name,
+            other_name: user.other_name ?? '',
+            designation: user.designation ?? '',
+            system_id: user.system_id ?? '',
             email: user.email,
             password: '',
             role: user.role,
@@ -206,7 +222,7 @@ export default function UsersIndex({ users }: Props) {
                     <Button variant="ghost" size="icon" onClick={() => openEdit(u)}>
                         <Pencil className="h-4 w-4" />
                     </Button>
-                    {u.role !== 'admin' && (
+                    {salaryEnabled && u.role !== 'admin' && (
                         <Button
                             variant="ghost"
                             size="icon"
@@ -290,6 +306,42 @@ export default function UsersIndex({ users }: Props) {
                                 autoFocus
                             />
                             {form.errors.name && <p className="text-destructive text-xs">{form.errors.name}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="other_name">
+                                Print Name
+                                <span className="text-muted-foreground ml-1 text-xs">(shown on pay slip)</span>
+                            </Label>
+                            <Input
+                                id="other_name"
+                                value={form.data.other_name}
+                                onChange={(e) => form.setData('other_name', e.target.value)}
+                                placeholder="Name to print on pay slip"
+                            />
+                            {form.errors.other_name && <p className="text-destructive text-xs">{form.errors.other_name}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="designation">Designation</Label>
+                            <Input
+                                id="designation"
+                                value={form.data.designation}
+                                onChange={(e) => form.setData('designation', e.target.value)}
+                                placeholder="e.g. Software Engineer"
+                            />
+                            {form.errors.designation && <p className="text-destructive text-xs">{form.errors.designation}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="system_id">System ID</Label>
+                            <Input
+                                id="system_id"
+                                value={form.data.system_id}
+                                onChange={(e) => form.setData('system_id', e.target.value)}
+                                placeholder="e.g. EMP-001"
+                            />
+                            {form.errors.system_id && <p className="text-destructive text-xs">{form.errors.system_id}</p>}
                         </div>
 
                         <div className="space-y-2">

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Helpers\AppTimezone;
+use App\Models\FeatureFlag;
 use App\Models\LeaveRequest;
 use App\Models\MonthlySalary;
 use App\Models\Salary;
@@ -28,6 +29,11 @@ class CalculateMonthlySalary extends Command
 
     public function handle(AttendanceService $attendance): int
     {
+        if (! FeatureFlag::isEnabled('salary_feature_flag')) {
+            $this->error('Salary feature flag is disabled. Enable it in System Settings → Feature Flags before running this command.');
+            return Command::FAILURE;
+        }
+
         $tz = AppTimezone::get();
 
         $targetMonth = $this->option('month')

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController;
 use App\Http\Controllers\Admin\AttendanceHolidayController;
 use App\Http\Controllers\Admin\LeaveController as AdminLeaveController;
+use App\Http\Controllers\Api\SystemInfoController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceNoteController;
 use App\Http\Controllers\LeaveController;
@@ -74,13 +75,17 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('leave/{leave}', [LeaveController::class, 'destroy'])->name('leave.destroy');
     });
 
-    Route::get('remuneration', [SalaryController::class, 'myRemuneration'])->name('remuneration');
-    Route::get('remuneration/{monthlySalary}/slip', [SalaryController::class, 'mySlip'])->name('remuneration.slip');
+    Route::middleware(['salary'])->group(function () {
+        Route::get('remuneration', [SalaryController::class, 'myRemuneration'])->name('remuneration');
+        Route::get('remuneration/{monthlySalary}/slip', [SalaryController::class, 'mySlip'])->name('remuneration.slip');
+    });
 
     Route::middleware(['admin'])->group(function () {
         Route::middleware(['attendance'])->group(function () {
             Route::get('attendance/admin', [AdminAttendanceController::class, 'index'])->name('attendance.admin.index');
+            Route::get('attendance/live', [AdminAttendanceController::class, 'live'])->name('attendance.admin.live');
             Route::get('attendance/admin/{user}', [AdminAttendanceController::class, 'show'])->name('attendance.admin.show');
+            Route::get('attendance/system-info/{serialNumber}', [SystemInfoController::class, 'show'])->name('attendance.system-info');
             Route::post('attendance/holidays', [AttendanceHolidayController::class, 'store'])->name('attendance.holidays.store');
             Route::delete('attendance/holidays/{holiday}', [AttendanceHolidayController::class, 'destroy'])->name('attendance.holidays.destroy');
             Route::patch('attendance/leave/{leave}/approve', [AdminLeaveController::class, 'approve'])->name('attendance.leave.approve');
@@ -93,9 +98,11 @@ Route::middleware(['auth'])->group(function () {
         Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
-        Route::get('users/{user}/salary', [SalaryController::class, 'show'])->name('users.salary.show');
-        Route::post('users/{user}/salary', [SalaryController::class, 'update'])->name('users.salary.update');
-        Route::get('users/{user}/salary/{monthlySalary}/slip', [SalaryController::class, 'slip'])->name('users.salary.slip');
+        Route::middleware(['salary'])->group(function () {
+            Route::get('users/{user}/salary', [SalaryController::class, 'show'])->name('users.salary.show');
+            Route::post('users/{user}/salary', [SalaryController::class, 'update'])->name('users.salary.update');
+            Route::get('users/{user}/salary/{monthlySalary}/slip', [SalaryController::class, 'slip'])->name('users.salary.slip');
+        });
     });
 });
 

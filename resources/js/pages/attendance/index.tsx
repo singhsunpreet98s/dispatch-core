@@ -294,6 +294,12 @@ function ShiftDetailSheet({ day, open, onClose, tz }: { day: HeatmapDay | null; 
                                 </div>
                                 <span className="font-mono text-xs">{shift.ip_address ?? '—'}</span>
                             </div>
+                            {shift.is_late && (
+                                <div className="flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-900/20 px-2.5 py-2">
+                                    <AlertCircle className="h-3.5 w-3.5 shrink-0 text-red-600 dark:text-red-400" />
+                                    <span className="text-xs text-red-700 dark:text-red-300">Marked as late</span>
+                                </div>
+                            )}
                             {shift.auto_closed && (
                                 <div className="flex items-center gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 px-2.5 py-2">
                                     <AlertCircle className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
@@ -525,6 +531,9 @@ function ClockPanel({ currentShift, settings, canClockIn, ipAllowed, tz }: {
                         <p className="text-muted-foreground text-xs">Breaks</p>
                         <p className="font-mono font-medium">{formatSeconds(currentShift.total_break_seconds)}</p>
                     </div>
+                    {currentShift.is_late && (
+                        <p className="col-span-full text-xs text-red-600 dark:text-red-400">You were marked as late today.</p>
+                    )}
                     {currentShift.auto_closed && (
                         <p className="col-span-full text-xs text-amber-600">Shift was automatically closed by the system.</p>
                     )}
