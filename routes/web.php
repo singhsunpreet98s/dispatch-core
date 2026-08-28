@@ -18,6 +18,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\DemoController;
 use App\Http\Controllers\EmailController;
+use App\Http\Controllers\GeofenceController;
 use App\Http\Controllers\GeminiController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -92,6 +93,11 @@ Route::middleware(['auth'])->group(function () {
             Route::patch('attendance/leave/{leave}/approve', [AdminLeaveController::class, 'approve'])->name('attendance.leave.approve');
             Route::patch('attendance/leave/{leave}/reject', [AdminLeaveController::class, 'reject'])->name('attendance.leave.reject');
         });
+
+        Route::get('geofence', [GeofenceController::class, 'index'])->name('geofence.index');
+        Route::post('geofence', [GeofenceController::class, 'store'])->name('geofence.store');
+        Route::put('geofence/{geofence}', [GeofenceController::class, 'update'])->name('geofence.update');
+        Route::delete('geofence/{geofence}', [GeofenceController::class, 'destroy'])->name('geofence.destroy');
 
         Route::get('users', [UserController::class, 'index'])->name('users.index');
         Route::get('users/senders', [UserController::class, 'senders'])->name('users.senders');
