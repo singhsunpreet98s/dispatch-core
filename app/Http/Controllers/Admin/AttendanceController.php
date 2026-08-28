@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Helpers\AppTimezone;
 use App\Http\Controllers\Controller;
+use App\Models\AppExitEvent;
 use App\Models\AttendanceBreak;
 use App\Models\AttendanceShift;
 use App\Models\SystemSetting;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -122,12 +124,33 @@ class AttendanceController extends Controller
             ];
         })->values();
 
+        $exitEvents = AppExitEvent::with('user')
+            ->whereDate('event_timestamp', $today)
+            ->whereNull('acknowledged_at')
+            ->orderBy('event_timestamp', 'desc')
+            ->get()
+            ->map(fn (AppExitEvent $e) => [
+                'id'              => $e->id,
+                'user_name'       => $e->user?->name ?? 'Unknown ('.$e->serial_number.')',
+                'serial_number'   => $e->serial_number,
+                'event_timestamp' => $e->event_timestamp->toIso8601String(),
+            ])
+            ->values();
+
         return Inertia::render('attendance/live', [
             'liveData'    => $liveData,
             'today'       => $today,
             'appTimezone' => AppTimezone::get(),
             'clockInEnd'  => $clockInEnd,
+            'exitEvents'  => $exitEvents,
         ]);
+    }
+
+    public function acknowledgeExitEvent(AppExitEvent $exitEvent): RedirectResponse
+    {
+        $exitEvent->update(['acknowledged_at' => now()]);
+
+        return back();
     }
 
     public function show(Request $request, User $user): Response

@@ -2,7 +2,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { Clock, Coffee, HardDrive, Monitor, Wifi } from 'lucide-react';
+import { AlertTriangle, Clock, Coffee, HardDrive, Monitor, Wifi, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface BreakEntry {
@@ -41,11 +41,19 @@ interface LiveUserData {
     shift: ShiftData | null;
 }
 
+interface ExitEvent {
+    id: number;
+    user_name: string;
+    serial_number: string;
+    event_timestamp: string;
+}
+
 interface Props {
     liveData: LiveUserData[];
     today: string;
     appTimezone: string;
     clockInEnd: string;
+    exitEvents: ExitEvent[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -174,7 +182,7 @@ function getBreakSeconds(item: LiveUserData, now: number): number {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export default function AttendanceLive({ liveData, today, appTimezone, clockInEnd }: Props) {
+export default function AttendanceLive({ liveData, today, appTimezone, clockInEnd, exitEvents }: Props) {
     const now = useNow();
     const [filter, setFilter] = useState<FilterStatus>('all');
     const [selected, setSelected] = useState<LiveUserData | null>(null);
@@ -202,7 +210,7 @@ export default function AttendanceLive({ liveData, today, appTimezone, clockInEn
 
     useEffect(() => {
         const id = setInterval(() => {
-            router.reload({ only: ['liveData'] });
+            router.reload({ only: ['liveData', 'exitEvents'] });
             setLastRefreshed(new Date());
         }, 60_000);
         return () => clearInterval(id);
@@ -259,7 +267,12 @@ export default function AttendanceLive({ liveData, today, appTimezone, clockInEn
                         </h1>
                         <p className="text-muted-foreground mt-1 text-sm">
                             {today} · refreshes every 1m · updated{' '}
-                            {lastRefreshed.toLocaleTimeString('en-US', { timeZone: appTimezone, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            {lastRefreshed.toLocaleTimeString('en-US', {
+                                timeZone: appTimezone,
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                            })}
                         </p>
                     </div>
 
@@ -284,6 +297,53 @@ export default function AttendanceLive({ liveData, today, appTimezone, clockInEn
                         ))}
                     </div>
                 </div>
+
+                {/* ── Action Required tile ───────────────────── */}
+                {exitEvents.length > 0 && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 dark:border-red-500/25 dark:bg-red-500/8">
+                        <div className="flex items-center gap-2.5 border-b border-red-200/70 px-4 py-3 dark:border-red-500/20">
+                            <AlertTriangle className="h-4 w-4 shrink-0 text-red-500" />
+                            <span className="text-sm font-semibold text-red-700 dark:text-red-400">Action Required</span>
+                            <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white tabular-nums">
+                                {exitEvents.length}
+                            </span>
+                        </div>
+                        <ul className="divide-y divide-red-100 dark:divide-red-500/10">
+                            {exitEvents.map((ev) => (
+                                <li key={ev.id} className="flex items-center justify-between gap-4 px-4 py-3">
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-medium text-red-800 dark:text-red-300">
+                                            <span className="font-semibold">{ev.user_name}</span> has tried to quit the app
+                                        </p>
+                                        <p className="mt-0.5 text-[11px] text-red-500/80 dark:text-red-400/60">
+                                            {new Date(ev.event_timestamp).toLocaleTimeString('en-US', {
+                                                timeZone: appTimezone,
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                                second: '2-digit',
+                                            })}
+                                            {' · '}
+                                            {ev.serial_number}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() =>
+                                            router.post(
+                                                route('attendance.exit-events.acknowledge', { exitEvent: ev.id }),
+                                                {},
+                                                { preserveScroll: true, only: ['exitEvents'] },
+                                            )
+                                        }
+                                        className="shrink-0 rounded-lg border border-red-200 bg-white p-1.5 text-red-400 transition hover:border-red-300 hover:text-red-600 dark:border-red-500/20 dark:bg-red-500/5 dark:hover:text-red-300"
+                                        title="Dismiss"
+                                    >
+                                        <X className="h-3.5 w-3.5" />
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
 
                 {/* ── Filter chips ───────────────────────────── */}
                 <div className="flex flex-wrap gap-2">
@@ -359,7 +419,7 @@ export default function AttendanceLive({ liveData, today, appTimezone, clockInEn
                                             <div className="flex min-w-0 items-center gap-1.5">
                                                 <p className="truncate text-[13px] leading-snug font-semibold">{item.user.name}</p>
                                                 {item.shift?.is_late && (
-                                                    <span className="shrink-0 rounded-full border border-orange-200 bg-orange-50 px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide text-orange-600 dark:border-orange-500/25 dark:bg-orange-500/10 dark:text-orange-400">
+                                                    <span className="shrink-0 rounded-full border border-orange-200 bg-orange-50 px-1.5 py-px text-[9px] font-semibold tracking-wide text-orange-600 uppercase dark:border-orange-500/25 dark:bg-orange-500/10 dark:text-orange-400">
                                                         Late
                                                     </span>
                                                 )}
@@ -418,7 +478,15 @@ export default function AttendanceLive({ liveData, today, appTimezone, clockInEn
             </div>
 
             {/* ── Detail sheet ───────────────────────────────── */}
-            <Sheet open={!!selected} onOpenChange={(open) => { if (!open) { setSelected(null); setSystemInfo(null); } }}>
+            <Sheet
+                open={!!selected}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setSelected(null);
+                        setSystemInfo(null);
+                    }
+                }}
+            >
                 <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-[420px]" style={{ fontFamily: "'Sora', system-ui, sans-serif" }}>
                     {selected &&
                         (() => {
@@ -443,11 +511,13 @@ export default function AttendanceLive({ liveData, today, appTimezone, clockInEn
                                                     <SheetTitle className="text-base leading-tight font-semibold">{selected.user.name}</SheetTitle>
                                                     <p className="text-muted-foreground mt-0.5 truncate text-xs">{selected.user.email}</p>
                                                     <div className="mt-2 flex items-center gap-1.5">
-                                                        <span className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] leading-5 font-medium ${cfg.badgeCls}`}>
+                                                        <span
+                                                            className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] leading-5 font-medium ${cfg.badgeCls}`}
+                                                        >
                                                             {cfg.label}
                                                         </span>
                                                         {selected.shift?.is_late && (
-                                                            <span className="rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-600 dark:border-orange-500/25 dark:bg-orange-500/10 dark:text-orange-400">
+                                                            <span className="rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-orange-600 uppercase dark:border-orange-500/25 dark:bg-orange-500/10 dark:text-orange-400">
                                                                 Late
                                                             </span>
                                                         )}
@@ -618,7 +688,12 @@ export default function AttendanceLive({ liveData, today, appTimezone, clockInEn
                                                                     Storage used
                                                                 </span>
                                                                 <span className="font-medium tabular-nums">
-                                                                    {(((systemInfo.maxStorageGB - systemInfo.storageLeftGB) / systemInfo.maxStorageGB) * 100).toFixed(0)}%
+                                                                    {(
+                                                                        ((systemInfo.maxStorageGB - systemInfo.storageLeftGB) /
+                                                                            systemInfo.maxStorageGB) *
+                                                                        100
+                                                                    ).toFixed(0)}
+                                                                    %
                                                                 </span>
                                                             </div>
                                                             <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
