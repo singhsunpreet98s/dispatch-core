@@ -7,11 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AttendanceBreak extends Model
 {
-    protected $fillable = ['attendance_shift_id', 'started_at', 'ended_at'];
+    protected $fillable = ['attendance_shift_id', 'started_at', 'ended_at', 'session_locked'];
 
     protected $casts = [
-        'started_at' => 'datetime',
-        'ended_at'   => 'datetime',
+        'started_at'     => 'datetime',
+        'ended_at'       => 'datetime',
+        'session_locked' => 'boolean',
     ];
 
     public function shift(): BelongsTo
