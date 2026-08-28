@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\GeofenceLookup;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -11,6 +12,7 @@ class Geofence extends Model
         'name',
         'type',
         'color',
+        'lookup',
         'center_lat',
         'center_lng',
         'radius',
@@ -23,6 +25,7 @@ class Geofence extends Model
         'center_lng'  => 'float',
         'radius'      => 'float',
         'coordinates' => 'array',
+        'lookup'      => GeofenceLookup::class,
     ];
 
     public function creator(): BelongsTo

@@ -88,6 +88,12 @@ export interface ChecklistItem {
     checked: boolean;
 }
 
+export interface AttendanceGeofenceOption {
+    id: number;
+    name: string;
+    lookup: 'general' | 'attendance';
+}
+
 export interface AttendanceSettings {
     clock_in_start: string;
     clock_in_end: string;
@@ -95,6 +101,8 @@ export interface AttendanceSettings {
     min_break_minutes: number;
     ip_whitelist: string;
     current_ip: string;
+    geofences: AttendanceGeofenceOption[];
+    geofence_ids: number[];
 }
 
 export interface DashboardUser {

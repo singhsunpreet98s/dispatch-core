@@ -118,7 +118,7 @@ export default function GeofencePage({ geofences }: Props) {
                     />
                 </div>
 
-                <div className="relative flex-1">
+                <div className="relative flex-1 isolate">
                     <Suspense
                         fallback={
                             <div className="flex h-full w-full items-center justify-center bg-muted/20">

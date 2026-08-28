@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Enums\FeatureFlag as FeatureFlagEnum;
+use App\Enums\GeofenceLookup;
 use App\Helpers\AppTimezone;
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceHoliday;
 use App\Models\FeatureFlag;
+use App\Models\Geofence;
 use App\Models\ScheduleDispatchQueue;
 use App\Models\SystemSetting;
 use Carbon\Carbon;
@@ -42,6 +44,8 @@ class SystemSettingController extends Controller
                 'min_break_minutes' => (int) SystemSetting::get('attendance_min_break_minutes', 15),
                 'ip_whitelist'      => SystemSetting::get('attendance_ip_whitelist', ''),
                 'current_ip'        => $request->ip(),
+                'geofences'         => Geofence::orderBy('name')->get(['id', 'name', 'lookup']),
+                'geofence_ids'      => Geofence::where('lookup', GeofenceLookup::Attendance)->pluck('id'),
             ],
             'holidays'           => AttendanceHoliday::orderBy('date')->get()->map(fn ($h) => [
                 'id'   => $h->id,

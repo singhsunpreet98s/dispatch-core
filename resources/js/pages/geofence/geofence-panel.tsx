@@ -133,6 +133,9 @@ export default function GeofencePanel({
         );
     }
 
+    const deletingGeofence = deleteId ? geofences.find((g) => g.id === deleteId) : null;
+    const isAttendanceLookup = deletingGeofence?.lookup === 'attendance';
+
     function handleDelete() {
         if (!deleteId) return;
         router.delete(route('geofence.destroy', { geofence: deleteId }), {
@@ -314,6 +317,13 @@ export default function GeofencePanel({
             <Dialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
                 <DialogContent>
                     <DialogHeader><DialogTitle>Delete geofence?</DialogTitle></DialogHeader>
+                    {isAttendanceLookup && (
+                        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                            <span className="font-semibold">Warning:</span> This geofence is used as an{' '}
+                            <span className="font-semibold">Attendance</span> lookup. Deleting it will remove it from
+                            the attendance whitelist.
+                        </div>
+                    )}
                     <p className="text-sm text-muted-foreground">This action cannot be undone.</p>
                     <DialogFooter>
                         <Button variant="ghost" onClick={() => setDeleteId(null)}>Cancel</Button>

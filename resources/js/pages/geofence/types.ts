@@ -3,6 +3,7 @@ export interface Geofence {
     name: string;
     type: 'circle' | 'polygon';
     color: string;
+    lookup: 'general' | 'attendance';
     center_lat: number | null;
     center_lng: number | null;
     radius: number | null;
