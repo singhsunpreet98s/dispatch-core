@@ -21,18 +21,22 @@ class AttendanceShift extends Model
         'clock_out_lng',
         'auto_closed',
         'is_late',
+        'clock_in_outside_geofence',
+        'clock_out_outside_geofence',
     ];
 
     protected $casts = [
-        'date'           => 'date',
-        'clocked_in_at'  => 'datetime',
-        'clocked_out_at' => 'datetime',
-        'auto_closed'    => 'boolean',
-        'is_late'        => 'boolean',
-        'clock_in_lat'   => 'float',
-        'clock_in_lng'   => 'float',
-        'clock_out_lat'  => 'float',
-        'clock_out_lng'  => 'float',
+        'date'                       => 'date',
+        'clocked_in_at'              => 'datetime',
+        'clocked_out_at'             => 'datetime',
+        'auto_closed'                => 'boolean',
+        'is_late'                    => 'boolean',
+        'clock_in_lat'               => 'float',
+        'clock_in_lng'               => 'float',
+        'clock_out_lat'              => 'float',
+        'clock_out_lng'              => 'float',
+        'clock_in_outside_geofence'  => 'boolean',
+        'clock_out_outside_geofence' => 'boolean',
     ];
 
     public function user(): BelongsTo

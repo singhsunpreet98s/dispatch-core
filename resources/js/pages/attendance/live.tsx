@@ -27,6 +27,8 @@ interface ShiftData {
     total_worked_seconds: number;
     break_count: number;
     is_late: boolean;
+    clock_in_outside_geofence: boolean | null;
+    clock_out_outside_geofence: boolean | null;
     breaks: BreakEntry[];
 }
 
@@ -188,29 +190,28 @@ function getBreakSeconds(item: LiveUserData, now: number): number {
 
 function osmEmbedUrl(lat: number, lng: number): string {
     const delta = 0.005;
-    const bbox  = `${lng - delta},${lat - delta},${lng + delta},${lat + delta}`;
+    const bbox = `${lng - delta},${lat - delta},${lng + delta},${lat + delta}`;
     return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`;
 }
 
 type MapPin = 'in' | 'out';
 
 function LocationMap({ shift }: { shift: ShiftData }) {
-    const hasIn  = shift.clock_in_lat  != null && shift.clock_in_lng  != null;
+    const hasIn = shift.clock_in_lat != null && shift.clock_in_lng != null;
     const hasOut = shift.clock_out_lat != null && shift.clock_out_lng != null;
 
     const [active, setActive] = useState<MapPin>(hasIn ? 'in' : 'out');
 
     if (!hasIn && !hasOut) return null;
 
-    const showIn  = hasIn  && (active === 'in'  || !hasOut);
-    const showOut = hasOut && (active === 'out' || !hasIn);
+    const showIn = hasIn && (active === 'in' || !hasOut);
 
-    const lat = showIn  ? shift.clock_in_lat!  : shift.clock_out_lat!;
-    const lng = showIn  ? shift.clock_in_lng!  : shift.clock_out_lng!;
+    const lat = showIn ? shift.clock_in_lat! : shift.clock_out_lat!;
+    const lng = showIn ? shift.clock_in_lng! : shift.clock_out_lng!;
 
     return (
         <div>
-            <p className="text-muted-foreground mb-2.5 text-[10px] font-semibold tracking-[0.1em] uppercase flex items-center gap-1">
+            <p className="text-muted-foreground mb-2.5 flex items-center gap-1 text-[10px] font-semibold tracking-[0.1em] uppercase">
                 <MapPin className="h-3 w-3" />
                 Location
             </p>
@@ -221,9 +222,7 @@ function LocationMap({ shift }: { shift: ShiftData }) {
                     <button
                         onClick={() => setActive('in')}
                         className={`flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${
-                            active === 'in'
-                                ? 'bg-emerald-500 text-white'
-                                : 'bg-muted text-muted-foreground hover:text-foreground'
+                            active === 'in' ? 'bg-emerald-500 text-white' : 'bg-muted text-muted-foreground hover:text-foreground'
                         }`}
                     >
                         <LogIn className="h-3 w-3" />
@@ -232,9 +231,7 @@ function LocationMap({ shift }: { shift: ShiftData }) {
                     <button
                         onClick={() => setActive('out')}
                         className={`flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${
-                            active === 'out'
-                                ? 'bg-indigo-500 text-white'
-                                : 'bg-muted text-muted-foreground hover:text-foreground'
+                            active === 'out' ? 'bg-indigo-500 text-white' : 'bg-muted text-muted-foreground hover:text-foreground'
                         }`}
                     >
                         <LogOut className="h-3 w-3" />
@@ -245,7 +242,7 @@ function LocationMap({ shift }: { shift: ShiftData }) {
 
             {/* Single label when only one location is available */}
             {!(hasIn && hasOut) && (
-                <p className="mb-2 flex items-center gap-1 text-[11px] text-muted-foreground">
+                <p className="text-muted-foreground mb-2 flex items-center gap-1 text-[11px]">
                     {hasIn ? <LogIn className="h-3 w-3" /> : <LogOut className="h-3 w-3" />}
                     {hasIn ? 'Clock-in location' : 'Clock-out location'}
                 </p>
@@ -265,14 +262,14 @@ function LocationMap({ shift }: { shift: ShiftData }) {
             </div>
 
             {/* Coordinates */}
-            <p className="mt-1.5 flex items-center gap-1 font-mono text-[10px] text-muted-foreground">
+            <p className="text-muted-foreground mt-1.5 flex items-center gap-1 font-mono text-[10px]">
                 <MapPin className="h-3 w-3 shrink-0" />
                 {lat.toFixed(6)}, {lng.toFixed(6)}
                 <a
                     href={`https://www.google.com/maps?q=${lat},${lng}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="ml-1 underline hover:text-foreground"
+                    className="hover:text-foreground ml-1 underline"
                 >
                     Open in Maps
                 </a>
@@ -524,6 +521,15 @@ export default function AttendanceLive({ liveData, today, appTimezone, clockInEn
                                                         Late
                                                     </span>
                                                 )}
+                                                {(item.shift?.clock_in_outside_geofence || item.shift?.clock_out_outside_geofence) && (
+                                                    <span
+                                                        className="flex shrink-0 items-center gap-0.5 rounded-full border border-red-200 bg-red-50 px-1.5 py-1 text-[9px] font-semibold text-red-600 dark:border-red-500/25 dark:bg-red-500/10 dark:text-red-400"
+                                                        title="Outside geofence"
+                                                    >
+                                                        <MapPin className="h-2.5 w-2.5" />
+                                                        <X className="h-2 w-2" />
+                                                    </span>
+                                                )}
                                             </div>
                                             <p className="text-muted-foreground truncate text-[11px]">{item.user.email}</p>
                                         </div>
@@ -622,6 +628,14 @@ export default function AttendanceLive({ liveData, today, appTimezone, clockInEn
                                                                 Late
                                                             </span>
                                                         )}
+                                                        {(selected.shift?.clock_in_outside_geofence ||
+                                                            selected.shift?.clock_out_outside_geofence) && (
+                                                            <span className="flex items-center gap-0.5 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-600 dark:border-red-500/25 dark:bg-red-500/10 dark:text-red-400">
+                                                                <MapPin className="h-3 w-3" />
+                                                                <X className="h-2.5 w-2.5" />
+                                                                Outside Geofence
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -637,12 +651,14 @@ export default function AttendanceLive({ liveData, today, appTimezone, clockInEn
                                                         {
                                                             label: 'Clocked In',
                                                             value: fmtTime(selected.shift.clocked_in_at, appTimezone),
+                                                            outsideGeofence: selected.shift.clock_in_outside_geofence,
                                                         },
                                                         {
                                                             label: 'Clocked Out',
                                                             value: selected.shift.clocked_out_at
                                                                 ? fmtTime(selected.shift.clocked_out_at, appTimezone)
                                                                 : '—',
+                                                            outsideGeofence: selected.shift.clock_out_outside_geofence,
                                                         },
                                                         { label: 'Worked Today', value: fmtDuration(workedSecs), mono: true },
                                                         { label: 'Total Break', value: fmtDuration(totalBreakSecs), mono: true },
@@ -651,19 +667,30 @@ export default function AttendanceLive({ liveData, today, appTimezone, clockInEn
                                                             <span className="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
                                                                 {cell.label}
                                                             </span>
-                                                            <span
-                                                                className="font-semibold"
-                                                                style={
-                                                                    cell.mono
-                                                                        ? {
-                                                                              fontFamily: "'JetBrains Mono', monospace",
-                                                                              fontSize: '15px',
-                                                                          }
-                                                                        : { fontSize: '15px' }
-                                                                }
-                                                            >
-                                                                {cell.value}
-                                                            </span>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span
+                                                                    className="font-semibold"
+                                                                    style={
+                                                                        cell.mono
+                                                                            ? {
+                                                                                  fontFamily: "'JetBrains Mono', monospace",
+                                                                                  fontSize: '15px',
+                                                                              }
+                                                                            : { fontSize: '15px' }
+                                                                    }
+                                                                >
+                                                                    {cell.value}
+                                                                </span>
+                                                                {'outsideGeofence' in cell && cell.outsideGeofence === true && (
+                                                                    <span
+                                                                        className="flex items-center gap-0.5 rounded-full border border-red-200 bg-red-50 px-1.5 py-px text-[9px] font-semibold text-red-600 dark:border-red-500/25 dark:bg-red-500/10 dark:text-red-400"
+                                                                        title="Outside geofence"
+                                                                    >
+                                                                        <MapPin className="h-2.5 w-2.5" />
+                                                                        <X className="h-2 w-2" />
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     ))}
                                                 </div>

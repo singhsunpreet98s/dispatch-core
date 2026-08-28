@@ -6,7 +6,7 @@ import AppLayout from '@/layouts/app-layout';
 import { formatInTz } from '@/lib/tz';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, LogIn, LogOut, MapPin, X } from 'lucide-react';
 import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
@@ -29,6 +29,8 @@ interface ShiftRow {
     break_count: number;
     auto_closed: boolean;
     is_late: boolean;
+    clock_in_outside_geofence: boolean | null;
+    clock_out_outside_geofence: boolean | null;
     breaks: BreakRow[];
 }
 
@@ -273,6 +275,20 @@ export default function AttendanceAdminDetail({ user, shifts, dateFrom, dateTo }
                                                             ) : !row.clocked_out_at ? (
                                                                 <Badge variant="outline" className="border-blue-500 text-blue-600 text-xs">Open</Badge>
                                                             ) : null}
+                                                            {row.clock_in_outside_geofence && (
+                                                                <Badge variant="outline" className="border-red-400 text-red-600 text-xs gap-0.5">
+                                                                    <LogIn className="h-3 w-3" />
+                                                                    <MapPin className="h-3 w-3" />
+                                                                    <X className="h-2.5 w-2.5" />
+                                                                </Badge>
+                                                            )}
+                                                            {row.clock_out_outside_geofence && (
+                                                                <Badge variant="outline" className="border-red-400 text-red-600 text-xs gap-0.5">
+                                                                    <LogOut className="h-3 w-3" />
+                                                                    <MapPin className="h-3 w-3" />
+                                                                    <X className="h-2.5 w-2.5" />
+                                                                </Badge>
+                                                            )}
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>

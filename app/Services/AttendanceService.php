@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Enums\GeofenceLookup;
 use App\Helpers\AppTimezone;
 use App\Models\AttendanceBreak;
 use App\Models\AttendanceHoliday;
 use App\Models\AttendanceShift;
+use App\Models\Geofence;
 use App\Models\SystemSetting;
 use App\Models\User;
 use Carbon\Carbon;
@@ -208,21 +210,23 @@ class AttendanceService
     public function serializeShift(AttendanceShift $shift): array
     {
         return [
-            'id'                   => $shift->id,
-            'date'                 => $shift->date->format('Y-m-d'),
-            'clocked_in_at'        => $shift->clocked_in_at?->toIso8601String(),
-            'clocked_out_at'       => $shift->clocked_out_at?->toIso8601String(),
-            'ip_address'           => $shift->ip_address,
-            'clock_in_lat'         => $shift->clock_in_lat,
-            'clock_in_lng'         => $shift->clock_in_lng,
-            'clock_out_lat'        => $shift->clock_out_lat,
-            'clock_out_lng'        => $shift->clock_out_lng,
-            'auto_closed'          => $shift->auto_closed,
-            'is_late'              => $shift->is_late,
-            'total_worked_seconds' => $shift->totalWorkedSeconds(),
-            'total_break_seconds'  => $shift->totalBreakSeconds(),
-            'total_shift_seconds'  => $shift->totalShiftSeconds(),
-            'breaks'               => $shift->breaks->map(fn ($b) => [
+            'id'                          => $shift->id,
+            'date'                        => $shift->date->format('Y-m-d'),
+            'clocked_in_at'               => $shift->clocked_in_at?->toIso8601String(),
+            'clocked_out_at'              => $shift->clocked_out_at?->toIso8601String(),
+            'ip_address'                  => $shift->ip_address,
+            'clock_in_lat'                => $shift->clock_in_lat,
+            'clock_in_lng'                => $shift->clock_in_lng,
+            'clock_out_lat'               => $shift->clock_out_lat,
+            'clock_out_lng'               => $shift->clock_out_lng,
+            'auto_closed'                 => $shift->auto_closed,
+            'is_late'                     => $shift->is_late,
+            'clock_in_outside_geofence'   => $shift->clock_in_outside_geofence,
+            'clock_out_outside_geofence'  => $shift->clock_out_outside_geofence,
+            'total_worked_seconds'        => $shift->totalWorkedSeconds(),
+            'total_break_seconds'         => $shift->totalBreakSeconds(),
+            'total_shift_seconds'         => $shift->totalShiftSeconds(),
+            'breaks'                      => $shift->breaks->map(fn ($b) => [
                 'id'               => $b->id,
                 'started_at'       => $b->started_at->toIso8601String(),
                 'ended_at'         => $b->ended_at?->toIso8601String(),
@@ -234,25 +238,52 @@ class AttendanceService
     public function clockIn(User $user, string $ip, ?float $lat = null, ?float $lng = null): AttendanceShift
     {
         return AttendanceShift::create([
-            'user_id'       => $user->id,
-            'date'          => today(AppTimezone::get()),
-            'clocked_in_at' => now(),
-            'ip_address'    => $ip,
-            'is_late'       => $this->isLateClockIn(),
-            'clock_in_lat'  => $lat,
-            'clock_in_lng'  => $lng,
+            'user_id'                    => $user->id,
+            'date'                       => today(AppTimezone::get()),
+            'clocked_in_at'              => now(),
+            'ip_address'                 => $ip,
+            'is_late'                    => $this->isLateClockIn(),
+            'clock_in_lat'               => $lat,
+            'clock_in_lng'               => $lng,
+            'clock_in_outside_geofence'  => $this->isOutsideAttendanceGeofence($lat, $lng),
         ]);
     }
 
     public function clockOut(AttendanceShift $shift, ?float $lat = null, ?float $lng = null): AttendanceShift
     {
         $shift->update([
-            'clocked_out_at' => now(),
-            'clock_out_lat'  => $lat,
-            'clock_out_lng'  => $lng,
+            'clocked_out_at'              => now(),
+            'clock_out_lat'               => $lat,
+            'clock_out_lng'               => $lng,
+            'clock_out_outside_geofence'  => $this->isOutsideAttendanceGeofence($lat, $lng),
         ]);
 
         return $shift;
+    }
+
+    /**
+     * Returns true if the point is outside all attendance geofences,
+     * false if inside at least one, null if no location or no geofences configured.
+     */
+    private function isOutsideAttendanceGeofence(?float $lat, ?float $lng): ?bool
+    {
+        if ($lat === null || $lng === null) {
+            return null;
+        }
+
+        $geofences = Geofence::where('lookup', GeofenceLookup::Attendance)->get();
+
+        if ($geofences->isEmpty()) {
+            return null;
+        }
+
+        foreach ($geofences as $geofence) {
+            if ($geofence->pointIn($lat, $lng)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function startBreak(AttendanceShift $shift): AttendanceBreak
