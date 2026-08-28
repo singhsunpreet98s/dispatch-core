@@ -2,7 +2,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { AlertTriangle, Clock, Coffee, HardDrive, Monitor, Wifi, X } from 'lucide-react';
+import { AlertTriangle, Clock, Coffee, HardDrive, LogIn, LogOut, MapPin, Monitor, Wifi, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface BreakEntry {
@@ -17,6 +17,10 @@ interface ShiftData {
     clocked_in_at: string | null;
     clocked_out_at: string | null;
     ip_address: string | null;
+    clock_in_lat: number | null;
+    clock_in_lng: number | null;
+    clock_out_lat: number | null;
+    clock_out_lng: number | null;
     auto_closed: boolean;
     current_break_started_at: string | null;
     completed_break_seconds: number;
@@ -178,6 +182,103 @@ function getWorkedSeconds(item: LiveUserData, now: number): number {
 function getBreakSeconds(item: LiveUserData, now: number): number {
     if (!item.shift?.current_break_started_at) return 0;
     return Math.max(0, Math.floor((now - new Date(item.shift.current_break_started_at).getTime()) / 1000));
+}
+
+// ─── LocationMap ────────────────────────────────────────────────────────────
+
+function osmEmbedUrl(lat: number, lng: number): string {
+    const delta = 0.005;
+    const bbox  = `${lng - delta},${lat - delta},${lng + delta},${lat + delta}`;
+    return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`;
+}
+
+type MapPin = 'in' | 'out';
+
+function LocationMap({ shift }: { shift: ShiftData }) {
+    const hasIn  = shift.clock_in_lat  != null && shift.clock_in_lng  != null;
+    const hasOut = shift.clock_out_lat != null && shift.clock_out_lng != null;
+
+    const [active, setActive] = useState<MapPin>(hasIn ? 'in' : 'out');
+
+    if (!hasIn && !hasOut) return null;
+
+    const showIn  = hasIn  && (active === 'in'  || !hasOut);
+    const showOut = hasOut && (active === 'out' || !hasIn);
+
+    const lat = showIn  ? shift.clock_in_lat!  : shift.clock_out_lat!;
+    const lng = showIn  ? shift.clock_in_lng!  : shift.clock_out_lng!;
+
+    return (
+        <div>
+            <p className="text-muted-foreground mb-2.5 text-[10px] font-semibold tracking-[0.1em] uppercase flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                Location
+            </p>
+
+            {/* Toggle tabs — only shown when both exist */}
+            {hasIn && hasOut && (
+                <div className="mb-2.5 flex gap-1.5">
+                    <button
+                        onClick={() => setActive('in')}
+                        className={`flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${
+                            active === 'in'
+                                ? 'bg-emerald-500 text-white'
+                                : 'bg-muted text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                        <LogIn className="h-3 w-3" />
+                        Clock In
+                    </button>
+                    <button
+                        onClick={() => setActive('out')}
+                        className={`flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${
+                            active === 'out'
+                                ? 'bg-indigo-500 text-white'
+                                : 'bg-muted text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                        <LogOut className="h-3 w-3" />
+                        Clock Out
+                    </button>
+                </div>
+            )}
+
+            {/* Single label when only one location is available */}
+            {!(hasIn && hasOut) && (
+                <p className="mb-2 flex items-center gap-1 text-[11px] text-muted-foreground">
+                    {hasIn ? <LogIn className="h-3 w-3" /> : <LogOut className="h-3 w-3" />}
+                    {hasIn ? 'Clock-in location' : 'Clock-out location'}
+                </p>
+            )}
+
+            {/* Map iframe */}
+            <div className="overflow-hidden rounded-xl border">
+                <iframe
+                    key={`${lat},${lng}`}
+                    src={osmEmbedUrl(lat, lng)}
+                    width="100%"
+                    height="180"
+                    style={{ border: 'none', display: 'block' }}
+                    title="Location map"
+                    loading="lazy"
+                />
+            </div>
+
+            {/* Coordinates */}
+            <p className="mt-1.5 flex items-center gap-1 font-mono text-[10px] text-muted-foreground">
+                <MapPin className="h-3 w-3 shrink-0" />
+                {lat.toFixed(6)}, {lng.toFixed(6)}
+                <a
+                    href={`https://www.google.com/maps?q=${lat},${lng}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="ml-1 underline hover:text-foreground"
+                >
+                    Open in Maps
+                </a>
+            </p>
+        </div>
+    );
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -588,6 +689,9 @@ export default function AttendanceLive({ liveData, today, appTimezone, clockInEn
                                                         </span>
                                                     )}
                                                 </div>
+
+                                                {/* Location map */}
+                                                <LocationMap shift={selected.shift} />
 
                                                 {/* Breaks */}
                                                 {selected.shift.breaks.length > 0 ? (

@@ -4,13 +4,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { formatInTz } from '@/lib/tz';
 import { type AttendanceSettings, type AttendanceShift, type BreadcrumbItem, type ChecklistItem, type HeatmapDay, type LeaveRequest } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { AlertCircle, CalendarCheck, CalendarPlus, ChevronLeft, ChevronRight, Clock, Coffee, LogIn, LogOut, Plus, Save, Timer, Trash2, Wifi, X } from 'lucide-react';
+import { AlertCircle, CalendarCheck, CalendarPlus, ChevronLeft, ChevronRight, Clock, Coffee, LogIn, LogOut, MapPin, Plus, Save, Timer, Trash2, Wifi, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface Props {
@@ -468,17 +467,144 @@ function ApplyLeaveSheet({ open, onClose }: { open: boolean; onClose: () => void
     );
 }
 
+// ── useGeolocation ────────────────────────────────────────────────────────────
+
+type GeoState = 'checking' | 'granted' | 'prompt' | 'denied' | 'unavailable';
+
+function useGeolocation() {
+    const [geoState, setGeoState] = useState<GeoState>('checking');
+    const [coords, setCoords]     = useState<{ lat: number; lng: number } | null>(null);
+
+    function fetchPosition() {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                setGeoState('granted');
+            },
+            () => setGeoState('denied'),
+            { timeout: 8000 },
+        );
+    }
+
+    useEffect(() => {
+        if (!navigator.geolocation) {
+            setGeoState('unavailable');
+            return;
+        }
+        if (!navigator.permissions) {
+            setGeoState('prompt');
+            return;
+        }
+        navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+            if (result.state === 'granted') {
+                setGeoState('granted');
+                fetchPosition();
+            } else if (result.state === 'denied') {
+                setGeoState('denied');
+            } else {
+                setGeoState('prompt');
+            }
+            result.onchange = () => {
+                if (result.state === 'granted') {
+                    fetchPosition();
+                } else if (result.state === 'denied') {
+                    setGeoState('denied');
+                    setCoords(null);
+                } else {
+                    setGeoState('prompt');
+                }
+            };
+        });
+    }, []);
+
+    function requestPermission() {
+        if (!navigator.geolocation) return;
+        setGeoState('checking');
+        fetchPosition();
+    }
+
+    function getLatestCoords(): Promise<{ lat: number; lng: number } | null> {
+        return new Promise((resolve) => {
+            if (!navigator.geolocation) { resolve(null); return; }
+            navigator.geolocation.getCurrentPosition(
+                (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                () => resolve(coords),
+                { timeout: 5000, maximumAge: 30000 },
+            );
+        });
+    }
+
+    return { geoState, coords, requestPermission, getLatestCoords };
+}
+
+// ── GeoWarning ────────────────────────────────────────────────────────────────
+
+function GeoWarning({ geoState, onRequest }: { geoState: GeoState; onRequest: () => void }) {
+    if (geoState === 'denied') {
+        return (
+            <div className="flex items-start gap-2.5 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-800 dark:bg-amber-900/20">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                <div>
+                    <p className="text-sm font-medium text-amber-700 dark:text-amber-400">Location access blocked</p>
+                    <p className="mt-0.5 text-xs text-amber-600/80 dark:text-amber-500">
+                        Allow location in your browser settings to enable clock-in.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+    if (geoState === 'prompt') {
+        return (
+            <div className="flex flex-col items-center gap-3">
+                <div className="flex items-start gap-2.5 rounded-md border border-blue-200 bg-blue-50 px-3 py-2.5 dark:border-blue-800 dark:bg-blue-900/20 w-full">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+                    <div>
+                        <p className="text-sm font-medium text-blue-700 dark:text-blue-400">Location permission required</p>
+                        <p className="mt-0.5 text-xs text-blue-600/80 dark:text-blue-500">
+                            Your location is saved when you clock in and out.
+                        </p>
+                    </div>
+                </div>
+                <Button size="sm" variant="outline" onClick={onRequest} className="gap-1.5">
+                    <MapPin className="h-3.5 w-3.5" />
+                    Enable Location
+                </Button>
+            </div>
+        );
+    }
+    return null;
+}
+
 // ── ClockPanel ────────────────────────────────────────────────────────────────
 
 function ClockPanel({ currentShift, settings, canClockIn, ipAllowed, tz }: {
     currentShift: AttendanceShift | null; settings: AttendanceSettings; canClockIn: boolean; ipAllowed: boolean; tz: string;
 }) {
-    const clockInForm    = useForm({});
-    const clockOutForm   = useForm({});
     const breakStartForm = useForm({});
     const breakEndForm   = useForm({});
+    const [clockingIn, setClockingIn]   = useState(false);
+    const [clockingOut, setClockingOut] = useState(false);
+    const { geoState, coords, requestPermission, getLatestCoords } = useGeolocation();
 
     const openBreak = currentShift?.breaks.find((b) => b.ended_at === null) ?? null;
+
+    async function handleClockIn() {
+        setClockingIn(true);
+        const loc = await getLatestCoords();
+        router.post(route('attendance.clock-in'), {
+            latitude:  loc?.lat ?? null,
+            longitude: loc?.lng ?? null,
+        }, { onFinish: () => setClockingIn(false) });
+    }
+
+    async function handleClockOut() {
+        setClockingOut(true);
+        const loc = await getLatestCoords();
+        router.post(route('attendance.clock-out'), {
+            latitude:  loc?.lat ?? null,
+            longitude: loc?.lng ?? null,
+        }, { onFinish: () => setClockingOut(false) });
+    }
 
     if (!currentShift) {
         return (
@@ -487,9 +613,23 @@ function ClockPanel({ currentShift, settings, canClockIn, ipAllowed, tz }: {
                     {canClockIn ? (
                         <>
                             <p className="text-muted-foreground text-sm">Ready to start your shift?</p>
-                            <Button onClick={() => clockInForm.post(route('attendance.clock-in'))} disabled={clockInForm.processing} size="lg">
-                                {clockInForm.processing ? 'Clocking in…' : 'Clock In'}
-                            </Button>
+                            {geoState === 'checking' ? (
+                                <p className="text-muted-foreground text-xs">Checking location…</p>
+                            ) : geoState === 'granted' ? (
+                                <>
+                                    {coords && (
+                                        <p className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                                            <MapPin className="h-3 w-3" />
+                                            Location ready
+                                        </p>
+                                    )}
+                                    <Button onClick={handleClockIn} disabled={clockingIn} size="lg">
+                                        {clockingIn ? 'Clocking in…' : 'Clock In'}
+                                    </Button>
+                                </>
+                            ) : (
+                                <GeoWarning geoState={geoState} onRequest={requestPermission} />
+                            )}
                         </>
                     ) : !ipAllowed ? (
                         <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-center dark:border-red-800 dark:bg-red-900/20">
@@ -576,8 +716,8 @@ function ClockPanel({ currentShift, settings, canClockIn, ipAllowed, tz }: {
                     <Button variant="outline" onClick={() => breakStartForm.post(route('attendance.break.start'))} disabled={breakStartForm.processing}>
                         {breakStartForm.processing ? 'Starting…' : 'Start Break'}
                     </Button>
-                    <Button variant="destructive" onClick={() => clockOutForm.post(route('attendance.clock-out'))} disabled={clockOutForm.processing}>
-                        {clockOutForm.processing ? 'Clocking out…' : 'Clock Out'}
+                    <Button variant="destructive" onClick={handleClockOut} disabled={clockingOut}>
+                        {clockingOut ? 'Clocking out…' : 'Clock Out'}
                     </Button>
                 </div>
             </CardContent>

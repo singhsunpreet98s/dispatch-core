@@ -51,6 +51,10 @@ export interface AttendanceShift {
     clocked_in_at: string | null;
     clocked_out_at: string | null;
     ip_address: string | null;
+    clock_in_lat: number | null;
+    clock_in_lng: number | null;
+    clock_out_lat: number | null;
+    clock_out_lng: number | null;
     auto_closed: boolean;
     is_late: boolean;
     total_worked_seconds: number;

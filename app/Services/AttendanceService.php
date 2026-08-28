@@ -213,6 +213,10 @@ class AttendanceService
             'clocked_in_at'        => $shift->clocked_in_at?->toIso8601String(),
             'clocked_out_at'       => $shift->clocked_out_at?->toIso8601String(),
             'ip_address'           => $shift->ip_address,
+            'clock_in_lat'         => $shift->clock_in_lat,
+            'clock_in_lng'         => $shift->clock_in_lng,
+            'clock_out_lat'        => $shift->clock_out_lat,
+            'clock_out_lng'        => $shift->clock_out_lng,
             'auto_closed'          => $shift->auto_closed,
             'is_late'              => $shift->is_late,
             'total_worked_seconds' => $shift->totalWorkedSeconds(),
@@ -227,7 +231,7 @@ class AttendanceService
         ];
     }
 
-    public function clockIn(User $user, string $ip): AttendanceShift
+    public function clockIn(User $user, string $ip, ?float $lat = null, ?float $lng = null): AttendanceShift
     {
         return AttendanceShift::create([
             'user_id'       => $user->id,
@@ -235,12 +239,18 @@ class AttendanceService
             'clocked_in_at' => now(),
             'ip_address'    => $ip,
             'is_late'       => $this->isLateClockIn(),
+            'clock_in_lat'  => $lat,
+            'clock_in_lng'  => $lng,
         ]);
     }
 
-    public function clockOut(AttendanceShift $shift): AttendanceShift
+    public function clockOut(AttendanceShift $shift, ?float $lat = null, ?float $lng = null): AttendanceShift
     {
-        $shift->update(['clocked_out_at' => now()]);
+        $shift->update([
+            'clocked_out_at' => now(),
+            'clock_out_lat'  => $lat,
+            'clock_out_lng'  => $lng,
+        ]);
 
         return $shift;
     }

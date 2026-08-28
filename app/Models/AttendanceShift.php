@@ -15,6 +15,10 @@ class AttendanceShift extends Model
         'clocked_in_at',
         'clocked_out_at',
         'ip_address',
+        'clock_in_lat',
+        'clock_in_lng',
+        'clock_out_lat',
+        'clock_out_lng',
         'auto_closed',
         'is_late',
     ];
@@ -25,6 +29,10 @@ class AttendanceShift extends Model
         'clocked_out_at' => 'datetime',
         'auto_closed'    => 'boolean',
         'is_late'        => 'boolean',
+        'clock_in_lat'   => 'float',
+        'clock_in_lng'   => 'float',
+        'clock_out_lat'  => 'float',
+        'clock_out_lng'  => 'float',
     ];
 
     public function user(): BelongsTo

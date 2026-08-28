@@ -88,7 +88,17 @@ class AttendanceController extends Controller
             return back()->with('error', 'You have already clocked in today.');
         }
 
-        $shift = $this->attendance->clockIn($user, $ip);
+        $validated = $request->validate([
+            'latitude'  => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+        ]);
+
+        $shift = $this->attendance->clockIn(
+            $user,
+            $ip,
+            isset($validated['latitude'])  ? (float) $validated['latitude']  : null,
+            isset($validated['longitude']) ? (float) $validated['longitude'] : null,
+        );
 
         $message = $shift->is_late
             ? 'Clocked in successfully. You have been marked as late.'
@@ -110,7 +120,16 @@ class AttendanceController extends Controller
             return back()->with('error', 'Please end your current break before clocking out.');
         }
 
-        $this->attendance->clockOut($shift);
+        $validated = $request->validate([
+            'latitude'  => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+        ]);
+
+        $this->attendance->clockOut(
+            $shift,
+            isset($validated['latitude'])  ? (float) $validated['latitude']  : null,
+            isset($validated['longitude']) ? (float) $validated['longitude'] : null,
+        );
 
         return back()->with('success', 'Clocked out successfully.');
     }
