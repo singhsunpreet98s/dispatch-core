@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Helpers\AppTimezone;
 use App\Models\SystemSetting;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
@@ -55,6 +56,7 @@ class HandleInertiaRequests extends Middleware
                 $path = SystemSetting::get('logo_path');
                 return $path ? Storage::disk('public')->url($path) : null;
             }, null),
+            'appTimezone' => fn () => AppTimezone::get(),
         ]);
     }
 }

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type MonthlySalary, type SalaryBreakdownEntry, type Salary, type SalaryHistory } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { ChevronDown, ChevronRight, Printer, TrendingDown, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 
@@ -31,13 +31,14 @@ function formatCurrency(value: number | null | undefined): string {
     );
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string, tz = 'UTC'): string {
     return new Intl.DateTimeFormat('en-IN', {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
+        timeZone: tz,
     }).format(new Date(dateStr));
 }
 
@@ -235,6 +236,7 @@ function MonthlyPayTable({ records }: { records: MonthlySalary[] }) {
 }
 
 export default function Remuneration({ salary, history, monthly_pay }: Props) {
+    const tz = ((usePage().props as { appTimezone?: string }).appTimezone) ?? 'UTC';
     const ctc = salary ? parseNum(salary.ctc) : null;
     const perMonth = salary ? parseNum(salary.per_month) : null;
 
@@ -335,7 +337,7 @@ export default function Remuneration({ salary, history, monthly_pay }: Props) {
                                                 return (
                                                     <TableRow key={h.id}>
                                                         <TableCell className="text-muted-foreground whitespace-nowrap text-xs">
-                                                            {formatDate(h.created_at)}
+                                                            {formatDate(h.created_at, tz)}
                                                         </TableCell>
                                                         <TableCell className="text-xs font-medium">
                                                             {fieldLabels[h.changed_field]}

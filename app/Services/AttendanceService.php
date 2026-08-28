@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\AppTimezone;
 use App\Models\AttendanceBreak;
 use App\Models\AttendanceHoliday;
 use App\Models\AttendanceShift;
@@ -71,7 +72,7 @@ class AttendanceService
             return true;
         }
 
-        $now = now()->format('H:i');
+        $now = now(AppTimezone::get())->format('H:i');
 
         return $now >= $start && $now <= $end;
     }
@@ -80,7 +81,7 @@ class AttendanceService
     {
         return AttendanceShift::with('breaks')
             ->where('user_id', $user->id)
-            ->where('date', today())
+            ->where('date', today(AppTimezone::get()))
             ->first();
     }
 
@@ -106,7 +107,7 @@ class AttendanceService
     {
         $shifts      = $this->getMonthShifts($user, $year, $month);
         $settings    = $this->settings();
-        $today       = today()->format('Y-m-d');
+        $today       = today(AppTimezone::get())->format('Y-m-d');
         $daysInMonth = Carbon::create($year, $month)->daysInMonth;
         $days        = [];
 
@@ -207,7 +208,7 @@ class AttendanceService
     {
         return AttendanceShift::create([
             'user_id'       => $user->id,
-            'date'          => today(),
+            'date'          => today(AppTimezone::get()),
             'clocked_in_at' => now(),
             'ip_address'    => $ip,
         ]);
@@ -240,13 +241,14 @@ class AttendanceService
             return 0;
         }
 
-        $shiftEndTime = Carbon::parse(today()->format('Y-m-d').' '.$shiftEndStr);
+        $tz = AppTimezone::get();
+        $shiftEndTime = Carbon::parse(today($tz)->format('Y-m-d').' '.$shiftEndStr, $tz);
         if (now()->lt($shiftEndTime)) {
             return 0;
         }
 
         $openShifts = AttendanceShift::with('breaks')
-            ->where('date', today())
+            ->where('date', today($tz))
             ->whereNotNull('clocked_in_at')
             ->whereNull('clocked_out_at')
             ->get();

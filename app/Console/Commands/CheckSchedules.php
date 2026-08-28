@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Helpers\AppTimezone;
 use App\Models\Schedule;
 use App\Models\ScheduleDispatchQueue;
 use App\Models\SystemSetting;
@@ -15,7 +16,7 @@ class CheckSchedules extends Command
 
     public function handle(): int
     {
-        $now = Carbon::now('Asia/Kolkata');
+        $now = Carbon::now(AppTimezone::get());
         $currentMinute = $now->format('H:i');
         $currentWeekday = (int) $now->format('w'); // 0=Sun … 6=Sat
         $queuedAt = $now->startOfMinute()->copy();

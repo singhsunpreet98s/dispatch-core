@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
+import { formatInTz } from '@/lib/tz';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -91,6 +92,7 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AttendanceAdminDetail({ user, shifts, dateFrom, dateTo }: Props) {
+    const tz = ((usePage().props as { appTimezone?: string }).appTimezone) ?? 'UTC';
     const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
     function toggleExpand(id: number) {
@@ -247,8 +249,8 @@ export default function AttendanceAdminDetail({ user, shifts, dateFrom, dateTo }
                                                         )}
                                                     </TableCell>
                                                     <TableCell className="px-4 py-3 font-mono text-sm">{row.date}</TableCell>
-                                                    <TableCell className="px-4 py-3 font-mono text-sm">{row.clocked_in_at ?? '—'}</TableCell>
-                                                    <TableCell className="px-4 py-3 font-mono text-sm">{row.clocked_out_at ?? '—'}</TableCell>
+                                                    <TableCell className="px-4 py-3 font-mono text-sm">{row.clocked_in_at ? formatInTz(row.clocked_in_at, tz) : '—'}</TableCell>
+                                                    <TableCell className="px-4 py-3 font-mono text-sm">{row.clocked_out_at ? formatInTz(row.clocked_out_at, tz) : '—'}</TableCell>
                                                     <TableCell className="px-4 py-3 font-mono text-sm">{fmtSeconds(row.total_worked_seconds)}</TableCell>
                                                     <TableCell className="px-4 py-3 font-mono text-sm">{fmtSeconds(row.total_break_seconds)}</TableCell>
                                                     <TableCell className="px-4 py-3 text-sm">{row.break_count}</TableCell>
@@ -275,8 +277,8 @@ export default function AttendanceAdminDetail({ user, shifts, dateFrom, dateTo }
                                                         <TableCell colSpan={2} className="text-muted-foreground px-4 py-2 text-xs italic">
                                                             Break
                                                         </TableCell>
-                                                        <TableCell className="px-4 py-2 font-mono text-xs">{b.started_at ?? '—'}</TableCell>
-                                                        <TableCell className="px-4 py-2 font-mono text-xs">{b.ended_at ?? 'ongoing'}</TableCell>
+                                                        <TableCell className="px-4 py-2 font-mono text-xs">{b.started_at ? formatInTz(b.started_at, tz) : '—'}</TableCell>
+                                                        <TableCell className="px-4 py-2 font-mono text-xs">{b.ended_at ? formatInTz(b.ended_at, tz) : 'ongoing'}</TableCell>
                                                         <TableCell className="px-4 py-2 font-mono text-xs">
                                                             {b.duration_seconds != null ? fmtSeconds(b.duration_seconds) : '—'}
                                                         </TableCell>

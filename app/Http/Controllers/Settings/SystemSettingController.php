@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Enums\FeatureFlag as FeatureFlagEnum;
+use App\Helpers\AppTimezone;
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceHoliday;
 use App\Models\FeatureFlag;
@@ -46,6 +47,8 @@ class SystemSettingController extends Controller
                 'name' => $h->name,
             ]),
             'commandStatus'      => $this->buildCommandStatus(),
+            'timezone'           => AppTimezone::get(),
+            'timezones'          => \DateTimeZone::listIdentifiers(),
         ]);
     }
 
@@ -101,6 +104,19 @@ class SystemSettingController extends Controller
         }
 
         return back()->with('success', 'Company information updated.');
+    }
+
+    // ── Timezone ──────────────────────────────────────────────────────────────
+
+    public function updateTimezone(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'timezone' => ['required', 'string', 'timezone:all'],
+        ]);
+
+        SystemSetting::set('app_timezone', $data['timezone']);
+
+        return back()->with('success', 'Timezone updated.');
     }
 
     // ── Feature flags ─────────────────────────────────────────────────────────

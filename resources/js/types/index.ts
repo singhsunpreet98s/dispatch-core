@@ -32,6 +32,7 @@ export interface SharedData {
     auth: Auth;
     flash: Flash;
     logoUrl: string | null;
+    appTimezone: string;
     [key: string]: unknown;
 }
 

@@ -17,6 +17,8 @@ interface Props {
     attendanceSettings: AttendanceSettings;
     holidays: AttendanceHoliday[];
     commandStatus: CampaignCommandStatus;
+    timezone: string;
+    timezones: string[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -24,7 +26,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'System Settings', href: '/settings/system' },
 ];
 
-export default function SystemSettings({ logoUrl, companyInfo, featureFlags, attendanceSettings, holidays, commandStatus }: Props) {
+export default function SystemSettings({ logoUrl, companyInfo, featureFlags, attendanceSettings, holidays, commandStatus, timezone, timezones }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="System Settings" />
@@ -46,7 +48,7 @@ export default function SystemSettings({ logoUrl, companyInfo, featureFlags, att
 
                     <TabsContent value="settings" className="mt-4">
                         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                            <LogoTab logoUrl={logoUrl} />
+                            <LogoTab logoUrl={logoUrl} timezone={timezone} timezones={timezones} />
                             <CompanyInfoTab companyInfo={companyInfo} />
                         </div>
                     </TabsContent>

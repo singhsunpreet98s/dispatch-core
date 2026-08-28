@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Helpers\AppTimezone;
 use App\Models\LeaveRequest;
 use App\Models\MonthlySalary;
 use App\Models\Salary;
@@ -27,21 +28,24 @@ class CalculateMonthlySalary extends Command
 
     public function handle(AttendanceService $attendance): int
     {
+        $tz = AppTimezone::get();
+
         $targetMonth = $this->option('month')
             ? Carbon::createFromFormat('Y-m', $this->option('month'))->startOfMonth()
-            : now('UTC')->subMonth()->startOfMonth();
+            : now($tz)->subMonth()->startOfMonth();
 
         $year      = (int) $targetMonth->format('Y');
         $month     = (int) $targetMonth->format('n');
         $totalDays = $targetMonth->daysInMonth;
-        $today     = today()->format('Y-m-d');
+        $today     = today($tz)->format('Y-m-d');
 
-        $isMidMonth = $targetMonth->format('Y-m') === now()->format('Y-m');
+        $nowInTz = now($tz);
+        $isMidMonth = $targetMonth->format('Y-m') === $nowInTz->format('Y-m');
 
         $this->info("Calculating salary for {$targetMonth->format('F Y')} ({$totalDays} days)…");
 
         if ($isMidMonth) {
-            $futureDays = $totalDays - (int) now()->format('j');
+            $futureDays = $totalDays - (int) $nowInTz->format('j');
             $this->warn("Note: {$futureDays} future day(s) will not be counted (month is not yet complete).");
         }
 

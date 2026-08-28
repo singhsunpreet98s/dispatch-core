@@ -31,6 +31,7 @@ Route::middleware('auth')->group(function () {
         Route::post('settings/system/logo', [SystemSettingController::class, 'update'])->name('system-settings.logo');
         Route::delete('settings/system/logo', [SystemSettingController::class, 'removeLogo'])->name('system-settings.logo.remove');
         Route::patch('settings/system/company', [SystemSettingController::class, 'updateCompany'])->name('system-settings.company');
+        Route::patch('settings/system/timezone', [SystemSettingController::class, 'updateTimezone'])->name('system-settings.timezone');
 
         Route::patch('settings/system/flags/{featureFlag}', [SystemSettingController::class, 'updateFlag'])->name('system-settings.flags.update');
         Route::patch('settings/system/flags/{featureFlag}/toggle', [SystemSettingController::class, 'toggleFlag'])->name('system-settings.flags.toggle');

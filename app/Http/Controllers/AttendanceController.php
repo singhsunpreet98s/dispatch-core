@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\AppTimezone;
 use App\Models\AttendanceHoliday;
 use App\Models\AttendanceNote;
 use App\Models\LeaveRequest;
@@ -30,8 +31,9 @@ class AttendanceController extends Controller
         $user     = $request->user();
         $settings = $this->attendance->settings();
 
-        $year  = (int) ($request->year  ?? now()->format('Y'));
-        $month = (int) ($request->month ?? now()->format('n'));
+        $tz    = AppTimezone::get();
+        $year  = (int) ($request->year  ?? now($tz)->format('Y'));
+        $month = (int) ($request->month ?? now($tz)->format('n'));
 
         $holidays      = $this->attendance->getMonthHolidays($year, $month);
         $todayShift    = $this->attendance->getTodayShift($user);
@@ -44,7 +46,7 @@ class AttendanceController extends Controller
         $canClockIn = $ipAllowed && $inWindow && $todayShift === null;
 
         $todayNote = AttendanceNote::where('user_id', $user->id)
-            ->where('date', today())
+            ->where('date', today($tz))
             ->first();
 
         return Inertia::render('attendance/index', [

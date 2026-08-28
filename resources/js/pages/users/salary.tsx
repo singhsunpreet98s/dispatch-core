@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type MonthlySalary, type SalaryBreakdownEntry, type Salary, type SalaryHistory } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { ArrowRight, ChevronDown, ChevronRight, Printer, TrendingDown, TrendingUp } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -39,8 +39,8 @@ function formatCurrency(value: number | null | undefined): string {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(value);
 }
 
-function formatDate(dateStr: string): string {
-    return new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(
+function formatDate(dateStr: string, tz = 'UTC'): string {
+    return new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: tz }).format(
         new Date(dateStr),
     );
 }
@@ -233,6 +233,7 @@ function AdminMonthlyPayTable({ records, userId }: { records: MonthlySalary[]; u
 }
 
 export default function UserSalary({ user, salary, history, monthly_pay, total_paid }: Props) {
+    const tz = ((usePage().props as { appTimezone?: string }).appTimezone) ?? 'UTC';
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
         { title: 'Users', href: '/users' },
@@ -536,7 +537,7 @@ export default function UserSalary({ user, salary, history, monthly_pay, total_p
                                                 return (
                                                     <TableRow key={h.id}>
                                                         <TableCell className="text-muted-foreground whitespace-nowrap text-xs">
-                                                            {formatDate(h.created_at)}
+                                                            {formatDate(h.created_at, tz)}
                                                         </TableCell>
                                                         <TableCell className="text-xs font-medium">{fieldLabels[h.changed_field]}</TableCell>
                                                         <TableCell>

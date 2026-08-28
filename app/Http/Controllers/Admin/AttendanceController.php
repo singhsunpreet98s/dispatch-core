@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Helpers\AppTimezone;
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceBreak;
 use App\Models\AttendanceShift;
@@ -14,8 +15,8 @@ class AttendanceController extends Controller
 {
     public function index(Request $request): Response
     {
-        $dateFrom = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
-        $dateTo   = $request->date_to   ?? now()->endOfMonth()->format('Y-m-d');
+        $dateFrom = $request->date_from ?? now(AppTimezone::get())->startOfMonth()->format('Y-m-d');
+        $dateTo   = $request->date_to   ?? now(AppTimezone::get())->endOfMonth()->format('Y-m-d');
 
         $request->validate([
             'user_id'   => ['nullable', 'integer', 'exists:users,id'],
@@ -57,8 +58,8 @@ class AttendanceController extends Controller
 
     public function show(Request $request, User $user): Response
     {
-        $dateFrom = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
-        $dateTo   = $request->date_to   ?? now()->endOfMonth()->format('Y-m-d');
+        $dateFrom = $request->date_from ?? now(AppTimezone::get())->startOfMonth()->format('Y-m-d');
+        $dateTo   = $request->date_to   ?? now(AppTimezone::get())->endOfMonth()->format('Y-m-d');
 
         $shifts = AttendanceShift::with('breaks')
             ->where('user_id', $user->id)

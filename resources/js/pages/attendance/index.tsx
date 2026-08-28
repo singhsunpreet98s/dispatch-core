@@ -7,8 +7,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
+import { formatInTz } from '@/lib/tz';
 import { type AttendanceSettings, type AttendanceShift, type BreadcrumbItem, type ChecklistItem, type HeatmapDay, type LeaveRequest } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { AlertCircle, CalendarCheck, CalendarPlus, ChevronLeft, ChevronRight, Clock, Coffee, LogIn, LogOut, Plus, Save, Timer, Trash2, Wifi, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -40,10 +41,12 @@ function formatSeconds(totalSeconds: number): string {
     return [h, m, s].map((v) => String(v).padStart(2, '0')).join(':');
 }
 
-function formatTime(isoString: string): string {
-    return new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(
-        new Date(isoString),
-    );
+function useAppTz(): string {
+    return (usePage().props as { appTimezone?: string }).appTimezone ?? 'UTC';
+}
+
+function formatTime(isoString: string, tz: string): string {
+    return formatInTz(isoString, tz);
 }
 
 function formatDate(dateStr: string): string {
@@ -200,7 +203,7 @@ const SHIFT_STATUS_LABEL: Record<string, string> = {
     leave:       'On Leave',
 };
 
-function ShiftDetailSheet({ day, open, onClose }: { day: HeatmapDay | null; open: boolean; onClose: () => void }) {
+function ShiftDetailSheet({ day, open, onClose, tz }: { day: HeatmapDay | null; open: boolean; onClose: () => void; tz: string }) {
     const shift = day?.shift ?? null;
     const statusBadgeCls = day?.status ? (SHIFT_STATUS_BADGE[day.status] ?? '') : '';
     const statusLabel    = day?.status ? (SHIFT_STATUS_LABEL[day.status] ?? day.status) : '';
@@ -246,7 +249,7 @@ function ShiftDetailSheet({ day, open, onClose }: { day: HeatmapDay | null; open
                                     <span className="text-[10px] font-semibold uppercase tracking-widest">Clock In</span>
                                 </div>
                                 <p className="font-mono text-base font-semibold tabular-nums">
-                                    {shift.clocked_in_at ? formatTime(shift.clocked_in_at) : '—'}
+                                    {shift.clocked_in_at ? formatTime(shift.clocked_in_at, tz) : '—'}
                                 </p>
                             </div>
                             <div className="rounded-xl border bg-card p-3 space-y-1.5">
@@ -255,7 +258,7 @@ function ShiftDetailSheet({ day, open, onClose }: { day: HeatmapDay | null; open
                                     <span className="text-[10px] font-semibold uppercase tracking-widest">Clock Out</span>
                                 </div>
                                 <p className={`font-mono text-base font-semibold tabular-nums ${!shift.clocked_out_at ? 'text-blue-500 dark:text-blue-400' : ''}`}>
-                                    {shift.clocked_out_at ? formatTime(shift.clocked_out_at) : 'Active'}
+                                    {shift.clocked_out_at ? formatTime(shift.clocked_out_at, tz) : 'Active'}
                                 </p>
                             </div>
                         </div>
@@ -312,10 +315,10 @@ function ShiftDetailSheet({ day, open, onClose }: { day: HeatmapDay | null; open
                                                 {idx + 1}
                                             </span>
                                             <div className="flex flex-1 items-center gap-1.5 font-mono text-xs tabular-nums">
-                                                <span>{formatTime(b.started_at)}</span>
+                                                <span>{formatTime(b.started_at, tz)}</span>
                                                 <span className="text-muted-foreground/50">→</span>
                                                 <span className={b.ended_at ? '' : 'text-blue-500 dark:text-blue-400'}>
-                                                    {b.ended_at ? formatTime(b.ended_at) : 'Open'}
+                                                    {b.ended_at ? formatTime(b.ended_at, tz) : 'Open'}
                                                 </span>
                                             </div>
                                             <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-[11px] tabular-nums text-muted-foreground">
@@ -461,8 +464,8 @@ function ApplyLeaveSheet({ open, onClose }: { open: boolean; onClose: () => void
 
 // ── ClockPanel ────────────────────────────────────────────────────────────────
 
-function ClockPanel({ currentShift, settings, canClockIn, ipAllowed }: {
-    currentShift: AttendanceShift | null; settings: AttendanceSettings; canClockIn: boolean; ipAllowed: boolean;
+function ClockPanel({ currentShift, settings, canClockIn, ipAllowed, tz }: {
+    currentShift: AttendanceShift | null; settings: AttendanceSettings; canClockIn: boolean; ipAllowed: boolean; tz: string;
 }) {
     const clockInForm    = useForm({});
     const clockOutForm   = useForm({});
@@ -508,11 +511,11 @@ function ClockPanel({ currentShift, settings, canClockIn, ipAllowed }: {
                 <CardContent className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
                     <div>
                         <p className="text-muted-foreground text-xs">Clocked in</p>
-                        <p className="font-mono font-medium">{currentShift.clocked_in_at ? formatTime(currentShift.clocked_in_at) : '—'}</p>
+                        <p className="font-mono font-medium">{currentShift.clocked_in_at ? formatTime(currentShift.clocked_in_at, tz) : '—'}</p>
                     </div>
                     <div>
                         <p className="text-muted-foreground text-xs">Clocked out</p>
-                        <p className="font-mono font-medium">{formatTime(currentShift.clocked_out_at)}</p>
+                        <p className="font-mono font-medium">{formatTime(currentShift.clocked_out_at, tz)}</p>
                     </div>
                     <div>
                         <p className="text-muted-foreground text-xs">Worked</p>
@@ -553,7 +556,7 @@ function ClockPanel({ currentShift, settings, canClockIn, ipAllowed }: {
             <CardContent className="flex flex-col items-center gap-4 py-2">
                 <div className="text-center">
                     <p className="text-muted-foreground mb-1 text-xs">
-                        Clocked in at {currentShift.clocked_in_at ? formatTime(currentShift.clocked_in_at) : ''}
+                        Clocked in at {currentShift.clocked_in_at ? formatTime(currentShift.clocked_in_at, tz) : ''}
                     </p>
                     <LiveTimer clockedInAt={currentShift.clocked_in_at!} totalBreakSeconds={currentShift.total_break_seconds} />
                     {currentShift.breaks.length > 0 && (
@@ -690,6 +693,7 @@ function ChecklistNotes({ initialItems }: { initialItems: ChecklistItem[] }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AttendancePage({ heatmapDays, currentShift, settings, canClockIn, ipAllowed, year, month, todayNote, leaveRequests }: Props) {
+    const tz = useAppTz();
     const [selectedDay, setSelectedDay]     = useState<HeatmapDay | null>(null);
     const [checkLeavesOpen, setCheckLeaves] = useState(false);
     const [applyLeaveOpen, setApplyLeave]   = useState(false);
@@ -721,7 +725,7 @@ export default function AttendancePage({ heatmapDays, currentShift, settings, ca
                 </div>
 
                 {/* Active shift / clock panel — always at top */}
-                <ClockPanel currentShift={currentShift} settings={settings} canClockIn={canClockIn} ipAllowed={ipAllowed} />
+                <ClockPanel currentShift={currentShift} settings={settings} canClockIn={canClockIn} ipAllowed={ipAllowed} tz={tz} />
 
                 {/* Calendar + Notes side by side */}
                 <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[360px_1fr]">
@@ -750,7 +754,7 @@ export default function AttendancePage({ heatmapDays, currentShift, settings, ca
                 </div>
             </div>
 
-            <ShiftDetailSheet day={selectedDay} open={selectedDay !== null} onClose={() => setSelectedDay(null)} />
+            <ShiftDetailSheet day={selectedDay} open={selectedDay !== null} onClose={() => setSelectedDay(null)} tz={tz} />
             <CheckLeavesSheet open={checkLeavesOpen} onClose={() => setCheckLeaves(false)} leaves={leaveRequests} />
             <ApplyLeaveSheet open={applyLeaveOpen} onClose={() => setApplyLeave(false)} />
         </AppLayout>
