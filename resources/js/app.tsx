@@ -10,7 +10,7 @@ declare global {
     const route: typeof routeFn;
 }
 
-const appName = 'Dispatch Core';
+const appName = 'Dispatch Uniship';
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,

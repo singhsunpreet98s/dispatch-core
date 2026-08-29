@@ -88,6 +88,8 @@ Route::middleware(['auth'])->group(function () {
             Route::get('attendance/admin/{user}', [AdminAttendanceController::class, 'show'])->name('attendance.admin.show');
             Route::get('attendance/system-info/{serialNumber}', [SystemInfoController::class, 'show'])->name('attendance.system-info');
             Route::post('attendance/exit-events/{exitEvent}/acknowledge', [AdminAttendanceController::class, 'acknowledgeExitEvent'])->name('attendance.exit-events.acknowledge');
+            Route::patch('attendance/breaks/{break}', [AdminAttendanceController::class, 'updateBreak'])->name('attendance.breaks.update');
+            Route::delete('attendance/breaks/{break}', [AdminAttendanceController::class, 'destroyBreak'])->name('attendance.breaks.destroy');
             Route::post('attendance/holidays', [AttendanceHolidayController::class, 'store'])->name('attendance.holidays.store');
             Route::delete('attendance/holidays/{holiday}', [AttendanceHolidayController::class, 'destroy'])->name('attendance.holidays.destroy');
             Route::patch('attendance/leave/{leave}/approve', [AdminLeaveController::class, 'approve'])->name('attendance.leave.approve');

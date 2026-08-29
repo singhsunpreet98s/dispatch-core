@@ -8,11 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
+import { FLAGS, useFeatureFlags } from '@/hooks/use-feature-flags';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Deferred, Head, useForm } from '@inertiajs/react';
-import { router } from '@inertiajs/react';
-import { FLAGS, useFeatureFlags } from '@/hooks/use-feature-flags';
+import { Deferred, Head, router, useForm } from '@inertiajs/react';
 import { Banknote, Check, ChevronsUpDown, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -186,7 +185,7 @@ export default function UsersIndex({ users }: Props) {
         },
         {
             key: 'sendgrid_contact_id',
-            header: 'SendGrid Contact ID',
+            header: 'Portal Contact ID',
             render: (u) =>
                 u.sendgrid_contact_id ? (
                     <span className="font-mono text-xs">{u.sendgrid_contact_id}</span>
@@ -199,10 +198,18 @@ export default function UsersIndex({ users }: Props) {
             header: 'MFA',
             render: (u) => {
                 if (u.two_factor_confirmed_at) {
-                    return <Badge variant="outline" className="border-green-500 text-green-600 text-xs">Enabled</Badge>;
+                    return (
+                        <Badge variant="outline" className="border-green-500 text-xs text-green-600">
+                            Enabled
+                        </Badge>
+                    );
                 }
                 if (u.mfa_required) {
-                    return <Badge variant="outline" className="border-amber-500 text-amber-600 text-xs">Required</Badge>;
+                    return (
+                        <Badge variant="outline" className="border-amber-500 text-xs text-amber-600">
+                            Required
+                        </Badge>
+                    );
                 }
                 return <span className="text-muted-foreground text-xs">Not set up</span>;
             },
@@ -223,12 +230,7 @@ export default function UsersIndex({ users }: Props) {
                         <Pencil className="h-4 w-4" />
                     </Button>
                     {salaryEnabled && u.role !== 'admin' && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => router.visit(route('users.salary.show', u.id))}
-                            title="Manage Salary"
-                        >
+                        <Button variant="ghost" size="icon" onClick={() => router.visit(route('users.salary.show', u.id))} title="Manage Salary">
                             <Banknote className="h-4 w-4" />
                         </Button>
                     )}
@@ -252,7 +254,7 @@ export default function UsersIndex({ users }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Users" />
 
-            <div className="flex flex-1 flex-col min-h-0 gap-6 p-6">
+            <div className="flex min-h-0 flex-1 flex-col gap-6 p-6">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-semibold">Users</h1>
@@ -264,13 +266,11 @@ export default function UsersIndex({ users }: Props) {
                     </Button>
                 </div>
 
-                <Card className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
                     <CardHeader className="shrink-0">
-                        <CardTitle className="text-base font-semibold">
-                            All Users {users?.total !== undefined && `(${users.total})`}
-                        </CardTitle>
+                        <CardTitle className="text-base font-semibold">All Users {users?.total !== undefined && `(${users.total})`}</CardTitle>
                     </CardHeader>
-                    <CardContent className="flex flex-col flex-1 min-h-0 p-0">
+                    <CardContent className="flex min-h-0 flex-1 flex-col p-0">
                         <Deferred data="users" fallback={<DataTableSkeleton columns={7} rows={10} />}>
                             <DataTable
                                 columns={columns}
@@ -387,7 +387,7 @@ export default function UsersIndex({ users }: Props) {
                         </div>
 
                         <div className="space-y-2">
-                            <Label>SendGrid Sender</Label>
+                            <Label>Portal Sender</Label>
                             <div className="relative">
                                 <Button
                                     type="button"
@@ -402,24 +402,31 @@ export default function UsersIndex({ users }: Props) {
                                         {sendersLoading
                                             ? 'Loading senders…'
                                             : form.data.sendgrid_contact_id
-                                            ? senders.find((s) => String(s.id) === form.data.sendgrid_contact_id)?.from_name ?? form.data.sendgrid_contact_id
-                                            : 'Select a sender…'}
+                                              ? (senders.find((s) => String(s.id) === form.data.sendgrid_contact_id)?.from_name ??
+                                                form.data.sendgrid_contact_id)
+                                              : 'Select a sender…'}
                                     </span>
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                                 {senderOpen && (
                                     <>
                                         <div className="fixed inset-0 z-40" onClick={() => setSenderOpen(false)} />
-                                        <div className="bg-popover text-popover-foreground absolute bottom-full left-0 right-0 z-50 mb-1 max-h-56 overflow-y-auto rounded-md border py-1 shadow-md">
+                                        <div className="bg-popover text-popover-foreground absolute right-0 bottom-full left-0 z-50 mb-1 max-h-56 overflow-y-auto rounded-md border py-1 shadow-md">
                                             {senders.length === 0 && (
                                                 <p className="text-muted-foreground p-3 text-center text-sm">No senders found.</p>
                                             )}
                                             <button
                                                 type="button"
                                                 className="hover:bg-accent flex w-full items-center gap-2 px-3 py-2 text-left text-sm"
-                                                onMouseDown={(e) => { e.preventDefault(); form.setData('sendgrid_contact_id', ''); setSenderOpen(false); }}
+                                                onMouseDown={(e) => {
+                                                    e.preventDefault();
+                                                    form.setData('sendgrid_contact_id', '');
+                                                    setSenderOpen(false);
+                                                }}
                                             >
-                                                <Check className={`h-4 w-4 shrink-0 ${!form.data.sendgrid_contact_id ? 'opacity-100' : 'opacity-0'}`} />
+                                                <Check
+                                                    className={`h-4 w-4 shrink-0 ${!form.data.sendgrid_contact_id ? 'opacity-100' : 'opacity-0'}`}
+                                                />
                                                 <span className="text-muted-foreground">None</span>
                                             </button>
                                             {senders.map((s) => (
@@ -427,9 +434,15 @@ export default function UsersIndex({ users }: Props) {
                                                     key={s.id}
                                                     type="button"
                                                     className="hover:bg-accent flex w-full items-center gap-2 px-3 py-2 text-left text-sm"
-                                                    onMouseDown={(e) => { e.preventDefault(); form.setData('sendgrid_contact_id', String(s.id)); setSenderOpen(false); }}
+                                                    onMouseDown={(e) => {
+                                                        e.preventDefault();
+                                                        form.setData('sendgrid_contact_id', String(s.id));
+                                                        setSenderOpen(false);
+                                                    }}
                                                 >
-                                                    <Check className={`h-4 w-4 shrink-0 ${String(s.id) === form.data.sendgrid_contact_id ? 'opacity-100' : 'opacity-0'}`} />
+                                                    <Check
+                                                        className={`h-4 w-4 shrink-0 ${String(s.id) === form.data.sendgrid_contact_id ? 'opacity-100' : 'opacity-0'}`}
+                                                    />
                                                     {s.from_name}
                                                 </button>
                                             ))}
@@ -444,7 +457,9 @@ export default function UsersIndex({ users }: Props) {
                             <div className="flex items-center justify-between rounded-lg border p-3">
                                 <div>
                                     <p className="text-sm font-medium">Require MFA</p>
-                                    <p className="text-muted-foreground text-xs">User must set up two-factor authentication before accessing the app.</p>
+                                    <p className="text-muted-foreground text-xs">
+                                        User must set up two-factor authentication before accessing the app.
+                                    </p>
                                 </div>
                                 <Switch
                                     checked={form.data.mfa_required as boolean}

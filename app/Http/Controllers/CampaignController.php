@@ -38,14 +38,14 @@ class CampaignController extends Controller
                 $q->where('user_id', $selectedUserId);
             }
 
-            $manualRows = $q->get()->map(fn ($c) => [
+            $manualRows = $q->get()->map(fn($c) => [
                 'id'             => 'manual-' . $c->id,
                 'db_id'          => $c->id,
                 'type'           => 'manual',
                 'name'           => $c->name,
                 'subject'        => $c->subject,
                 'status'         => $c->status,            // sending|sent|failed
-                'schedule_status'=> null,
+                'schedule_status' => null,
                 'template_title' => $c->template?->title,
                 'list_name'      => $c->emailList?->list_name,
                 'contact_count'  => $c->contact_count,
@@ -68,14 +68,14 @@ class CampaignController extends Controller
                 $q->where('user_id', $selectedUserId);
             }
 
-            $autoRows = $q->get()->map(fn ($s) => [
+            $autoRows = $q->get()->map(fn($s) => [
                 'id'             => 'automation-' . $s->id,
                 'db_id'          => $s->id,
                 'type'           => 'automation',
                 'name'           => $s->name,
                 'subject'        => $s->template?->subject ?? '—',
                 'status'         => null,
-                'schedule_status'=> $s->status,            // active|paused
+                'schedule_status' => $s->status,            // active|paused
                 'template_title' => $s->template?->title,
                 'list_name'      => $s->emailList?->list_name,
                 'contact_count'  => $s->emailList?->email_count ?? 0,
@@ -84,7 +84,7 @@ class CampaignController extends Controller
                 'user'           => $s->user ? ['name' => $s->user->name, 'email' => $s->user->email] : null,
                 'error_message'  => null,
                 'sendgrid_id'    => $s->sendgrid_singlesend_id,
-                'triggers'       => $s->triggers->map(fn ($t) => [
+                'triggers'       => $s->triggers->map(fn($t) => [
                     'weekday' => $t->weekday,
                     'time'    => $t->time,
                 ])->values(),
@@ -104,11 +104,11 @@ class CampaignController extends Controller
         );
 
         // ── Data for the send sheet ───────────────────────────────────────────
-        $templates = EmailTemplate::when(! $isAdmin, fn ($q) => $q->where('user_id', $authUser->id))
+        $templates = EmailTemplate::when(! $isAdmin, fn($q) => $q->where('user_id', $authUser->id))
             ->orderBy('title')
             ->get(['id', 'title', 'subject', 'body']);
 
-        $emailLists = EmailList::when(! $isAdmin, fn ($q) => $q->where('user_id', $authUser->id))
+        $emailLists = EmailList::when(! $isAdmin, fn($q) => $q->where('user_id', $authUser->id))
             ->whereNotNull('sendgrid_list_id')
             ->orderBy('list_name')
             ->get(['id', 'list_name', 'email_count', 'sendgrid_list_id']);
@@ -118,7 +118,7 @@ class CampaignController extends Controller
             : collect();
 
         return Inertia::render('campaigns/index', [
-            'campaigns'  => Inertia::defer(fn () => $paginated),
+            'campaigns'  => Inertia::defer(fn() => $paginated),
             'templates'  => $templates,
             'emailLists' => $emailLists,
             'isAdmin'    => $isAdmin,
@@ -143,11 +143,11 @@ class CampaignController extends Controller
         $list     = EmailList::findOrFail($validated['email_list_id']);
 
         if (! $user->sendgrid_contact_id) {
-            return back()->with('error', 'Your account does not have a SendGrid Sender ID configured. Ask an admin to set your Sender ID in the Users page before sending campaigns.');
+            return back()->with('error', 'Your account does not have a Portal Sender ID configured. Ask an admin to set your Sender ID in the Users page before sending campaigns.');
         }
 
         if (! $list->sendgrid_list_id) {
-            return back()->with('error', 'The selected email list has not been synced to SendGrid. Please re-upload the list first.');
+            return back()->with('error', 'The selected email list has not been synced to Portal. Please re-upload the list first.');
         }
 
         $campaign = Campaign::create([

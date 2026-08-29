@@ -108,7 +108,10 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
         if (!deletingFile) return;
         setDeleteError(null);
         deleteForm.delete(route('email-lists.destroy', deletingFile.id), {
-            onSuccess: () => { setDeletingFile(null); setDeleteError(null); },
+            onSuccess: () => {
+                setDeletingFile(null);
+                setDeleteError(null);
+            },
         });
     }
 
@@ -154,7 +157,7 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
         },
         {
             key: 'sendgrid_list_id',
-            header: 'SendGrid',
+            header: 'Portal',
             render: (f) =>
                 f.sendgrid_list_id ? (
                     <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
@@ -219,7 +222,7 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-semibold">Email Lists</h1>
-                        <p className="text-muted-foreground text-sm">Upload Excel or CSV files — contacts are synced to SendGrid automatically</p>
+                        <p className="text-muted-foreground text-sm">Upload Excel or CSV files — contacts are synced to Portal automatically</p>
                     </div>
                     <Button
                         size="sm"
@@ -261,8 +264,7 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
                     <SheetHeader>
                         <SheetTitle>Upload Email List</SheetTitle>
                         <SheetDescription>
-                            Name your list, then upload a .xlsx, .xls, or .csv file. Contacts are synced to a new SendGrid marketing list
-                            automatically.
+                            Name your list, then upload a .xlsx, .xls, or .csv file. Contacts are synced to a new Portal marketing list automatically.
                         </SheetDescription>
                     </SheetHeader>
 
@@ -315,10 +317,10 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
                                 </li>
                                 <li>
                                     Include a <span className="font-mono">name</span>, <span className="font-mono">first_name</span>, or{' '}
-                                    <span className="font-mono">last_name</span> column to sync names to SendGrid
+                                    <span className="font-mono">last_name</span> column to sync names to Portal
                                 </li>
                                 <li>Duplicate emails within the same file are ignored</li>
-                                <li>Contacts are created in a new SendGrid marketing list with the name you provide</li>
+                                <li>Contacts are created in a new Portal marketing list with the name you provide</li>
                             </ul>
                         </div>
                     </form>
@@ -332,29 +334,38 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
                             disabled={!uploadForm.data.file || !uploadForm.data.list_name.trim() || uploadForm.processing}
                             onClick={handleUpload}
                         >
-                            {uploadForm.processing ? 'Uploading & Syncing…' : 'Upload & Sync to SendGrid'}
+                            {uploadForm.processing ? 'Uploading & Syncing…' : 'Upload & Sync to Portal'}
                         </Button>
                     </SheetFooter>
                 </SheetContent>
             </Sheet>
 
             {/* Delete confirmation */}
-            <Dialog open={!!deletingFile} onOpenChange={(open) => { if (!open) { setDeletingFile(null); setDeleteError(null); } }}>
+            <Dialog
+                open={!!deletingFile}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setDeletingFile(null);
+                        setDeleteError(null);
+                    }
+                }}
+            >
                 <DialogContent className="sm:max-w-sm">
                     <DialogHeader>
                         <DialogTitle>Delete List</DialogTitle>
                     </DialogHeader>
                     <p className="text-muted-foreground text-sm">
-                        Are you sure you want to delete{' '}
-                        <span className="text-foreground font-medium">"{deletingFile?.list_name}"</span>?
-                        This will permanently remove the list from{' '}
+                        Are you sure you want to delete <span className="text-foreground font-medium">"{deletingFile?.list_name}"</span>? This will
+                        permanently remove the list from{' '}
                         {deletingFile?.sendgrid_list_id ? (
-                            <><span className="text-foreground font-medium">SendGrid</span> and the local database</>
+                            <>
+                                <span className="text-foreground font-medium">Portal</span> and the local database
+                            </>
                         ) : (
                             <>the local database</>
-                        )}, along with all{' '}
-                        <span className="text-foreground font-medium">{deletingFile?.email_count.toLocaleString()}</span>{' '}
-                        contact(s). This action cannot be undone.
+                        )}
+                        , along with all <span className="text-foreground font-medium">{deletingFile?.email_count.toLocaleString()}</span> contact(s).
+                        This action cannot be undone.
                     </p>
                     {deleteError && (
                         <div className="border-destructive/30 bg-destructive/10 flex items-start gap-2 rounded-md border px-3 py-2.5">
@@ -363,7 +374,13 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
                         </div>
                     )}
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => { setDeletingFile(null); setDeleteError(null); }}>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setDeletingFile(null);
+                                setDeleteError(null);
+                            }}
+                        >
                             Cancel
                         </Button>
                         <Button variant="destructive" onClick={handleDelete} disabled={deleteForm.processing}>

@@ -337,7 +337,7 @@ export default function CampaignsIndex({ campaigns, templates, emailLists, isAdm
                             <p className="font-medium">Before you can send a manual campaign:</p>
                             <ul className="text-muted-foreground mt-1 list-disc space-y-0.5 pl-4">
                                 {templates.length === 0 && <li>Create at least one email template</li>}
-                                {emailLists.length === 0 && <li>Upload and sync at least one email list to SendGrid</li>}
+                                {emailLists.length === 0 && <li>Upload and sync at least one email list to Portal</li>}
                             </ul>
                         </div>
                     </div>
@@ -420,7 +420,7 @@ export default function CampaignsIndex({ campaigns, templates, emailLists, isAdm
                 <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
                     <SheetHeader>
                         <SheetTitle>New Campaign</SheetTitle>
-                        <SheetDescription>Choose a template and a contact list. The email is dispatched to SendGrid immediately.</SheetDescription>
+                        <SheetDescription>Choose a template and a contact list. The email is dispatched to Portal immediately.</SheetDescription>
                     </SheetHeader>
 
                     <form onSubmit={handleSend} className="flex flex-1 flex-col gap-5 overflow-y-auto px-1 py-6">

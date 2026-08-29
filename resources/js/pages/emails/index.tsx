@@ -201,7 +201,7 @@ export default function EmailsIndex({ emails, filters, isAdmin, users }: Props) 
                         Email Activity
                     </h1>
                     <p className="text-muted-foreground text-sm">
-                        {isTodayOnly ? 'Today · Live from SendGrid' : `${fmtLabel(filters.date_from)} – ${fmtLabel(filters.date_to)} · SendGrid`}
+                        {isTodayOnly ? 'Today · Live from Portal' : `${fmtLabel(filters.date_from)} – ${fmtLabel(filters.date_to)} · Portal`}
                         {isAdmin && filters.user_id && users.find((u) => u.id === filters.user_id) && (
                             <span className="ml-1.5 inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
                                 · {users.find((u) => u.id === filters.user_id)!.name}
@@ -346,7 +346,7 @@ export default function EmailsIndex({ emails, filters, isAdmin, users }: Props) 
                         </SheetTitle>
                     </SheetHeader>
 
-                    <div className="flex flex-1 flex-col gap-5 overflow-y-auto py-6">
+                    <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-1 py-6">
                         {/* Delivered to */}
                         <div className="space-y-2">
                             <Label htmlFor="filter-to-email">Delivered to</Label>

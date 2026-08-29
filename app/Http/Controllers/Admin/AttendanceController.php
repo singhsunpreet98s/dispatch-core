@@ -11,6 +11,7 @@ use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -77,9 +78,13 @@ class AttendanceController extends Controller
             /** @var AttendanceShift|null $shift */
             $shift = $shifts->get($user->id);
 
+            $systemInfoCached = $user->system_id
+                ? Cache::has("system_info:{$user->system_id}")
+                : null;
+
             if (! $shift) {
                 return [
-                    'user'   => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'system_id' => $user->system_id],
+                    'user'   => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'system_id' => $user->system_id, 'system_info_cached' => $systemInfoCached],
                     'status' => 'absent',
                     'shift'  => null,
                 ];
@@ -99,7 +104,7 @@ class AttendanceController extends Controller
                 ->sum(fn (AttendanceBreak $b) => $b->started_at->diffInSeconds($b->ended_at));
 
             return [
-                'user'   => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'system_id' => $user->system_id],
+                'user'   => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'system_id' => $user->system_id, 'system_info_cached' => $systemInfoCached],
                 'status' => $status,
                 'shift'  => [
                     'clocked_in_at'              => $shift->clocked_in_at?->toIso8601String(),
@@ -155,6 +160,34 @@ class AttendanceController extends Controller
     public function acknowledgeExitEvent(AppExitEvent $exitEvent): RedirectResponse
     {
         $exitEvent->update(['acknowledged_at' => now()]);
+
+        return back();
+    }
+
+    public function updateBreak(Request $request, AttendanceBreak $break): RedirectResponse
+    {
+        $data = $request->validate([
+            'started_at' => ['required', 'date_format:H:i:s'],
+            'ended_at'   => ['nullable', 'date_format:H:i:s', 'after:started_at'],
+        ]);
+
+        $shift = $break->shift;
+        $date  = $shift->date->format('Y-m-d');
+        $tz    = AppTimezone::get();
+
+        $break->update([
+            'started_at' => \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', "$date {$data['started_at']}", $tz)->utc(),
+            'ended_at'   => isset($data['ended_at'])
+                ? \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', "$date {$data['ended_at']}", $tz)->utc()
+                : null,
+        ]);
+
+        return back();
+    }
+
+    public function destroyBreak(AttendanceBreak $break): RedirectResponse
+    {
+        $break->delete();
 
         return back();
     }

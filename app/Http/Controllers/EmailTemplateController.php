@@ -18,7 +18,7 @@ class EmailTemplateController extends Controller
             : EmailTemplate::where('user_id', $user->id)->orderBy('created_at', 'desc');
 
         return Inertia::render('templates/index', [
-            'templates' => Inertia::defer(fn () => $query->paginate(15, ['id', 'user_id', 'title', 'subject', 'created_at', 'updated_at'])),
+            'templates' => Inertia::defer(fn() => $query->paginate(15, ['id', 'user_id', 'title', 'subject', 'created_at', 'updated_at'])),
             'isAdmin'   => $user->isAdmin(),
         ]);
     }
@@ -27,7 +27,7 @@ class EmailTemplateController extends Controller
     {
         if (! auth()->user()->sendgrid_contact_id) {
             return redirect()->route('templates.index')
-                ->with('error', 'Your SendGrid Sender ID is not configured. Ask an admin to set it up before creating templates.');
+                ->with('error', 'Your Portal Sender ID is not configured. Ask an admin to set it up before creating templates.');
         }
 
         return Inertia::render('templates/create');
@@ -36,7 +36,7 @@ class EmailTemplateController extends Controller
     public function store(StoreEmailTemplateRequest $request)
     {
         if (! auth()->user()->sendgrid_contact_id) {
-            return back()->with('error', 'Your SendGrid Sender ID is not configured. Ask an admin to set it up before creating templates.');
+            return back()->with('error', 'Your Portal Sender ID is not configured. Ask an admin to set it up before creating templates.');
         }
 
         EmailTemplate::create([

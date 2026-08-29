@@ -47,7 +47,7 @@ class SystemSettingController extends Controller
                 'geofences'         => Geofence::orderBy('name')->get(['id', 'name', 'lookup']),
                 'geofence_ids'      => Geofence::where('lookup', GeofenceLookup::Attendance)->pluck('id'),
             ],
-            'holidays'           => AttendanceHoliday::orderBy('date')->get()->map(fn ($h) => [
+            'holidays'           => AttendanceHoliday::orderBy('date')->get()->map(fn($h) => [
                 'id'   => $h->id,
                 'date' => $h->date->format('Y-m-d'),
                 'name' => $h->name,
@@ -187,7 +187,7 @@ class SystemSettingController extends Controller
             ],
             'dispatch_campaigns' => [
                 'label'        => 'campaigns:dispatch-queue',
-                'description'  => 'Picks pending queue items and sends them via SendGrid.',
+                'description'  => 'Picks pending queue items and sends them via Portal.',
                 'last_run'     => $dispatchLastRun,
                 'is_running'   => $dispatchLastRun && Carbon::parse($dispatchLastRun)->isAfter($staleCutoff),
             ],

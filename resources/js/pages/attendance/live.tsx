@@ -2,7 +2,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { AlertTriangle, Clock, Coffee, HardDrive, LogIn, LogOut, MapPin, Monitor, Wifi, X } from 'lucide-react';
+import { AlertTriangle, Clock, Coffee, HardDrive, Laptop, LogIn, LogOut, MapPin, Monitor, Wifi, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface BreakEntry {
@@ -42,7 +42,7 @@ interface SystemInfo {
 }
 
 interface LiveUserData {
-    user: { id: number; name: string; email: string; system_id: string | null };
+    user: { id: number; name: string; email: string; system_id: string | null; system_info_cached: boolean | null };
     status: 'present' | 'on_break' | 'clocked_out' | 'absent';
     shift: ShiftData | null;
 }
@@ -528,6 +528,14 @@ export default function AttendanceLive({ liveData, today, appTimezone, clockInEn
                                                     >
                                                         <MapPin className="h-2.5 w-2.5" />
                                                         <X className="h-2 w-2" />
+                                                    </span>
+                                                )}
+                                                {item.user.system_id && item.user.system_info_cached === false && (
+                                                    <span
+                                                        className="flex shrink-0 items-center rounded-full border border-red-200 bg-red-50 px-1.5 py-1 text-[9px] font-semibold text-red-600 dark:border-red-500/25 dark:bg-red-500/10 dark:text-red-400"
+                                                        title="No system data — laptop offline or not reporting"
+                                                    >
+                                                        <Laptop className="h-2.5 w-2.5" />
                                                     </span>
                                                 )}
                                             </div>

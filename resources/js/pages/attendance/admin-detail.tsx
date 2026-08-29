@@ -1,12 +1,15 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { formatInTz } from '@/lib/tz';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, usePage } from '@inertiajs/react';
-import { ChevronDown, ChevronRight, LogIn, LogOut, MapPin, X } from 'lucide-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { ChevronDown, ChevronRight, LogIn, LogOut, MapPin, Pencil, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
@@ -71,6 +74,83 @@ function secToHours(s: number): number {
 
 const ACCENT = 'var(--primary)';
 
+// ── Edit Break Dialog ─────────────────────────────────────────────────────────
+
+interface EditBreakDialogProps {
+    breakRow: BreakRow | null;
+    open: boolean;
+    onClose: () => void;
+}
+
+function EditBreakDialog({ breakRow, open, onClose }: EditBreakDialogProps) {
+    const [startedAt, setStartedAt] = useState('');
+    const [endedAt, setEndedAt] = useState('');
+    const [busy, setBusy] = useState(false);
+
+    // Sync fields when a break is opened for editing
+    function handleOpenChange(isOpen: boolean) {
+        if (isOpen && breakRow) {
+            setStartedAt(breakRow.started_at ?? '');
+            setEndedAt(breakRow.ended_at ?? '');
+        }
+        if (!isOpen) onClose();
+    }
+
+    function toHis(val: string): string {
+        // browser may return HH:MM or HH:MM:SS
+        return val.length === 5 ? val + ':00' : val;
+    }
+
+    function submit() {
+        if (!breakRow) return;
+        setBusy(true);
+        router.patch(
+            route('attendance.breaks.update', { break: breakRow.id }),
+            { started_at: toHis(startedAt), ended_at: endedAt ? toHis(endedAt) : null },
+            {
+                preserveScroll: true,
+                onFinish: () => { setBusy(false); onClose(); },
+            },
+        );
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+            <DialogContent className="sm:max-w-sm">
+                <DialogHeader>
+                    <DialogTitle>Edit Break</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-2">
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="break-start">Start time (HH:MM:SS)</Label>
+                        <Input
+                            id="break-start"
+                            type="time"
+                            step="1"
+                            value={startedAt}
+                            onChange={(e) => setStartedAt(e.target.value)}
+                        />
+                    </div>
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="break-end">End time — leave blank if open</Label>
+                        <Input
+                            id="break-end"
+                            type="time"
+                            step="1"
+                            value={endedAt}
+                            onChange={(e) => setEndedAt(e.target.value)}
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
+                    <Button onClick={submit} disabled={busy}>Save</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 // ── Custom tooltip ────────────────────────────────────────────────────────────
 
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
@@ -97,6 +177,12 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 export default function AttendanceAdminDetail({ user, shifts, dateFrom, dateTo }: Props) {
     const tz = ((usePage().props as { appTimezone?: string }).appTimezone) ?? 'UTC';
     const [expanded, setExpanded] = useState<Set<number>>(new Set());
+    const [editingBreak, setEditingBreak] = useState<BreakRow | null>(null);
+
+    function deleteBreak(b: BreakRow) {
+        if (!confirm('Delete this break?')) return;
+        router.delete(route('attendance.breaks.destroy', { break: b.id }), { preserveScroll: true });
+    }
 
     function toggleExpand(id: number) {
         setExpanded((prev) => {
@@ -127,6 +213,11 @@ export default function AttendanceAdminDetail({ user, shifts, dateFrom, dateTo }
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Attendance — ${user.name}`} />
+            <EditBreakDialog
+                breakRow={editingBreak}
+                open={editingBreak !== null}
+                onClose={() => setEditingBreak(null)}
+            />
 
             <div className="flex flex-1 flex-col gap-6 p-6">
                 {/* Header */}
@@ -304,7 +395,25 @@ export default function AttendanceAdminDetail({ user, shifts, dateFrom, dateTo }
                                                         <TableCell className="px-4 py-2 font-mono text-xs">
                                                             {b.duration_seconds != null ? fmtSeconds(b.duration_seconds) : '—'}
                                                         </TableCell>
-                                                        <TableCell colSpan={3} />
+                                                        <TableCell colSpan={2} />
+                                                        <TableCell className="px-4 py-2">
+                                                            <div className="flex items-center gap-1">
+                                                                <button
+                                                                    onClick={() => setEditingBreak(b)}
+                                                                    className="text-muted-foreground hover:text-foreground rounded p-0.5"
+                                                                    title="Edit break"
+                                                                >
+                                                                    <Pencil className="h-3.5 w-3.5" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => deleteBreak(b)}
+                                                                    className="text-muted-foreground hover:text-destructive rounded p-0.5"
+                                                                    title="Delete break"
+                                                                >
+                                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                                </button>
+                                                            </div>
+                                                        </TableCell>
                                                     </TableRow>
                                                 ))}
                                             </>
