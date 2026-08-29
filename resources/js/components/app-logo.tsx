@@ -25,7 +25,7 @@ export default function AppLogo() {
                 </div>
             )}
             <div className="ml-1.5 grid flex-1 text-left leading-none">
-                <span className="truncate text-sm font-bold tracking-tight">Dispatch Core</span>
+                <span className="truncate text-sm font-bold tracking-tight">Dispatch Uniship</span>
             </div>
         </>
     );

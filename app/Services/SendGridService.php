@@ -233,11 +233,7 @@ class SendGridService
             ]);
 
         if ($response->failed()) {
-            dd([
-                'status' => $response->status(),
-                'error' => $response->json(),
-                'body' => $response->body(),
-            ]);
+            return [];
         }
         if (! $response->successful()) {
             return [];

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCarrierPacketRequest;
+use App\Jobs\SendCarrierPacketInvitation;
 use App\Models\CarrierPacket;
 use App\Services\MotusService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -42,11 +43,13 @@ class CarrierPacketController extends Controller
 
     public function store(StoreCarrierPacketRequest $request)
     {
-        CarrierPacket::create([
+        $packet = CarrierPacket::create([
             ...$request->validated(),
             'user_id' => auth()->id(),
             'uuid'    => (string) Str::uuid(),
         ]);
+
+        SendCarrierPacketInvitation::dispatch($packet, auth()->user()->name);
 
         return back()->with('success', 'Carrier packet created successfully.');
     }

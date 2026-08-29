@@ -10,7 +10,7 @@ class CarrierPacket extends Model
 {
     protected $fillable = [
         'user_id', 'uuid', 'email', 'mc_number', 'company_name',
-        'status', 'full_name', 'address', 'phone', 'signature_path',
+        'status', 'email_status', 'full_name', 'address', 'phone', 'signature_path',
         'opened_at', 'submitted_at', 'signed_at',
     ];
 

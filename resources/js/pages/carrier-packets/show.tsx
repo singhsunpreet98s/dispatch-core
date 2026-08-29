@@ -5,12 +5,13 @@ import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Check, Copy, Download, FileText, Package, User } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Download, FileText, Mail, Package, User } from 'lucide-react';
 import { useState } from 'react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type PacketStatus = 'pending' | 'opened' | 'submitted' | 'signed';
+type EmailStatus = 'pending' | 'sent' | 'failed';
 
 interface Document {
     id: number;
@@ -26,6 +27,7 @@ interface CarrierPacket {
     mc_number: string;
     company_name: string;
     status: PacketStatus;
+    email_status: EmailStatus;
     full_name: string | null;
     address: string | null;
     phone: string | null;
@@ -64,6 +66,34 @@ function StatusBadge({ status }: { status: PacketStatus }) {
     const cfg = STATUS_CONFIG[status];
     return (
         <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${cfg.className}`}>
+            {cfg.label}
+        </span>
+    );
+}
+
+const EMAIL_STATUS_CONFIG: Record<EmailStatus, { label: string; dot: string; className: string }> = {
+    pending: {
+        label: 'Pending',
+        dot: 'bg-zinc-400',
+        className: 'border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400',
+    },
+    sent: {
+        label: 'Sent',
+        dot: 'bg-emerald-500',
+        className: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300',
+    },
+    failed: {
+        label: 'Failed',
+        dot: 'bg-red-500',
+        className: 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300',
+    },
+};
+
+function EmailStatusBadge({ status }: { status: EmailStatus }) {
+    const cfg = EMAIL_STATUS_CONFIG[status];
+    return (
+        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${cfg.className}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
             {cfg.label}
         </span>
     );
@@ -113,6 +143,10 @@ export default function CarrierPacketShow({ packet, isAdmin }: Props) {
                         <div className="flex flex-wrap items-center gap-2">
                             <h1 className="text-xl font-semibold">{packet.company_name}</h1>
                             <StatusBadge status={packet.status} />
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Mail className="h-3 w-3" />
+                                <EmailStatusBadge status={packet.email_status} />
+                            </span>
                         </div>
                         <p className="mt-1 text-sm text-muted-foreground">MC# {packet.mc_number} · {packet.email}</p>
                     </div>
@@ -159,6 +193,20 @@ export default function CarrierPacketShow({ packet, isAdmin }: Props) {
                                     </div>
                                 </div>
                             ))}
+
+                            {/* Invitation email row */}
+                            <div className="flex items-start gap-3 pt-1">
+                                <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-border bg-muted">
+                                    <Mail className="h-2.5 w-2.5 text-muted-foreground" />
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <p className="text-sm text-muted-foreground">Invitation email</p>
+                                    <EmailStatusBadge status={packet.email_status} />
+                                    {packet.email_status === 'failed' && (
+                                        <span className="text-xs text-red-500">— delivery failed after retries</span>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>

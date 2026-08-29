@@ -10,7 +10,7 @@ import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem, type DashboardUser } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { Inbox, Loader2, MailOpen, SlidersHorizontal, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Inbox, Info, Loader2, MailOpen, SlidersHorizontal, X } from 'lucide-react';
 import { useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 
@@ -113,6 +113,8 @@ function fmtLabel(date: string) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+const PER_PAGE = 25;
+
 export default function EmailsIndex({ emails, filters, isAdmin, users }: Props) {
     const today = new Date().toISOString().slice(0, 10);
 
@@ -127,6 +129,9 @@ export default function EmailsIndex({ emails, filters, isAdmin, users }: Props) 
     const [draftFromEmail, setDraftFromEmail] = useState(filters.from_email ?? '');
     const [draftUserId, setDraftUserId] = useState<string>(filters.user_id ? String(filters.user_id) : 'all');
 
+    // Client-side pagination
+    const [currentPage, setCurrentPage] = useState(1);
+
     function navigate(patch: {
         date_from?: string;
         date_to?: string;
@@ -135,6 +140,7 @@ export default function EmailsIndex({ emails, filters, isAdmin, users }: Props) 
         from_email?: string;
         user_id?: number | null;
     }) {
+        setCurrentPage(1);
         const next = { ...filters, ...patch };
         const params: Record<string, string | number> = {
             date_from: next.date_from,
@@ -146,6 +152,13 @@ export default function EmailsIndex({ emails, filters, isAdmin, users }: Props) 
         if (next.user_id != null) params.user_id = next.user_id;
         router.get(route('emails.index'), params, { preserveState: false });
     }
+
+    const totalEmails = emails?.length ?? 0;
+    const lastPage = Math.max(1, Math.ceil(totalEmails / PER_PAGE));
+    const safePage = Math.min(currentPage, lastPage);
+    const pageFrom = totalEmails === 0 ? 0 : (safePage - 1) * PER_PAGE + 1;
+    const pageTo = Math.min(safePage * PER_PAGE, totalEmails);
+    const pagedEmails = emails?.slice(pageFrom - 1, pageTo) ?? [];
 
     function handleRangeChange(r: DateRange | undefined) {
         setRange(r);
@@ -193,7 +206,7 @@ export default function EmailsIndex({ emails, filters, isAdmin, users }: Props) 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Emails" />
 
-            <div className="flex flex-1 flex-col gap-6 p-6">
+            <div className="flex min-h-0 flex-1 flex-col gap-6 p-6">
                 {/* Header */}
                 <div>
                     <h1 className="flex items-center gap-2 text-xl font-semibold">
@@ -272,9 +285,15 @@ export default function EmailsIndex({ emails, filters, isAdmin, users }: Props) 
                     </div>
                 </div>
 
+                {/* Info notice */}
+                <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                    <Info className="h-3.5 w-3.5 shrink-0" />
+                    Only the 200 most recent records are shown for the selected filters.
+                </div>
+
                 {/* Table */}
-                <Card>
-                    <CardHeader className="pb-3">
+                <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                    <CardHeader className="shrink-0 pb-3">
                         <CardTitle className="text-base font-semibold">
                             {emails === undefined
                                 ? 'Loading…'
@@ -283,7 +302,7 @@ export default function EmailsIndex({ emails, filters, isAdmin, users }: Props) 
                                   : `${emails.length.toLocaleString()} email${emails.length === 1 ? '' : 's'}`}
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-0">
+                    <CardContent className="flex min-h-0 flex-1 flex-col p-0">
                         {emails === undefined ? (
                             <div className="text-muted-foreground flex flex-col items-center gap-2 py-16">
                                 <Loader2 className="h-10 w-10 animate-spin opacity-40" />
@@ -295,41 +314,101 @@ export default function EmailsIndex({ emails, filters, isAdmin, users }: Props) 
                                 <p className="text-sm">No email activity for the selected period.</p>
                             </div>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full min-w-[720px] text-sm">
-                                    <thead>
-                                        <tr className="bg-muted/40 text-muted-foreground border-b text-left text-xs font-medium tracking-wider uppercase">
-                                            <th className="px-6 py-3">To</th>
-                                            <th className="px-6 py-3">From</th>
-                                            <th className="px-6 py-3">Subject</th>
-                                            <th className="px-6 py-3">Status</th>
-                                            <th className="px-6 py-3 text-right">Opens</th>
-                                            <th className="px-6 py-3 text-right">Clicks</th>
-                                            <th className="px-6 py-3">Last Event</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y">
-                                        {emails.map((email, i) => (
-                                            <tr key={email.msg_id || i} className="hover:bg-muted/30 transition-colors">
-                                                <td className="max-w-[200px] truncate px-6 py-3 font-medium">{email.to_email}</td>
-                                                <td className="text-muted-foreground max-w-[180px] truncate px-6 py-3">{email.from_email}</td>
-                                                <td className="max-w-[220px] truncate px-6 py-3">
-                                                    {email.subject || <span className="text-muted-foreground italic">(no subject)</span>}
-                                                </td>
-                                                <td className="px-6 py-3">
-                                                    <Badge variant={STATUS_VARIANTS[email.status] ?? 'outline'}>
-                                                        {STATUS_LABELS[email.status] ?? email.status}
-                                                    </Badge>
-                                                </td>
-                                                <td className="text-muted-foreground px-6 py-3 text-right tabular-nums">{email.opens_count ?? 0}</td>
-                                                <td className="text-muted-foreground px-6 py-3 text-right tabular-nums">{email.clicks_count ?? 0}</td>
-                                                <td className="text-muted-foreground px-6 py-3 whitespace-nowrap">
-                                                    {formatDateTime(email.last_event_time)}
-                                                </td>
+                            <div className="flex min-h-0 flex-1 flex-col">
+                                <div className="min-h-0 flex-1 overflow-auto">
+                                    <table className="w-full min-w-[720px] text-sm">
+                                        <thead className="sticky top-0 z-10">
+                                            <tr className="bg-card text-muted-foreground border-b text-left text-xs font-medium tracking-wider uppercase">
+                                                <th className="px-6 py-3">To</th>
+                                                <th className="px-6 py-3">From</th>
+                                                <th className="px-6 py-3">Subject</th>
+                                                <th className="px-6 py-3">Status</th>
+                                                <th className="px-6 py-3 text-right">Opens</th>
+                                                <th className="px-6 py-3 text-right">Clicks</th>
+                                                <th className="px-6 py-3">Last Event</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {pagedEmails.map((email, i) => (
+                                                <tr key={email.msg_id || i} className="hover:bg-muted/30 transition-colors">
+                                                    <td className="max-w-[200px] truncate px-6 py-3 font-medium">{email.to_email}</td>
+                                                    <td className="text-muted-foreground max-w-[180px] truncate px-6 py-3">{email.from_email}</td>
+                                                    <td className="max-w-[220px] truncate px-6 py-3">
+                                                        {email.subject || <span className="text-muted-foreground italic">(no subject)</span>}
+                                                    </td>
+                                                    <td className="px-6 py-3">
+                                                        <Badge variant={STATUS_VARIANTS[email.status] ?? 'outline'}>
+                                                            {STATUS_LABELS[email.status] ?? email.status}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="text-muted-foreground px-6 py-3 text-right tabular-nums">
+                                                        {email.opens_count ?? 0}
+                                                    </td>
+                                                    <td className="text-muted-foreground px-6 py-3 text-right tabular-nums">
+                                                        {email.clicks_count ?? 0}
+                                                    </td>
+                                                    <td className="text-muted-foreground px-6 py-3 whitespace-nowrap">
+                                                        {formatDateTime(email.last_event_time)}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Pagination bar */}
+                                <div className="flex shrink-0 items-center justify-between border-t px-6 py-3">
+                                    <p className="text-muted-foreground text-xs">
+                                        {totalEmails === 0 ? 'No results' : `Showing ${pageFrom}–${pageTo} of ${totalEmails}`}
+                                    </p>
+                                    {lastPage > 1 && (
+                                        <div className="flex items-center gap-1">
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-7 w-7"
+                                                disabled={safePage === 1}
+                                                onClick={() => setCurrentPage(1)}
+                                                aria-label="First page"
+                                            >
+                                                <ChevronsLeft className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-7 w-7"
+                                                disabled={safePage === 1}
+                                                onClick={() => setCurrentPage((p) => p - 1)}
+                                                aria-label="Previous page"
+                                            >
+                                                <ChevronLeft className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <span className="text-muted-foreground min-w-[7rem] text-center text-xs">
+                                                Page {safePage} of {lastPage}
+                                            </span>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-7 w-7"
+                                                disabled={safePage === lastPage}
+                                                onClick={() => setCurrentPage((p) => p + 1)}
+                                                aria-label="Next page"
+                                            >
+                                                <ChevronRight className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-7 w-7"
+                                                disabled={safePage === lastPage}
+                                                onClick={() => setCurrentPage(lastPage)}
+                                                aria-label="Last page"
+                                            >
+                                                <ChevronsRight className="h-3.5 w-3.5" />
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </CardContent>

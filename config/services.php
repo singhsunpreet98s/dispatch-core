@@ -44,4 +44,11 @@ return [
         'key' => env('GEMINI_API_KEY'),
     ],
 
+    'microsoft_graph' => [
+        'tenant_id'     => env('MICROSOFT_GRAPH_TENANT_ID'),
+        'client_id'     => env('MICROSOFT_GRAPH_CLIENT_ID'),
+        'client_secret' => env('MICROSOFT_GRAPH_CLIENT_SECRET'),
+        'from_email'    => env('MICROSOFT_GRAPH_FROM_EMAIL'),
+    ],
+
 ];
