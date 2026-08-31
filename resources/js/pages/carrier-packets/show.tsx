@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { ArrowLeft, Check, Copy, Download, FileText, Mail, Package, User } from 'lucide-react';
 import { useState } from 'react';
 
@@ -99,9 +99,16 @@ function EmailStatusBadge({ status }: { status: EmailStatus }) {
     );
 }
 
-function fmt(d: string | null) {
-    if (!d) return '—';
-    return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(d));
+function useFmt() {
+    const tz = ((usePage().props as { appTimezone?: string }).appTimezone) ?? 'UTC';
+    return (d: string | null) => {
+        if (!d) return '—';
+        return new Intl.DateTimeFormat('en-US', {
+            month: 'short', day: 'numeric', year: 'numeric',
+            hour: '2-digit', minute: '2-digit',
+            timeZone: tz,
+        }).format(new Date(d));
+    };
 }
 
 function fmtBytes(bytes: number) {
@@ -113,6 +120,7 @@ function fmtBytes(bytes: number) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function CarrierPacketShow({ packet, isAdmin }: Props) {
+    const fmt = useFmt();
     const [copied, setCopied] = useState(false);
 
     const breadcrumbs: BreadcrumbItem[] = [

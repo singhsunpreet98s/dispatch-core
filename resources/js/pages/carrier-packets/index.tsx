@@ -131,8 +131,8 @@ export default function CarrierPacketsIndex({ packets, isAdmin }: Props) {
             key: 'company',
             header: 'Company',
             render: (p) => (
-                <div>
-                    <p className="font-medium">{p.company_name}</p>
+                <div className="max-w-[180px]">
+                    <p className="truncate font-medium" title={p.company_name}>{p.company_name}</p>
                     <p className="text-xs text-muted-foreground">MC# {p.mc_number}</p>
                 </div>
             ),
@@ -140,7 +140,9 @@ export default function CarrierPacketsIndex({ packets, isAdmin }: Props) {
         {
             key: 'email',
             header: 'Email',
-            render: (p) => <span className="text-muted-foreground">{p.email}</span>,
+            render: (p) => (
+                <span className="block max-w-[200px] truncate text-muted-foreground" title={p.email}>{p.email}</span>
+            ),
         },
         {
             key: 'status',
@@ -151,16 +153,16 @@ export default function CarrierPacketsIndex({ packets, isAdmin }: Props) {
             key: 'created_by',
             header: 'Created by',
             render: (p: CarrierPacket) => (
-                <div>
-                    <p className="text-sm font-medium">{p.user?.name ?? '—'}</p>
-                    <p className="text-xs text-muted-foreground">{p.user?.email}</p>
+                <div className="max-w-[160px]">
+                    <p className="truncate text-sm font-medium" title={p.user?.name}>{p.user?.name ?? '—'}</p>
+                    <p className="truncate text-xs text-muted-foreground" title={p.user?.email}>{p.user?.email}</p>
                 </div>
             ),
         }] : []),
         {
             key: 'created_at',
             header: 'Created',
-            render: (p) => <span className="text-muted-foreground">{formatDate(p.created_at)}</span>,
+            render: (p) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(p.created_at)}</span>,
         },
         {
             key: 'actions',
@@ -214,6 +216,7 @@ export default function CarrierPacketsIndex({ packets, isAdmin }: Props) {
                                 columns={columns}
                                 paginator={packets!}
                                 rowKey={(p) => p.id}
+                                compact
                                 emptyMessage="No carrier packets yet. Click 'New Packet' to create one."
                             />
                         </Deferred>

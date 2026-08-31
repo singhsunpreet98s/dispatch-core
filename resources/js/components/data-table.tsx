@@ -71,13 +71,14 @@ interface DataTableProps<T> {
     paginator: Paginator<T>;
     rowKey: (row: T) => string | number;
     emptyMessage?: string;
+    compact?: boolean;
 }
 
 function goToPage(page: number) {
     router.get(window.location.pathname, { page }, { preserveScroll: true, replace: true });
 }
 
-export function DataTable<T>({ columns, paginator, rowKey, emptyMessage = 'No records found.' }: DataTableProps<T>) {
+export function DataTable<T>({ columns, paginator, rowKey, emptyMessage = 'No records found.', compact = false }: DataTableProps<T>) {
     if (!paginator) return null;
 
     const { data, current_page, last_page, total, from, to } = paginator;
@@ -106,7 +107,7 @@ export function DataTable<T>({ columns, paginator, rowKey, emptyMessage = 'No re
                             data.map((row) => (
                                 <tr key={rowKey(row)} className="hover:bg-muted/30 transition-colors">
                                     {columns.map((col) => (
-                                        <td key={col.key} className={`px-6 py-4 ${col.cellClassName ?? ''}`}>
+                                        <td key={col.key} className={`px-6 ${compact ? 'py-2' : 'py-4'} ${col.cellClassName ?? ''}`}>
                                             {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] ?? '')}
                                         </td>
                                     ))}
