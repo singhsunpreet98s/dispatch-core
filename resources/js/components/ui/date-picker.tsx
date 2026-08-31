@@ -26,6 +26,7 @@ type DisabledMatcher =
 
 interface DatePickerWithRangeProps {
     className?: string
+    triggerClassName?: string
     value?: DateRange
     onChange?: (range: DateRange | undefined) => void
     open?: boolean
@@ -157,6 +158,7 @@ function CalendarMonth({ month, from, to, onDayClick, onDayHover, disabled, onPr
 
 export function DatePickerWithRange({
     className,
+    triggerClassName,
     value,
     onChange,
     open: controlledOpen,
@@ -237,6 +239,7 @@ export function DatePickerWithRange({
                     "hover:bg-accent hover:text-accent-foreground",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     !label && "text-muted-foreground",
+                    triggerClassName,
                 )}
             >
                 <CalendarIcon className="h-4 w-4 shrink-0" />

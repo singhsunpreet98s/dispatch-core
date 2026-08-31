@@ -27,17 +27,45 @@ class CarrierPacketController extends Controller
         return response()->json(['company_name' => $name]);
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
 
-        $query = $user->isAdmin()
-            ? CarrierPacket::with(['user:id,name,email', 'documents'])
-            : CarrierPacket::where('user_id', $user->id)->with(['documents']);
+        $filters = $request->only(['search', 'status', 'user_id', 'date_from', 'date_to']);
+
+        $query = CarrierPacket::with(['user:id,name,email', 'documents']);
+
+        if (! empty($filters['search'])) {
+            $like = '%' . $filters['search'] . '%';
+            $query->where(function ($q) use ($like) {
+                $q->where('company_name', 'like', $like)
+                  ->orWhere('mc_number', 'like', $like);
+            });
+        }
+
+        if (! empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (! empty($filters['user_id'])) {
+            $query->where('user_id', (int) $filters['user_id']);
+        }
+
+        if (! empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+
+        if (! empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+
+        $users = \App\Models\User::select('id', 'name', 'email')->orderBy('name')->get();
 
         return Inertia::render('carrier-packets/index', [
             'packets' => Inertia::defer(fn () => $query->orderBy('created_at', 'desc')->paginate(15)),
             'isAdmin' => $user->isAdmin(),
+            'filters' => $filters,
+            'users'   => $users,
         ]);
     }
 
