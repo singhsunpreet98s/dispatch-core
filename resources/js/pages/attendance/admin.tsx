@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatePickerWithRange } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
@@ -184,81 +183,78 @@ export default function AttendanceAdmin({ summary, users, filters }: Props) {
                     </CardHeader>
                     <CardContent className="flex min-h-0 flex-1 flex-col p-0">
                         <div className="flex-1 overflow-auto min-h-0">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className="border-b bg-muted/30 text-xs">
-                                        <TableHead className="px-6 py-3 font-medium uppercase tracking-wide text-muted-foreground">Employee</TableHead>
-                                        <TableHead className="px-6 py-3 font-medium uppercase tracking-wide text-muted-foreground">Days</TableHead>
-                                        <TableHead className="px-6 py-3 font-medium uppercase tracking-wide text-muted-foreground">Time Worked</TableHead>
-                                        <TableHead className="px-6 py-3 font-medium uppercase tracking-wide text-muted-foreground">Break Time</TableHead>
-                                        <TableHead className="px-6 py-3 font-medium uppercase tracking-wide text-muted-foreground">Breaks</TableHead>
-                                        <TableHead className="px-6 py-3 text-right" />
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody className="divide-y">
+                            <table className="w-full text-sm">
+                                <thead className="sticky top-0 z-10">
+                                    <tr className="border-b bg-card text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                                        <th className="px-6 py-3">Employee</th>
+                                        <th className="px-6 py-3">Days</th>
+                                        <th className="px-6 py-3">Time Worked</th>
+                                        <th className="px-6 py-3">Break Time</th>
+                                        <th className="px-6 py-3">Breaks</th>
+                                        <th className="px-6 py-3" />
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
                                     {summary.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={6} className="px-6 py-12 text-center text-sm text-muted-foreground">
+                                        <tr>
+                                            <td colSpan={6} className="px-6 py-12 text-center text-sm text-muted-foreground">
                                                 No attendance records for this period.
-                                            </TableCell>
-                                        </TableRow>
+                                            </td>
+                                        </tr>
                                     ) : (
                                         summary.map((row) => {
                                             const pct = Math.round((row.total_worked_seconds / maxWorked) * 100);
                                             return (
-                                                <TableRow key={row.user.id} className="hover:bg-muted/20 transition-colors">
+                                                <tr key={row.user.id} className="transition-colors hover:bg-muted/20">
                                                     {/* Employee */}
-                                                    <TableCell className="px-6 py-3">
+                                                    <td className="px-6 py-3">
                                                         <div className="flex items-center gap-3">
                                                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                                                                 {initials(row.user.name)}
                                                             </div>
                                                             <span className="font-medium">{row.user.name}</span>
                                                         </div>
-                                                    </TableCell>
+                                                    </td>
 
                                                     {/* Days */}
-                                                    <TableCell className="px-6 py-3">
+                                                    <td className="px-6 py-3">
                                                         <span className="text-sm font-medium">{row.days_worked}</span>
                                                         <span className="ml-1 text-xs text-muted-foreground">days</span>
-                                                    </TableCell>
+                                                    </td>
 
                                                     {/* Time worked + bar */}
-                                                    <TableCell className="px-6 py-3">
+                                                    <td className="px-6 py-3">
                                                         <span className="font-mono text-sm">{fmtSeconds(row.total_worked_seconds)}</span>
                                                         <div className="mt-1 h-1 w-24 rounded-full bg-muted">
-                                                            <div
-                                                                className="h-1 rounded-full bg-primary/60"
-                                                                style={{ width: `${pct}%` }}
-                                                            />
+                                                            <div className="h-1 rounded-full bg-primary/60" style={{ width: `${pct}%` }} />
                                                         </div>
-                                                    </TableCell>
+                                                    </td>
 
                                                     {/* Break time */}
-                                                    <TableCell className="px-6 py-3 font-mono text-sm text-muted-foreground">
+                                                    <td className="px-6 py-3 font-mono text-sm text-muted-foreground">
                                                         {fmtSeconds(row.total_break_seconds)}
-                                                    </TableCell>
+                                                    </td>
 
                                                     {/* Breaks */}
-                                                    <TableCell className="px-6 py-3 text-sm text-muted-foreground">
+                                                    <td className="px-6 py-3 text-sm text-muted-foreground">
                                                         {row.total_breaks}
-                                                    </TableCell>
+                                                    </td>
 
                                                     {/* Detail */}
-                                                    <TableCell className="px-6 py-3 text-right">
+                                                    <td className="px-6 py-3 text-right">
                                                         <Button variant="ghost" size="sm" asChild className="gap-1.5 text-xs">
                                                             <Link href={detailHref(row.user.id)}>
                                                                 View
                                                                 <ArrowRight className="h-3.5 w-3.5" />
                                                             </Link>
                                                         </Button>
-                                                    </TableCell>
-                                                </TableRow>
+                                                    </td>
+                                                </tr>
                                             );
                                         })
                                     )}
-                                </TableBody>
-                            </Table>
+                                </tbody>
+                            </table>
                         </div>
                     </CardContent>
                 </Card>

@@ -302,7 +302,7 @@ export default function CampaignsIndex({ campaigns, templates, emailLists, isAdm
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Campaigns" />
 
-            <div className="flex flex-1 flex-col gap-6 p-6">
+            <div className="flex min-h-0 flex-1 flex-col gap-6 p-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
@@ -395,14 +395,14 @@ export default function CampaignsIndex({ campaigns, templates, emailLists, isAdm
                 </div>
 
                 {/* Table */}
-                <Card>
-                    <CardHeader>
+                <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                    <CardHeader className="shrink-0">
                         <CardTitle className="text-base font-semibold">
                             {isAdmin ? 'All Campaigns' : 'Your Campaigns'}
                             {campaigns?.total !== undefined && ` (${campaigns.total})`}
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-0">
+                    <CardContent className="flex min-h-0 flex-1 flex-col p-0">
                         <Deferred data="campaigns" fallback={<DataTableSkeleton columns={isAdmin ? 8 : 7} />}>
                             <DataTable
                                 columns={columns}

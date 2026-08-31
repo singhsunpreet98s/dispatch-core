@@ -334,7 +334,7 @@ export default function SchedulesIndex({ schedules, templates, emailLists, isAdm
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Schedules" />
 
-            <div className="flex flex-1 flex-col gap-6 p-6">
+            <div className="flex min-h-0 flex-1 flex-col gap-6 p-6">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-semibold">Schedules</h1>
@@ -355,13 +355,13 @@ export default function SchedulesIndex({ schedules, templates, emailLists, isAdm
 
                 {!senderConfigured && <SenderNotConfiguredBanner isAdmin={isAdmin} />}
 
-                <Card>
-                    <CardHeader>
+                <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                    <CardHeader className="shrink-0">
                         <CardTitle className="text-base font-semibold">
                             {isAdmin ? 'All Schedules' : 'Your Schedules'}{schedules?.total !== undefined && ` (${schedules.total})`}
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-0">
+                    <CardContent className="flex min-h-0 flex-1 flex-col p-0">
                         <Deferred data="schedules" fallback={<DataTableSkeleton columns={8} />}>
                             <DataTable
                                 columns={columns}

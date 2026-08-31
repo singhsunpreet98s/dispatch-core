@@ -124,7 +124,7 @@ export default function TemplatesIndex({ templates, isAdmin }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Templates" />
 
-            <div className="flex flex-1 flex-col gap-6 p-6">
+            <div className="flex min-h-0 flex-1 flex-col gap-6 p-6">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-semibold">Email Templates</h1>
@@ -149,13 +149,13 @@ export default function TemplatesIndex({ templates, isAdmin }: Props) {
 
                 {!senderConfigured && <SenderNotConfiguredBanner isAdmin={isAdmin} />}
 
-                <Card>
-                    <CardHeader>
+                <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                    <CardHeader className="shrink-0">
                         <CardTitle className="text-base font-semibold">
                             Templates {templates?.total !== undefined && `(${templates.total})`}
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-0">
+                    <CardContent className="flex min-h-0 flex-1 flex-col p-0">
                         <Deferred data="templates" fallback={<DataTableSkeleton columns={6} />}>
                             <DataTable
                                 columns={columns}
