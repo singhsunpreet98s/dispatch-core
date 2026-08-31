@@ -13,7 +13,7 @@ createServer((page) =>
             const pages = import.meta.glob('./pages/**/*.tsx', {
                 eager: true,
             });
-            return pages[`./pages/${name}.tsx`];
+            return pages[`./pages/${name}.tsx`] ?? pages[`./pages/${name}/index.tsx`];
         },
         // prettier-ignore
         setup: ({ App, props }) => <App {...props} />,

@@ -14,7 +14,11 @@ const appName = 'Dispatch Uniship';
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
-    resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx')),
+    resolve: (name) => {
+        const pages = import.meta.glob('./pages/**/*.tsx');
+        return resolvePageComponent(`./pages/${name}.tsx`, pages)
+            .catch(() => resolvePageComponent(`./pages/${name}/index.tsx`, pages));
+    },
     setup({ el, App, props }) {
         const root = createRoot(el);
 

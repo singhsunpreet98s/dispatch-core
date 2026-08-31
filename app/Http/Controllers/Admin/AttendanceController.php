@@ -217,8 +217,8 @@ class AttendanceController extends Controller
                 return [
                     'id'                          => $s->id,
                     'date'                        => $s->date->format('Y-m-d'),
-                    'clocked_in_at'               => $s->clocked_in_at?->format('H:i:s'),
-                    'clocked_out_at'              => $s->clocked_out_at?->format('H:i:s'),
+                    'clocked_in_at'               => $s->clocked_in_at?->toIso8601String(),
+                    'clocked_out_at'              => $s->clocked_out_at?->toIso8601String(),
                     'total_worked_seconds'        => $s->totalWorkedSeconds(),
                     'total_break_seconds'         => $s->totalBreakSeconds(),
                     'total_shift_seconds'         => $totalShift,
@@ -230,8 +230,8 @@ class AttendanceController extends Controller
                     'clock_out_outside_geofence'  => $s->clock_out_outside_geofence,
                     'breaks'                      => $s->breaks->map(fn(AttendanceBreak $b) => [
                         'id'               => $b->id,
-                        'started_at'       => $b->started_at?->format('H:i:s'),
-                        'ended_at'         => $b->ended_at?->format('H:i:s'),
+                        'started_at'       => $b->started_at?->toIso8601String(),
+                        'ended_at'         => $b->ended_at?->toIso8601String(),
                         'duration_seconds' => $b->ended_at
                             ? (int) $b->started_at->diffInSeconds($b->ended_at)
                             : null,
