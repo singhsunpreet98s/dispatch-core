@@ -59,6 +59,9 @@ class HandleInertiaRequests extends Middleware
             }, null),
             'appTimezone' => fn () => AppTimezone::get(),
             'featureFlags' => fn () => FeatureFlag::pluck('enabled', 'name')->map(fn ($v) => (bool) $v),
+            'impersonating' => fn () => session('impersonator_id')
+                ? ['impersonator_id' => session('impersonator_id'), 'as' => $request->user()?->name]
+                : null,
         ]);
     }
 }

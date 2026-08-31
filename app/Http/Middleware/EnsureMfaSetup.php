@@ -13,6 +13,7 @@ class EnsureMfaSetup
     {
         if (
             Auth::check() &&
+            ! session('impersonator_id') &&
             Auth::user()->mfa_required &&
             ! Auth::user()->hasTwoFactorEnabled()
         ) {

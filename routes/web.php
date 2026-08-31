@@ -15,6 +15,7 @@ use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\PublicCarrierPacketController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ImpersonateController;
 use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\DemoController;
 use App\Http\Controllers\EmailController;
@@ -40,6 +41,7 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth'])->group(function () {
+    Route::post('impersonate/stop', [ImpersonateController::class, 'stop'])->name('impersonate.stop');
     Route::post('ai/email', [GeminiController::class, 'generate'])->name('ai.email');
 
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -106,6 +108,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('users', [UserController::class, 'store'])->name('users.store');
         Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+        Route::post('users/{user}/impersonate', [ImpersonateController::class, 'start'])
+            ->name('impersonate.start')
+            ->middleware('throttle:5,1');
 
         Route::middleware(['salary'])->group(function () {
             Route::get('users/{user}/salary', [SalaryController::class, 'show'])->name('users.salary.show');

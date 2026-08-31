@@ -35,6 +35,7 @@ export interface SharedData {
     logoUrl: string | null;
     appTimezone: string;
     featureFlags: Record<string, boolean>;
+    impersonating: { impersonator_id: number; as: string } | null;
     [key: string]: unknown;
 }
 

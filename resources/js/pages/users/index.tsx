@@ -12,7 +12,7 @@ import { FLAGS, useFeatureFlags } from '@/hooks/use-feature-flags';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Deferred, Head, router, useForm } from '@inertiajs/react';
-import { Banknote, Check, ChevronsUpDown, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Banknote, Check, ChevronsUpDown, LogIn, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 type Role = 'admin' | 'manager' | 'user';
@@ -82,6 +82,7 @@ export default function UsersIndex({ users }: Props) {
     const [mode, setMode] = useState<FormMode>('create');
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [deletingUser, setDeletingUser] = useState<User | null>(null);
+    const [impersonatingUser, setImpersonatingUser] = useState<User | null>(null);
 
     const [senders, setSenders] = useState<SendGridSender[]>([]);
     const [sendersLoading, setSendersLoading] = useState(false);
@@ -232,6 +233,16 @@ export default function UsersIndex({ users }: Props) {
                     {salaryEnabled && u.role !== 'admin' && (
                         <Button variant="ghost" size="icon" onClick={() => router.visit(route('users.salary.show', u.id))} title="Manage Salary">
                             <Banknote className="h-4 w-4" />
+                        </Button>
+                    )}
+                    {u.role !== 'admin' && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            title={`Login as ${u.name}`}
+                            onClick={() => setImpersonatingUser(u)}
+                        >
+                            <LogIn className="h-4 w-4" />
                         </Button>
                     )}
                     <Button
@@ -479,6 +490,34 @@ export default function UsersIndex({ users }: Props) {
                     </SheetFooter>
                 </SheetContent>
             </Sheet>
+
+            {/* Login-as confirmation dialog */}
+            <Dialog open={!!impersonatingUser} onOpenChange={(open) => !open && setImpersonatingUser(null)}>
+                <DialogContent className="sm:max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle>Login as {impersonatingUser?.name}?</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-muted-foreground text-sm">
+                        You will be temporarily logged in as{' '}
+                        <span className="text-foreground font-medium">{impersonatingUser?.name}</span> (
+                        {impersonatingUser?.email}). This session will appear in the audit log and expires after 2 hours.
+                    </p>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setImpersonatingUser(null)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                router.post(route('impersonate.start', impersonatingUser!.id));
+                                setImpersonatingUser(null);
+                            }}
+                        >
+                            <LogIn className="mr-2 h-4 w-4" />
+                            Confirm
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Delete confirmation dialog */}
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

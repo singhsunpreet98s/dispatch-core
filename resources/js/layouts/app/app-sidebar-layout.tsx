@@ -2,6 +2,7 @@ import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
+import { ImpersonationBanner } from '@/components/impersonation-banner';
 import { Toaster } from '@/components/ui/sonner';
 import { useFlashToast } from '@/hooks/use-flash-toast';
 import { type BreadcrumbItem } from '@/types';
@@ -15,9 +16,10 @@ export default function AppSidebarLayout({ children, breadcrumbs = [] }: { child
     return (
         <AppShell variant="sidebar">
             <FlashToastHandler />
-            <Toaster position="top-center"  />
+            <Toaster position="top-center" />
             <AppSidebar />
             <AppContent variant="sidebar">
+                <ImpersonationBanner />
                 <AppSidebarHeader breadcrumbs={breadcrumbs} />
                 {children}
             </AppContent>

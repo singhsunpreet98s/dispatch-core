@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CheckImpersonationExpiry;
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\EnsureAttendanceEnabled;
 use App\Http\Middleware\EnsureMfaSetup;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             EnsureMfaSetup::class,
+            CheckImpersonationExpiry::class,
         ]);
 
         $middleware->alias([
