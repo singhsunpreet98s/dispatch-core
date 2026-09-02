@@ -11,6 +11,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Deferred, Head, useForm, usePage } from '@inertiajs/react';
 import { CheckCircle2, Download, FileSpreadsheet, Mail, Plus, Trash2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useEffect, useState } from 'react';
 
 interface EmailListFile {
@@ -68,7 +69,7 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
     const [deleteError, setDeleteError] = useState<string | null>(null);
 
     const uploadForm = useForm<{ list_name: string; file: File | null }>({ list_name: '', file: null });
-    const deleteForm = useForm({});
+    const deleteForm = useForm<{ delete_from_sendgrid: boolean }>({ delete_from_sendgrid: false });
 
     // Close the sheet when upload succeeds
     useEffect(() => {
@@ -111,6 +112,7 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
             onSuccess: () => {
                 setDeletingFile(null);
                 setDeleteError(null);
+                deleteForm.reset();
             },
         });
     }
@@ -347,6 +349,7 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
                     if (!open) {
                         setDeletingFile(null);
                         setDeleteError(null);
+                        deleteForm.reset();
                     }
                 }}
             >
@@ -356,17 +359,22 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
                     </DialogHeader>
                     <p className="text-muted-foreground text-sm">
                         Are you sure you want to delete <span className="text-foreground font-medium">"{deletingFile?.list_name}"</span>? This will
-                        permanently remove the list from{' '}
-                        {deletingFile?.sendgrid_list_id ? (
-                            <>
-                                <span className="text-foreground font-medium">Portal</span> and the local database
-                            </>
-                        ) : (
-                            <>the local database</>
-                        )}
-                        , along with all <span className="text-foreground font-medium">{deletingFile?.email_count.toLocaleString()}</span> contact(s).
-                        This action cannot be undone.
+                        permanently remove the list along with all{' '}
+                        <span className="text-foreground font-medium">{deletingFile?.email_count.toLocaleString()}</span> contact(s). This action
+                        cannot be undone.
                     </p>
+
+                    {isAdmin && deletingFile?.sendgrid_list_id && (
+                        <label className="flex cursor-pointer items-center gap-2.5 text-sm select-none">
+                            <Checkbox
+                                checked={deleteForm.data.delete_from_sendgrid}
+                                onCheckedChange={(checked) => deleteForm.setData('delete_from_sendgrid', !!checked)}
+                                disabled={deleteForm.processing}
+                            />
+                            Also delete from Portal (SendGrid)
+                        </label>
+                    )}
+
                     {deleteError && (
                         <div className="border-destructive/30 bg-destructive/10 flex items-start gap-2 rounded-md border px-3 py-2.5">
                             <span className="text-destructive mt-0.5 shrink-0">⚠</span>
@@ -379,6 +387,7 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
                             onClick={() => {
                                 setDeletingFile(null);
                                 setDeleteError(null);
+                                deleteForm.reset();
                             }}
                         >
                             Cancel

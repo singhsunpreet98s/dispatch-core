@@ -118,7 +118,9 @@ class EmailListController extends Controller
     {
         $this->authorizeAccess($emailList);
 
-        if ($emailList->sendgrid_list_id) {
+        $deleteFromSendgrid = auth()->user()->isAdmin() && request()->boolean('delete_from_sendgrid');
+
+        if ($deleteFromSendgrid && $emailList->sendgrid_list_id) {
             try {
                 $this->sendGrid->deleteMarketingList($emailList->sendgrid_list_id);
             } catch (\RuntimeException $e) {
@@ -129,7 +131,11 @@ class EmailListController extends Controller
         $this->fileStorage->delete($emailList->stored_path, $emailList->disk);
         $emailList->delete(); // cascades to email_contacts via FK
 
-        return back()->with('success', 'List deleted from Portal and local database.');
+        $message = $deleteFromSendgrid && $emailList->sendgrid_list_id
+            ? 'List deleted from Portal and local database.'
+            : 'List deleted from local database.';
+
+        return back()->with('success', $message);
     }
 
     private function authorizeAccess(EmailList $emailList): void
