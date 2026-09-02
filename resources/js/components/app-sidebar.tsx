@@ -4,7 +4,26 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { FLAGS, useFeatureFlags } from '@/hooks/use-feature-flags';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Activity, Banknote, CalendarClock, ClipboardList, Clock, FileText, Filter, LayoutGrid, MailOpen, MailX, MapPin, Package, Send, Settings2, ShieldX, Upload, UserRound, Users } from 'lucide-react';
+import {
+    Activity,
+    Banknote,
+    CalendarClock,
+    ClipboardList,
+    Clock,
+    FileText,
+    Filter,
+    LayoutGrid,
+    MailOpen,
+    MailX,
+    MapPin,
+    Package,
+    Send,
+    Settings2,
+    ShieldX,
+    Upload,
+    UserRound,
+    Users,
+} from 'lucide-react';
 import AppLogo from './app-logo';
 
 export function AppSidebar() {
@@ -33,7 +52,7 @@ export function AppSidebar() {
         { title: 'Carrier Packets', url: '/carrier-packets', icon: Package },
         { title: 'Unsubscribers', url: '/unsubscribers', icon: MailX },
         { title: 'Email Filter', url: '/email-filter', icon: Filter },
-        { title: 'Emails', url: '/emails', icon: MailOpen },
+        { title: 'Email Activity', url: '/emails', icon: MailOpen },
         ...(role === 'admin'
             ? [
                   { title: 'Blocked Emails', url: '/blocked-emails', icon: ShieldX },
@@ -43,8 +62,8 @@ export function AppSidebar() {
                   { title: 'System Settings', url: '/settings/system', icon: Settings2 },
               ]
             : salaryEnabled
-            ? [{ title: 'Remuneration', url: '/remuneration', icon: Banknote }]
-            : []),
+              ? [{ title: 'Remuneration', url: '/remuneration', icon: Banknote }]
+              : []),
     ];
 
     return (
@@ -52,7 +71,7 @@ export function AppSidebar() {
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild className="hover:bg-transparent! active:bg-transparent! cursor-default">
+                        <SidebarMenuButton size="lg" asChild className="cursor-default hover:bg-transparent! active:bg-transparent!">
                             <Link href="/dashboard" prefetch>
                                 <AppLogo />
                             </Link>
