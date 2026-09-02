@@ -19,6 +19,11 @@ interface ScanResult {
     clean: number;
 }
 
+function getXsrfToken(): string {
+    const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+}
+
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Email Filter', href: '/email-filter' },
@@ -50,7 +55,6 @@ export default function EmailFilterIndex({ isAdmin }: Props) {
 
         const formData = new FormData();
         formData.append('file', file);
-        const csrfToken = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '';
         const ctrl = new AbortController();
         abortRef.current = ctrl;
 
@@ -61,13 +65,19 @@ export default function EmailFilterIndex({ isAdmin }: Props) {
             const [data] = await Promise.all([
                 fetch(route('email-filter.scan'), {
                     method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': csrfToken },
+                    headers: { 'X-XSRF-TOKEN': getXsrfToken(), 'Accept': 'application/json' },
                     body: formData,
                     signal: ctrl.signal,
                 }).then(async (res) => {
-                    const json = await res.json();
-                    if (!res.ok) throw new Error(json.error ?? 'Something went wrong.');
-                    return json as ScanResult;
+                    const text = await res.text();
+                    let json: Record<string, unknown>;
+                    try {
+                        json = JSON.parse(text);
+                    } catch {
+                        throw new Error(res.ok ? 'Unexpected server response.' : `Server error (${res.status}). Please try again.`);
+                    }
+                    if (!res.ok) throw new Error((json.error ?? json.message ?? 'Something went wrong.') as string);
+                    return json as unknown as ScanResult;
                 }),
                 new Promise<void>((resolve) => setTimeout(resolve, minDelay)),
             ]);
