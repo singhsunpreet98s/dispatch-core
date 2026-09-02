@@ -20,6 +20,7 @@ use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\DemoController;
 use App\Http\Controllers\EmailController;
 use App\Http\Controllers\GeofenceController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\GeminiController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -102,6 +103,11 @@ Route::middleware(['auth'])->group(function () {
         Route::post('geofence', [GeofenceController::class, 'store'])->name('geofence.store');
         Route::put('geofence/{geofence}', [GeofenceController::class, 'update'])->name('geofence.update');
         Route::delete('geofence/{geofence}', [GeofenceController::class, 'destroy'])->name('geofence.destroy');
+
+        Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
+        Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
+        Route::put('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
+        Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
 
         Route::get('users', [UserController::class, 'index'])->name('users.index');
         Route::get('users/senders', [UserController::class, 'senders'])->name('users.senders');

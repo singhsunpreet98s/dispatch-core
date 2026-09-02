@@ -4,7 +4,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { FLAGS, useFeatureFlags } from '@/hooks/use-feature-flags';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Activity, Banknote, CalendarClock, ClipboardList, Clock, FileText, LayoutGrid, MailOpen, MapPin, Package, Send, Settings2, Upload, Users } from 'lucide-react';
+import { Activity, Banknote, CalendarClock, ClipboardList, Clock, FileText, LayoutGrid, MailOpen, MapPin, Package, Send, Settings2, Upload, UserRound, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 export function AppSidebar() {
@@ -35,6 +35,7 @@ export function AppSidebar() {
         ...(role === 'admin'
             ? [
                   { title: 'Geofence', url: '/geofence', icon: MapPin },
+                  { title: 'Customers', url: '/customers', icon: UserRound },
                   { title: 'Users', url: '/users', icon: Users },
                   { title: 'System Settings', url: '/settings/system', icon: Settings2 },
               ]
