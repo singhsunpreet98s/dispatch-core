@@ -4,7 +4,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { FLAGS, useFeatureFlags } from '@/hooks/use-feature-flags';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Activity, Banknote, CalendarClock, ClipboardList, Clock, FileText, LayoutGrid, MailOpen, MailX, MapPin, Package, Send, Settings2, Upload, UserRound, Users } from 'lucide-react';
+import { Activity, Banknote, CalendarClock, ClipboardList, Clock, FileText, Filter, LayoutGrid, MailOpen, MailX, MapPin, Package, Send, Settings2, ShieldX, Upload, UserRound, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 export function AppSidebar() {
@@ -32,9 +32,11 @@ export function AppSidebar() {
         { title: 'Schedules', url: '/schedules', icon: CalendarClock },
         { title: 'Carrier Packets', url: '/carrier-packets', icon: Package },
         { title: 'Unsubscribers', url: '/unsubscribers', icon: MailX },
+        { title: 'Email Filter', url: '/email-filter', icon: Filter },
         { title: 'Emails', url: '/emails', icon: MailOpen },
         ...(role === 'admin'
             ? [
+                  { title: 'Blocked Emails', url: '/blocked-emails', icon: ShieldX },
                   { title: 'Geofence', url: '/geofence', icon: MapPin },
                   { title: 'Customers', url: '/customers', icon: UserRound },
                   { title: 'Users', url: '/users', icon: Users },

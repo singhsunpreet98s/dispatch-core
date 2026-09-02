@@ -24,6 +24,8 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\GeminiController;
 use App\Http\Controllers\UnsubscribeController;
 use App\Http\Controllers\UnsubscribersController;
+use App\Http\Controllers\BlockedEmailController;
+use App\Http\Controllers\FilterEmailController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -73,6 +75,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('unsubscribers', [UnsubscribersController::class, 'index'])->name('unsubscribers.index');
     Route::delete('unsubscribers/{id}', [UnsubscribersController::class, 'destroy'])->name('unsubscribers.destroy');
 
+    Route::get('email-filter', [FilterEmailController::class, 'index'])->name('email-filter.index');
+    Route::post('email-filter/scan', [FilterEmailController::class, 'scan'])->name('email-filter.scan');
+    Route::get('email-filter/download', [FilterEmailController::class, 'download'])->name('email-filter.download');
+
     Route::get('email-lists', [EmailListController::class, 'index'])->name('email-lists.index');
     Route::post('email-lists', [EmailListController::class, 'store'])->name('email-lists.store');
     Route::get('email-lists/{emailList}/download', [EmailListController::class, 'download'])->name('email-lists.download');
@@ -108,6 +114,11 @@ Route::middleware(['auth'])->group(function () {
             Route::patch('attendance/leave/{leave}/approve', [AdminLeaveController::class, 'approve'])->name('attendance.leave.approve');
             Route::patch('attendance/leave/{leave}/reject', [AdminLeaveController::class, 'reject'])->name('attendance.leave.reject');
         });
+
+        Route::get('blocked-emails', [BlockedEmailController::class, 'index'])->name('blocked-emails.index');
+        Route::post('blocked-emails', [BlockedEmailController::class, 'store'])->name('blocked-emails.store');
+        Route::post('blocked-emails/import', [BlockedEmailController::class, 'import'])->name('blocked-emails.import');
+        Route::delete('blocked-emails/{blockedEmail}', [BlockedEmailController::class, 'destroy'])->name('blocked-emails.destroy');
 
         Route::get('geofence', [GeofenceController::class, 'index'])->name('geofence.index');
         Route::post('geofence', [GeofenceController::class, 'store'])->name('geofence.store');
