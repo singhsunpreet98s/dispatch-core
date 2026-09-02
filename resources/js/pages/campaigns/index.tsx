@@ -215,17 +215,17 @@ export default function CampaignsIndex({ campaigns, templates, emailLists, isAdm
             key: 'name',
             header: 'Campaign',
             render: (c) => (
-                <div className="flex items-center gap-3">
-                    <div className="bg-muted flex h-8 w-8 shrink-0 items-center justify-center rounded-md">
+                <div className="flex items-center gap-2.5">
+                    <div className="bg-muted flex h-7 w-7 shrink-0 items-center justify-center rounded-md">
                         {c.type === 'manual' ? (
-                            <Send className="text-muted-foreground h-4 w-4" />
+                            <Send className="text-muted-foreground h-3.5 w-3.5" />
                         ) : (
-                            <CalendarClock className="text-muted-foreground h-4 w-4" />
+                            <CalendarClock className="text-muted-foreground h-3.5 w-3.5" />
                         )}
                     </div>
                     <div className="min-w-0">
-                        <p className="truncate font-medium">{c.name}</p>
-                        <p className="text-muted-foreground truncate text-xs">{c.subject}</p>
+                        <p className="truncate text-sm font-medium leading-tight">{c.name}</p>
+                        <p className="text-muted-foreground truncate text-xs leading-tight">{c.subject}</p>
                     </div>
                 </div>
             ),
@@ -239,11 +239,12 @@ export default function CampaignsIndex({ campaigns, templates, emailLists, isAdm
             key: 'status',
             header: 'Status',
             render: (c) => (
-                <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
                     {c.type === 'manual' && c.status && <ManualStatusBadge status={c.status} />}
                     {c.type === 'automation' && c.schedule_status && <ScheduleStatusBadge status={c.schedule_status} />}
-                    {c.type === 'automation' && c.triggers && <p className="text-muted-foreground text-xs">{formatTriggers(c.triggers)}</p>}
-                    {c.status === 'failed' && c.error_message && <p className="text-destructive line-clamp-2 max-w-48 text-xs"></p>}
+                    {c.type === 'automation' && c.triggers && (
+                        <span className="text-muted-foreground text-xs">{formatTriggers(c.triggers)}</span>
+                    )}
                 </div>
             ),
         },
@@ -261,12 +262,12 @@ export default function CampaignsIndex({ campaigns, templates, emailLists, isAdm
             key: 'list',
             header: 'List',
             render: (c) => (
-                <div className="flex flex-col">
+                <div className="flex items-center gap-1.5">
                     <span className="text-sm">{c.list_name ?? '—'}</span>
-                    <div className="text-muted-foreground flex items-center gap-1 text-xs">
+                    <span className="text-muted-foreground flex items-center gap-0.5 text-xs">
                         <Users className="h-3 w-3" />
-                        {c.contact_count.toLocaleString()} contacts
-                    </div>
+                        {c.contact_count.toLocaleString()}
+                    </span>
                 </div>
             ),
         },
@@ -276,9 +277,9 @@ export default function CampaignsIndex({ campaigns, templates, emailLists, isAdm
                       key: 'user',
                       header: 'By',
                       render: (c: CampaignRow) => (
-                          <div className="flex flex-col">
-                              <span className="text-sm font-medium">{c.user?.name ?? '—'}</span>
-                              <span className="text-muted-foreground text-xs">{c.user?.email}</span>
+                          <div className="min-w-0">
+                              <p className="truncate text-sm font-medium leading-tight">{c.user?.name ?? '—'}</p>
+                              <p className="text-muted-foreground truncate text-xs leading-tight">{c.user?.email}</p>
                           </div>
                       ),
                   },
@@ -287,6 +288,7 @@ export default function CampaignsIndex({ campaigns, templates, emailLists, isAdm
         {
             key: 'created_at',
             header: 'Date',
+            cellClassName: 'whitespace-nowrap',
             render: (c) => (
                 <div className="flex items-center gap-1.5">
                     <Clock className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
@@ -408,6 +410,7 @@ export default function CampaignsIndex({ campaigns, templates, emailLists, isAdm
                                 columns={columns}
                                 paginator={campaigns!}
                                 rowKey={(c) => c.id}
+                                compact
                                 emptyMessage="No campaigns found. Send a manual campaign or set up a schedule."
                             />
                         </Deferred>
