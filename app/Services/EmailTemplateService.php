@@ -11,7 +11,7 @@ class EmailTemplateService
         $body = self::stripFirstElementTopMargin($body);
 
         $wrapper = '<div style="margin:0 auto;">';
-        $footer  = '<div style="text-align:center;margin-top:30px;padding-top:20px;border-top:1px solid #eeeeee;color:#888888;font-size:12px;">'
+        $footer  = '<div style="text-align:center;margin-top:30px;padding-top:20px;border-top:1px solid #eeeeee;color:#888888;font-size:13px;">'
             . '<p style="margin:0 0 6px 0;">&#169; 2026 Uniship Cargo LLC | All rights reserved</p>'
             . '<p style="margin:0;">Click here to <a href="[UNSUBSCRIBE_LINK]" target="_blank" style="color:#555555;">Unsubscribe</a></p>'
             . '</div>';
