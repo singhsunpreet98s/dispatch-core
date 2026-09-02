@@ -4,7 +4,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { FLAGS, useFeatureFlags } from '@/hooks/use-feature-flags';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Activity, Banknote, CalendarClock, ClipboardList, Clock, FileText, LayoutGrid, MailOpen, MapPin, Package, Send, Settings2, Upload, UserRound, Users } from 'lucide-react';
+import { Activity, Banknote, CalendarClock, ClipboardList, Clock, FileText, LayoutGrid, MailOpen, MailX, MapPin, Package, Send, Settings2, Upload, UserRound, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 export function AppSidebar() {
@@ -31,6 +31,7 @@ export function AppSidebar() {
         { title: 'Campaigns', url: '/campaigns', icon: Send },
         { title: 'Schedules', url: '/schedules', icon: CalendarClock },
         { title: 'Carrier Packets', url: '/carrier-packets', icon: Package },
+        { title: 'Unsubscribers', url: '/unsubscribers', icon: MailX },
         { title: 'Emails', url: '/emails', icon: MailOpen },
         ...(role === 'admin'
             ? [

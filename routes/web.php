@@ -22,6 +22,8 @@ use App\Http\Controllers\EmailController;
 use App\Http\Controllers\GeofenceController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\GeminiController;
+use App\Http\Controllers\UnsubscribeController;
+use App\Http\Controllers\UnsubscribersController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -34,6 +36,11 @@ Route::prefix('p')->name('packet.')->group(function () {
     Route::get('{uuid}/done', [PublicCarrierPacketController::class, 'done'])->name('done');
 });
 Route::get('/demo', [DemoController::class, 'index'])->name('demo.index');
+
+// ── Public unsubscribe page ────────────────────────────────────────────────
+Route::get('unsubscribe', [UnsubscribeController::class, 'show'])->name('unsubscribe.show');
+Route::post('unsubscribe', [UnsubscribeController::class, 'confirm'])->name('unsubscribe.confirm');
+Route::delete('unsubscribe', [UnsubscribeController::class, 'resubscribe'])->name('unsubscribe.resubscribe');
 Route::get('/', function () {
     if (auth()->user()) {
         return redirect()->route('dashboard');
@@ -62,6 +69,9 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
     Route::post('campaigns', [CampaignController::class, 'store'])->name('campaigns.store');
+
+    Route::get('unsubscribers', [UnsubscribersController::class, 'index'])->name('unsubscribers.index');
+    Route::delete('unsubscribers/{id}', [UnsubscribersController::class, 'destroy'])->name('unsubscribers.destroy');
 
     Route::get('email-lists', [EmailListController::class, 'index'])->name('email-lists.index');
     Route::post('email-lists', [EmailListController::class, 'store'])->name('email-lists.store');

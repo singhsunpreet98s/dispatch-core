@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\ScheduleDispatchQueue;
 use App\Models\SystemSetting;
+use App\Services\EmailTemplateService;
 use App\Services\SendGridService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -53,10 +54,15 @@ class DispatchCampaigns extends Command
                     throw new \RuntimeException("Email list has no SendGrid list ID configured.");
                 }
 
+                $wrappedBody = EmailTemplateService::getTemplateV1(
+                    $schedule->template->body,
+                    $schedule->user_id,
+                );
+
                 $singlesendId = $sendGrid->sendToList(
                     campaignName: $schedule->name . ' — ' . $now->format('Y-m-d H:i'),
                     subject: $schedule->template->subject,
-                    htmlContent: $schedule->template->body,
+                    htmlContent: $wrappedBody,
                     listId: $listId,
                     senderId: $senderId,
                 );

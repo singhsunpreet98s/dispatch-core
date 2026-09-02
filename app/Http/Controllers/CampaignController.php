@@ -7,6 +7,7 @@ use App\Models\EmailList;
 use App\Models\EmailTemplate;
 use App\Models\Schedule;
 use App\Models\User;
+use App\Services\EmailTemplateService;
 use App\Services\SendGridService;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -161,10 +162,12 @@ class CampaignController extends Controller
         ]);
 
         try {
+            $wrappedBody = EmailTemplateService::getTemplateV1($template->body, $user->id);
+
             $singlesendId = $this->sendGrid->sendToList(
                 $validated['name'],
                 $template->subject,
-                $template->body,
+                $wrappedBody,
                 $list->sendgrid_list_id,
                 (int) $user->sendgrid_contact_id,
             );
