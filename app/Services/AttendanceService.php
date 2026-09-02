@@ -116,7 +116,7 @@ class AttendanceService
             ->whereYear('date', $year)
             ->whereMonth('date', $month)
             ->get()
-            ->keyBy(fn ($s) => $s->date->format('Y-m-d'));
+            ->keyBy(fn($s) => $s->date->format('Y-m-d'));
     }
 
     public function getMonthHolidays(int $year, int $month): Collection
@@ -124,7 +124,7 @@ class AttendanceService
         return AttendanceHoliday::whereYear('date', $year)
             ->whereMonth('date', $month)
             ->get()
-            ->keyBy(fn ($h) => $h->date->format('Y-m-d'));
+            ->keyBy(fn($h) => $h->date->format('Y-m-d'));
     }
 
     public function buildHeatmap(User $user, int $year, int $month, Collection $holidays, Collection $approvedLeaves = new Collection): array
@@ -142,7 +142,7 @@ class AttendanceService
             $isWeekend = in_array($date->dayOfWeek, [0, 6]);
             $holiday   = $holidays->get($dateStr);
             $isLeave   = $approvedLeaves->contains(
-                fn ($l) => $dateStr >= $l->date_from->format('Y-m-d') && $dateStr <= $l->date_to->format('Y-m-d')
+                fn($l) => $dateStr >= $l->date_from->format('Y-m-d') && $dateStr <= $l->date_to->format('Y-m-d')
             );
             $status    = $this->computeDayStatus($dateStr, $shift, $settings, $today, $isWeekend, $holiday !== null, $isLeave);
             $days[]    = [
@@ -178,13 +178,13 @@ class AttendanceService
             // Use worked seconds (excluding breaks) for status thresholds
             $workedSeconds = $shift->totalWorkedSeconds();
 
-            if ($workedSeconds >= 7 * 3600 + 40 * 60) { // > 7h 40m
+            if ($workedSeconds >= 7 * 3600 + 40 * 60) { // >= 7h 20m
                 return 'present';
             }
-            if ($workedSeconds >= 6 * 3600) { // > 6h
+            if ($workedSeconds >= 6 * 3600) { // >= 6h
                 return 'short_leave';
             }
-            if ($workedSeconds >= 4 * 3600) { // > 4h
+            if ($workedSeconds >= 4 * 3600) { // >= 4h
                 return 'half_day';
             }
 
@@ -226,7 +226,7 @@ class AttendanceService
             'total_worked_seconds'        => $shift->totalWorkedSeconds(),
             'total_break_seconds'         => $shift->totalBreakSeconds(),
             'total_shift_seconds'         => $shift->totalShiftSeconds(),
-            'breaks'                      => $shift->breaks->map(fn ($b) => [
+            'breaks'                      => $shift->breaks->map(fn($b) => [
                 'id'               => $b->id,
                 'started_at'       => $b->started_at->toIso8601String(),
                 'ended_at'         => $b->ended_at?->toIso8601String(),
@@ -307,7 +307,7 @@ class AttendanceService
         }
 
         $tz = AppTimezone::get();
-        $shiftEndTime = Carbon::parse(today($tz)->format('Y-m-d').' '.$shiftEndStr, $tz);
+        $shiftEndTime = Carbon::parse(today($tz)->format('Y-m-d') . ' ' . $shiftEndStr, $tz);
         if (now()->lt($shiftEndTime)) {
             return 0;
         }
@@ -320,8 +320,8 @@ class AttendanceService
 
         foreach ($openShifts as $shift) {
             $shift->breaks
-                ->filter(fn ($b) => $b->ended_at === null)
-                ->each(fn ($b) => $b->update(['ended_at' => $shiftEndTime]));
+                ->filter(fn($b) => $b->ended_at === null)
+                ->each(fn($b) => $b->update(['ended_at' => $shiftEndTime]));
 
             $shift->update([
                 'clocked_out_at' => $shiftEndTime,

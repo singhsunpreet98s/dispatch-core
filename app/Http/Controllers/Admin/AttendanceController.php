@@ -100,8 +100,8 @@ class AttendanceController extends Controller
             };
 
             $completedBreakSeconds = (int) $shift->breaks
-                ->filter(fn (AttendanceBreak $b) => $b->ended_at !== null)
-                ->sum(fn (AttendanceBreak $b) => $b->started_at->diffInSeconds($b->ended_at));
+                ->filter(fn(AttendanceBreak $b) => $b->ended_at !== null)
+                ->sum(fn(AttendanceBreak $b) => $b->started_at->diffInSeconds($b->ended_at));
 
             return [
                 'user'   => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'system_id' => $user->system_id, 'system_info_cached' => $systemInfoCached],
@@ -122,7 +122,7 @@ class AttendanceController extends Controller
                     'completed_break_seconds'  => $completedBreakSeconds,
                     'total_worked_seconds'     => $shift->totalWorkedSeconds(),
                     'break_count'              => $shift->breaks->count(),
-                    'breaks'                   => $shift->breaks->map(fn (AttendanceBreak $b) => [
+                    'breaks'                   => $shift->breaks->map(fn(AttendanceBreak $b) => [
                         'id'               => $b->id,
                         'started_at'       => $b->started_at?->toIso8601String(),
                         'ended_at'         => $b->ended_at?->toIso8601String(),
@@ -140,9 +140,9 @@ class AttendanceController extends Controller
             ->whereNull('acknowledged_at')
             ->orderBy('event_timestamp', 'desc')
             ->get()
-            ->map(fn (AppExitEvent $e) => [
+            ->map(fn(AppExitEvent $e) => [
                 'id'              => $e->id,
-                'user_name'       => $e->user?->name ?? 'Unknown ('.$e->serial_number.')',
+                'user_name'       => $e->user?->name ?? 'Unknown (' . $e->serial_number . ')',
                 'serial_number'   => $e->serial_number,
                 'event_timestamp' => $e->event_timestamp->toIso8601String(),
             ])
@@ -203,12 +203,13 @@ class AttendanceController extends Controller
             ->orderBy('date')
             ->get()
             ->map(function (AttendanceShift $s) {
-                $totalShift = $s->totalShiftSeconds();
-                if ($totalShift >= 9 * 3600) {
+                $totalShift  = $s->totalShiftSeconds();
+                $workedSecs  = $s->totalWorkedSeconds();
+                if ($workedSecs >= 7 * 3600 + 40 * 60) { // >= 7h 20m
                     $dayStatus = 'present';
-                } elseif ($totalShift >= 7 * 3600) {
+                } elseif ($workedSecs >= 6 * 3600) { // >= 6h
                     $dayStatus = 'short_leave';
-                } elseif ($totalShift >= 5 * 3600) {
+                } elseif ($workedSecs >= 4 * 3600) { // >= 4h
                     $dayStatus = 'half_day';
                 } else {
                     $dayStatus = 'absent';
