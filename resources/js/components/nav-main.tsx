@@ -15,6 +15,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                             <SidebarMenuButton
                                 asChild
                                 isActive={isActive}
+                                tooltip={item.title}
                                 style={isActive ? { backgroundColor: 'var(--primary)', color: 'white' } : undefined}
                             >
                                 <Link href={item.url} prefetch>
