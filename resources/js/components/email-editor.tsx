@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import { Extension } from '@tiptap/core';
 import { Color } from '@tiptap/extension-color';
+import FontFamily from '@tiptap/extension-font-family';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
@@ -26,8 +27,9 @@ import {
     Underline as UnderlineIcon,
     Undo,
 } from 'lucide-react';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Button } from './ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Separator } from './ui/separator';
 
 /**
@@ -41,7 +43,6 @@ const EnterAsLineBreak = Extension.create({
     addKeyboardShortcuts() {
         return {
             Enter: () => {
-                // Let lists, code blocks and blockquotes keep their native Enter behaviour.
                 if (this.editor.isActive('listItem') || this.editor.isActive('codeBlock') || this.editor.isActive('blockquote')) {
                     return false;
                 }
@@ -56,6 +57,54 @@ const EnterAsLineBreak = Extension.create({
         };
     },
 });
+
+// Custom FontSize extension — adds fontSize to TextStyle inline styles.
+const FontSize = TextStyle.extend({
+    addAttributes() {
+        return {
+            ...this.parent?.(),
+            fontSize: {
+                default: null,
+                parseHTML: (el) => (el as HTMLElement).style.fontSize || null,
+                renderHTML: (attrs) => (attrs.fontSize ? { style: `font-size: ${attrs.fontSize}` } : {}),
+            },
+        };
+    },
+    addCommands() {
+        return {
+            ...this.parent?.(),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            setFontSize: (size: string) => (helpers: any) => helpers.chain().setMark('textStyle', { fontSize: size }).run(),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            unsetFontSize: () => (helpers: any) => helpers.chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run(),
+        };
+    },
+});
+
+const DEFAULT_FONT_VALUE = "'Times New Roman', Times, serif";
+
+const FONTS = [
+    { label: 'Times New Roman', value: DEFAULT_FONT_VALUE, google: null },
+    { label: 'Inter', value: "'Inter', sans-serif", google: 'Inter' },
+    { label: 'Plus Jakarta Sans', value: "'Plus Jakarta Sans', sans-serif", google: 'Plus+Jakarta+Sans' },
+    { label: 'DM Sans', value: "'DM Sans', sans-serif", google: 'DM+Sans' },
+    { label: 'Outfit', value: "'Outfit', sans-serif", google: 'Outfit' },
+    { label: 'Geist', value: "'Geist', sans-serif", google: 'Geist' },
+    { label: 'Playfair Display', value: "'Playfair Display', Georgia, serif", google: 'Playfair+Display' },
+    { label: 'Lora', value: "'Lora', Georgia, serif", google: 'Lora' },
+    { label: 'Roboto', value: "'Roboto', Arial, sans-serif", google: 'Roboto' },
+    { label: 'Georgia', value: 'Georgia, serif', google: null },
+    { label: 'Arial', value: 'Arial, sans-serif', google: null },
+] as const;
+
+const FONT_SIZES = ['12', '14', '16', '18', '20', '24', '28', '32', '36', '48'];
+
+const GOOGLE_FONTS_URL =
+    'https://fonts.googleapis.com/css2?family=' +
+    FONTS.filter((f) => f.google)
+        .map((f) => `${f.google}:wght@400;500;600;700`)
+        .join('&family=') +
+    '&display=swap';
 
 interface EmailEditorProps {
     content?: string;
@@ -90,12 +139,23 @@ function ToolbarButton({ onClick, active, disabled, title, children }: ToolbarBu
 }
 
 export function EmailEditor({ content = '', onChange, onEditorReady, placeholder = 'Write your email content here…', className }: EmailEditorProps) {
+    useEffect(() => {
+        const id = 'email-editor-google-fonts';
+        if (document.getElementById(id)) return;
+        const link = document.createElement('link');
+        link.id = id;
+        link.rel = 'stylesheet';
+        link.href = GOOGLE_FONTS_URL;
+        document.head.appendChild(link);
+    }, []);
+
     const editor = useEditor({
         extensions: [
             StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
             Underline,
-            TextStyle,
+            FontSize,
             Color,
+            FontFamily,
             TextAlign.configure({ types: ['heading', 'paragraph'] }),
             Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-primary underline' } }),
             Placeholder.configure({ placeholder }),
@@ -112,7 +172,7 @@ export function EmailEditor({ content = '', onChange, onEditorReady, placeholder
         },
         onCreate: ({ editor }) => {
             onEditorReady?.((html) => {
-                editor.commands.setContent(html, true);
+                editor.commands.setContent(html);
             });
         },
     });
@@ -131,10 +191,60 @@ export function EmailEditor({ content = '', onChange, onEditorReady, placeholder
 
     if (!editor) return null;
 
+    const activeFontFamily = (editor.getAttributes('textStyle').fontFamily as string | undefined) ?? DEFAULT_FONT_VALUE;
+    const activeFontSize = editor.getAttributes('textStyle').fontSize as string | undefined;
+    const activeFontSizePx = activeFontSize ? activeFontSize.replace('px', '') : '';
+
     return (
         <div className={cn('bg-background overflow-hidden rounded-lg border', className)}>
             {/* Toolbar */}
             <div className="flex flex-wrap items-center gap-0.5 border-b px-2 py-1.5">
+                {/* Font family */}
+                <Select
+                    value={activeFontFamily}
+                    onValueChange={(val) => {
+                        editor.chain().focus().setFontFamily(val).run();
+                    }}
+                >
+                    <SelectTrigger className="h-7 w-[152px] text-xs" title="Font family">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {FONTS.map((font) => (
+                            <SelectItem key={font.value} value={font.value}>
+                                <span style={{ fontFamily: font.value }} className="text-sm">
+                                    {font.label}
+                                </span>
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+
+                {/* Font size */}
+                <Select
+                    value={activeFontSizePx}
+                    onValueChange={(val) => {
+                        if (!val) {
+                            editor.chain().focus().unsetFontSize().run();
+                        } else {
+                            editor.chain().focus().setFontSize(`${val}px`).run();
+                        }
+                    }}
+                >
+                    <SelectTrigger className="h-7 w-[76px] text-xs" title="Font size">
+                        <SelectValue placeholder="Size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {FONT_SIZES.map((size) => (
+                            <SelectItem key={size} value={size}>
+                                <span className="text-xs">{size} px</span>
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+
+                <Separator orientation="vertical" className="mx-1 h-5" />
+
                 {/* History */}
                 <ToolbarButton title="Undo" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}>
                     <Undo className="h-3.5 w-3.5" />
