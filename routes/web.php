@@ -102,8 +102,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('remuneration/{monthlySalary}/slip', [SalaryController::class, 'mySlip'])->name('remuneration.slip');
     });
 
-    Route::get('rate-requests/send', [UserRateRequestController::class, 'index'])->name('rate-requests.send.index');
-    Route::post('rate-requests/send', [UserRateRequestController::class, 'store'])->name('rate-requests.send.store');
+    Route::middleware(['rate-request'])->group(function () {
+        Route::get('rate-requests/send', [UserRateRequestController::class, 'index'])->name('rate-requests.send.index');
+        Route::post('rate-requests/send', [UserRateRequestController::class, 'store'])->name('rate-requests.send.store');
+    });
 
     Route::middleware(['admin'])->group(function () {
         Route::middleware(['attendance'])->group(function () {
@@ -126,11 +128,13 @@ Route::middleware(['auth'])->group(function () {
         Route::post('blocked-emails/import', [BlockedEmailController::class, 'import'])->name('blocked-emails.import');
         Route::delete('blocked-emails/{blockedEmail}', [BlockedEmailController::class, 'destroy'])->name('blocked-emails.destroy');
 
-        Route::get('rate-requests', [RateRequestController::class, 'index'])->name('rate-requests.index');
-        Route::get('rate-requests/history', [RateRequestController::class, 'history'])->name('rate-requests.history');
-        Route::post('rate-requests', [RateRequestController::class, 'store'])->name('rate-requests.store');
-        Route::post('rate-requests/import', [RateRequestController::class, 'import'])->name('rate-requests.import');
-        Route::delete('rate-requests/{rateRequestContact}', [RateRequestController::class, 'destroy'])->name('rate-requests.destroy');
+        Route::middleware(['rate-request'])->group(function () {
+            Route::get('rate-requests', [RateRequestController::class, 'index'])->name('rate-requests.index');
+            Route::get('rate-requests/history', [RateRequestController::class, 'history'])->name('rate-requests.history');
+            Route::post('rate-requests', [RateRequestController::class, 'store'])->name('rate-requests.store');
+            Route::post('rate-requests/import', [RateRequestController::class, 'import'])->name('rate-requests.import');
+            Route::delete('rate-requests/{rateRequestContact}', [RateRequestController::class, 'destroy'])->name('rate-requests.destroy');
+        });
 
         Route::get('geofence', [GeofenceController::class, 'index'])->name('geofence.index');
         Route::post('geofence', [GeofenceController::class, 'store'])->name('geofence.store');

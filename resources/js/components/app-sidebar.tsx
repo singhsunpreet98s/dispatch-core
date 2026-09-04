@@ -32,6 +32,7 @@ export function AppSidebar() {
     const { isEnabled } = useFeatureFlags();
     const attendanceEnabled = isEnabled(FLAGS.ATTENDANCE);
     const salaryEnabled = isEnabled(FLAGS.SALARY);
+    const rateRequestEnabled = isEnabled(FLAGS.RATE_REQUEST);
 
     const mainNavItems: NavItem[] = [
         { title: 'Dashboard', url: '/dashboard', icon: LayoutGrid },
@@ -56,13 +57,13 @@ export function AppSidebar() {
         ...(role === 'admin'
             ? [
                   { title: 'Blocked Emails', url: '/blocked-emails', icon: ShieldX },
-                  { title: 'Rate Requests', url: '/rate-requests', icon: FileSpreadsheet },
+                  ...(rateRequestEnabled ? [{ title: 'Rate Requests', url: '/rate-requests', icon: FileSpreadsheet }] : []),
                   { title: 'Customers', url: '/customers', icon: UserRound },
                   { title: 'Users', url: '/users', icon: Users },
                   { title: 'System Settings', url: '/settings/system', icon: Settings2 },
               ]
             : [
-                  { title: 'Rate Requests', url: '/rate-requests/send', icon: FileSpreadsheet },
+                  ...(rateRequestEnabled ? [{ title: 'Rate Requests', url: '/rate-requests/send', icon: FileSpreadsheet }] : []),
                   ...(salaryEnabled ? [{ title: 'Remuneration', url: '/remuneration', icon: Banknote }] : []),
               ]),
     ];

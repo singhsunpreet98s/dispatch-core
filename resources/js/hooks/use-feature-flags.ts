@@ -6,8 +6,9 @@ import { type SharedData } from '@/types';
  * These match the values in App\Enums\FeatureFlag.
  */
 export const FLAGS = {
-    ATTENDANCE: 'attendance_feature_flag',
-    SALARY:     'salary_feature_flag',
+    ATTENDANCE:    'attendance_feature_flag',
+    SALARY:        'salary_feature_flag',
+    RATE_REQUEST:  'rate_request_feature_flag',
 } as const;
 
 export type FlagName = (typeof FLAGS)[keyof typeof FLAGS];

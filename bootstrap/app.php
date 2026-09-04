@@ -4,6 +4,7 @@ use App\Http\Middleware\CheckImpersonationExpiry;
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\EnsureAttendanceEnabled;
 use App\Http\Middleware\EnsureMfaSetup;
+use App\Http\Middleware\EnsureRateRequestEnabled;
 use App\Http\Middleware\EnsureSalaryEnabled;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -29,8 +30,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin'      => EnsureAdmin::class,
             'mfa.setup'  => EnsureMfaSetup::class,
-            'attendance' => EnsureAttendanceEnabled::class,
-            'salary'     => EnsureSalaryEnabled::class,
+            'attendance'    => EnsureAttendanceEnabled::class,
+            'salary'        => EnsureSalaryEnabled::class,
+            'rate-request'  => EnsureRateRequestEnabled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
