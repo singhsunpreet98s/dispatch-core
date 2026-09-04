@@ -7,21 +7,14 @@ interface Props {
     userId: number | null;
     email: string | null;
     senderName: string | null;
-    alreadyUnsubscribed: boolean;
     resubscribed: boolean;
     valid: boolean;
 }
 
-export default function UnsubscribePage({ userId, email, senderName, alreadyUnsubscribed, resubscribed, valid }: Props) {
+export default function UnsubscribePage({ userId, email, senderName, resubscribed, valid }: Props) {
     const { logoUrl } = usePage<SharedData>().props;
 
-    const confirmForm = useForm({ user_id: userId ?? 0, email: email ?? '' });
-    const resubForm   = useForm({ user_id: userId ?? 0, email: email ?? '' });
-
-    function handleConfirm(e: React.FormEvent) {
-        e.preventDefault();
-        confirmForm.post(route('unsubscribe.confirm'));
-    }
+    const resubForm = useForm({ user_id: userId ?? 0, email: email ?? '' });
 
     function handleResubscribe(e: React.FormEvent) {
         e.preventDefault();
@@ -33,7 +26,6 @@ export default function UnsubscribePage({ userId, email, senderName, alreadyUnsu
             <Head title="Unsubscribe" />
             <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4 py-12">
                 <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-md">
-                    {/* Company logo */}
                     <div className="mb-8 flex justify-center">
                         {logoUrl ? (
                             <img src={logoUrl} alt="Company logo" className="max-h-16 max-w-[200px] object-contain" />
@@ -59,47 +51,26 @@ export default function UnsubscribePage({ userId, email, senderName, alreadyUnsu
                                 ) : ''}.
                             </p>
                         </div>
-                    ) : alreadyUnsubscribed ? (
+                    ) : (
                         <div className="text-center">
                             <CheckCircle className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-                            <h1 className="mb-2 text-xl font-semibold text-gray-900">Already Unsubscribed</h1>
+                            <h1 className="mb-2 text-xl font-semibold text-gray-900">You've been unsubscribed</h1>
                             <p className="mb-6 text-sm text-gray-500">
-                                <span className="font-medium text-gray-800">{email}</span> is unsubscribed from updates
+                                <span className="font-medium text-gray-800">{email}</span> will no longer receive emails
                                 {senderName ? (
-                                    <> sent by <span className="font-medium text-gray-800">{senderName}</span></>
+                                    <> from <span className="font-medium text-gray-800">{senderName}</span></>
                                 ) : ''}.
                             </p>
                             <form onSubmit={handleResubscribe}>
                                 <Button
                                     type="submit"
-                                    variant="outline"
+                                    variant="ghost"
+                                    size="sm"
                                     disabled={resubForm.processing}
-                                    className="mx-auto flex items-center gap-2"
+                                    className="mx-auto flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600"
                                 >
-                                    <RefreshCw className="h-4 w-4" />
+                                    <RefreshCw className="h-3 w-3" />
                                     {resubForm.processing ? 'Processing…' : 'Subscribe again'}
-                                </Button>
-                            </form>
-                        </div>
-                    ) : (
-                        <div className="text-center">
-                            <MailX className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-                            <h1 className="mb-2 text-xl font-semibold text-gray-900">Unsubscribe</h1>
-                            <p className="mb-1 text-sm text-gray-500">You are unsubscribing:</p>
-                            <p className="mb-1 text-base font-semibold text-gray-800">{email}</p>
-                            {senderName && (
-                                <p className="mb-6 text-sm text-gray-500">
-                                    from updates sent by <span className="font-medium text-gray-800">{senderName}</span>
-                                </p>
-                            )}
-                            <form onSubmit={handleConfirm}>
-                                <Button
-                                    type="submit"
-                                    variant="destructive"
-                                    disabled={confirmForm.processing}
-                                    className="mx-auto"
-                                >
-                                    {confirmForm.processing ? 'Processing…' : 'Confirm Unsubscribe'}
                                 </Button>
                             </form>
                         </div>

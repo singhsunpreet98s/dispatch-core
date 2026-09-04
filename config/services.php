@@ -36,8 +36,11 @@ return [
     ],
 
     'sendgrid' => [
-        'api_key'              => env('SENDGRID_API_KEY'),
-        'unsubscribe_group_id' => env('SENDGRID_UNSUBSCRIBE_GROUP_ID'),
+        'api_key'                  => env('SENDGRID_API_KEY'),
+        'unsubscribe_group_id'     => env('SENDGRID_UNSUBSCRIBE_GROUP_ID'),
+        'from_email'               => env('SENDGRID_FROM_EMAIL'),
+        'from_name'                => env('SENDGRID_FROM_NAME'),
+        'max_direct_recipients'    => env('SENDGRID_MAX_DIRECT_RECIPIENTS', 100),
     ],
 
     'gemini' => [

@@ -15,21 +15,21 @@ class UnsubscribeController extends Controller
         $email  = strtolower(trim((string) $request->query('r')));
 
         $sender = $userId ? User::find($userId) : null;
-        $alreadyUnsubscribed = false;
+        $valid  = (bool) ($sender && $email);
 
-        if ($sender && $email) {
-            $alreadyUnsubscribed = EmailUnsubscribe::where('user_id', $userId)
-                ->where('email', $email)
-                ->exists();
+        if ($valid && $request->query('done') !== 'resubscribed') {
+            EmailUnsubscribe::firstOrCreate([
+                'user_id' => $userId,
+                'email'   => $email,
+            ]);
         }
 
         return Inertia::render('unsubscribe/index', [
-            'userId'              => $userId ?: null,
-            'email'               => $email ?: null,
-            'senderName'          => $sender?->email,
-            'alreadyUnsubscribed' => $alreadyUnsubscribed,
-            'resubscribed'        => $request->query('done') === 'resubscribed',
-            'valid'               => (bool) ($sender && $email),
+            'userId'      => $userId ?: null,
+            'email'       => $email ?: null,
+            'senderName'  => $sender?->email,
+            'resubscribed' => $request->query('done') === 'resubscribed',
+            'valid'       => $valid,
         ]);
     }
 

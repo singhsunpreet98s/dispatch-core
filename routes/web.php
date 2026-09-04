@@ -26,6 +26,7 @@ use App\Http\Controllers\UnsubscribeController;
 use App\Http\Controllers\UnsubscribersController;
 use App\Http\Controllers\BlockedEmailController;
 use App\Http\Controllers\FilterEmailController;
+use App\Http\Controllers\DirectSendController;
 use App\Http\Controllers\RateRequestController;
 use App\Http\Controllers\UserRateRequestController;
 use Illuminate\Support\Facades\Route;
@@ -73,6 +74,11 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
     Route::post('campaigns', [CampaignController::class, 'store'])->name('campaigns.store');
+
+    Route::middleware(['admin-or-manager'])->group(function () {
+        Route::get('direct-sends', [DirectSendController::class, 'index'])->name('direct-sends.index');
+        Route::post('direct-sends', [DirectSendController::class, 'store'])->name('direct-sends.store');
+    });
 
 
     Route::get('email-filter', [FilterEmailController::class, 'index'])->name('email-filter.index');

@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\CheckImpersonationExpiry;
 use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\EnsureAdminOrManager;
 use App\Http\Middleware\EnsureAttendanceEnabled;
 use App\Http\Middleware\EnsureMfaSetup;
 use App\Http\Middleware\EnsureRateRequestEnabled;
@@ -28,7 +29,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
-            'admin'      => EnsureAdmin::class,
+            'admin'           => EnsureAdmin::class,
+            'admin-or-manager' => EnsureAdminOrManager::class,
             'mfa.setup'  => EnsureMfaSetup::class,
             'attendance'    => EnsureAttendanceEnabled::class,
             'salary'        => EnsureSalaryEnabled::class,

@@ -49,6 +49,7 @@ export function AppSidebar() {
         { title: 'Email Lists', url: '/email-lists', icon: Upload },
         { title: 'Templates', url: '/templates', icon: FileText },
         { title: 'Campaigns', url: '/campaigns', icon: Send },
+        ...(role === 'admin' || role === 'manager' ? [{ title: 'Direct Send', url: '/direct-sends', icon: Send }] : []),
         { title: 'Schedules', url: '/schedules', icon: CalendarClock },
         { title: 'Carrier Packets', url: '/carrier-packets', icon: Package },
         { title: 'Email Filter', url: '/email-filter', icon: Filter },

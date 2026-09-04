@@ -497,6 +497,62 @@ class SendGridService
         return ['status' => 0, 'error' => $error];
     }
 
+    /**
+     * Send a bulk email to multiple recipients via /v3/mail/send using personalizations.
+     * Each recipient gets a separate personalization so addresses are not exposed to others.
+     *
+     * @param  array{email: string, name?: string|null}[]  $contacts
+     * @return array{status: int, sent_count: int, error?: string}
+     */
+    public function sendBulkDirect(
+        string $fromEmail,
+        ?string $fromName,
+        string $subject,
+        string $htmlContent,
+        array $contacts,
+    ): array {
+        if (empty($this->apiKey)) {
+            return ['status' => 0, 'sent_count' => 0, 'error' => 'SendGrid API key is not configured.'];
+        }
+
+        if (empty($contacts)) {
+            return ['status' => 0, 'sent_count' => 0, 'error' => 'No contacts provided.'];
+        }
+
+        $personalizations = array_map(function (array $c) {
+            $to = ['email' => $c['email']];
+            if (!empty($c['name'])) {
+                $to['name'] = $c['name'];
+            }
+            return ['to' => [$to]];
+        }, $contacts);
+
+        $payload = [
+            'personalizations' => $personalizations,
+            'from'    => array_filter(['email' => $fromEmail, 'name' => $fromName]),
+            'subject' => $subject,
+            'content' => [
+                ['type' => 'text/html', 'value' => $htmlContent],
+            ],
+        ];
+
+        if ($this->unsubscribeGroupId) {
+            $payload['asm'] = ['group_id' => $this->unsubscribeGroupId];
+        }
+
+        $response = Http::withToken($this->apiKey)
+            ->post(self::BASE_URL . '/mail/send', $payload);
+
+        if ($response->successful()) {
+            return ['status' => 1, 'sent_count' => count($contacts)];
+        }
+
+        $errors = $response->json('errors', []);
+        $error  = !empty($errors) ? $errors[0]['message'] : $response->body();
+
+        return ['status' => 0, 'sent_count' => 0, 'error' => $error];
+    }
+
     private function emptyStats(): array
     {
         return [
