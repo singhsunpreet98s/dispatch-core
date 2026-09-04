@@ -2,7 +2,6 @@ import { type Column, DataTable, DataTableSkeleton, type Paginator } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -10,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Deferred, Head, useForm, usePage } from '@inertiajs/react';
-import { Plus, Send } from 'lucide-react';
+import { Eye, Plus, Send } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 type LogStatus = 'queued' | 'processing' | 'completed' | 'failed';
@@ -32,6 +31,21 @@ interface RateRequestLog {
     failed_count: number;
     status: LogStatus;
     created_at: string;
+}
+
+interface LogEntry {
+    id: number;
+    to_email: string;
+    company_name: string | null;
+    mc_number: string | null;
+    status: 'sent' | 'failed';
+    error_message: string | null;
+    sent_at: string | null;
+}
+
+interface LogDetail extends RateRequestLog {
+    state_name: string | null;
+    entries: LogEntry[];
 }
 
 interface Props {
@@ -68,6 +82,25 @@ export default function RateRequestSend({ logs, states }: Props) {
     const [sheetOpen, setSheetOpen] = useState(false);
     const sheetOpenRef = useRef(sheetOpen);
     sheetOpenRef.current = sheetOpen;
+
+    const [detailOpen, setDetailOpen] = useState(false);
+    const [detail, setDetail] = useState<LogDetail | null>(null);
+    const [detailLoading, setDetailLoading] = useState(false);
+
+    async function openDetail(log: RateRequestLog) {
+        setDetailOpen(true);
+        setDetail(null);
+        setDetailLoading(true);
+        try {
+            const res = await fetch(route('rate-requests.send.show', log.id), {
+                headers: { Accept: 'application/json' },
+            });
+            const data: LogDetail = await res.json();
+            setDetail(data);
+        } finally {
+            setDetailLoading(false);
+        }
+    }
 
     const form = useForm<{ state_id: string; email_body: string }>({
         state_id: '',
@@ -127,16 +160,25 @@ export default function RateRequestSend({ logs, states }: Props) {
             key: 'failed_count',
             header: 'Failed',
             render: (r) =>
-                r.failed_count > 0 ? (
-                    <span className="text-destructive">{r.failed_count}</span>
-                ) : (
-                    <span className="text-muted-foreground">0</span>
-                ),
+                r.failed_count > 0 ? <span className="text-destructive">{r.failed_count}</span> : <span className="text-muted-foreground">0</span>,
         },
         {
             key: 'created_at',
             header: 'Sent On',
             render: (r) => <span className="text-muted-foreground">{formatDate(r.created_at)}</span>,
+        },
+        {
+            key: 'id',
+            header: '',
+            render: (r) => (
+                <button
+                    onClick={() => openDetail(r)}
+                    className="text-muted-foreground hover:bg-muted hover:text-foreground rounded p-1"
+                    title="View details"
+                >
+                    <Eye className="h-4 w-4" />
+                </button>
+            ),
         },
     ];
 
@@ -158,18 +200,11 @@ export default function RateRequestSend({ logs, states }: Props) {
 
                 <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
                     <CardHeader className="shrink-0">
-                        <CardTitle className="text-base font-semibold">
-                            Sent Requests {logs?.total !== undefined && `(${logs.total})`}
-                        </CardTitle>
+                        <CardTitle className="text-base font-semibold">Sent Requests {logs?.total !== undefined && `(${logs.total})`}</CardTitle>
                     </CardHeader>
                     <CardContent className="flex min-h-0 flex-1 flex-col p-0">
                         <Deferred data="logs" fallback={<DataTableSkeleton columns={6} rows={10} />}>
-                            <DataTable
-                                columns={columns}
-                                paginator={logs!}
-                                rowKey={(r) => r.id}
-                                emptyMessage="No rate requests sent yet."
-                            />
+                            <DataTable columns={columns} paginator={logs!} rowKey={(r) => r.id} emptyMessage="No rate requests sent yet." />
                         </Deferred>
                     </CardContent>
                 </Card>
@@ -233,10 +268,7 @@ export default function RateRequestSend({ logs, states }: Props) {
                         <Button type="button" variant="outline" onClick={() => handleSheetClose(false)} disabled={form.processing}>
                             Cancel
                         </Button>
-                        <Button
-                            onClick={handleSubmit}
-                            disabled={form.processing || !form.data.state_id || !form.data.email_body.trim()}
-                        >
+                        <Button onClick={handleSubmit} disabled={form.processing || !form.data.state_id || !form.data.email_body.trim()}>
                             {form.processing ? (
                                 'Sending…'
                             ) : (
@@ -247,6 +279,56 @@ export default function RateRequestSend({ logs, states }: Props) {
                             )}
                         </Button>
                     </SheetFooter>
+                </SheetContent>
+            </Sheet>
+            {/* ── Detail sheet ── */}
+            <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
+                <SheetContent side="right" className="flex flex-col sm:max-w-2xl">
+                    <SheetHeader>
+                        <SheetTitle>Rate Request Detail</SheetTitle>
+                        <SheetDescription>
+                            {detail ? `${detail.state_name ?? detail.state_code} — ${formatDate(detail.created_at)}` : ' '}
+                        </SheetDescription>
+                    </SheetHeader>
+
+                    <div className="flex flex-1 flex-col gap-5 overflow-y-auto py-4">
+                        {detailLoading && <div className="text-muted-foreground flex flex-1 items-center justify-center text-sm">Loading…</div>}
+
+                        {detail && !detailLoading && (
+                            <>
+                                {/* Stats row */}
+                                <div className="grid grid-cols-3 gap-3">
+                                    {[
+                                        { label: 'Recipients', value: detail.total_recipients },
+                                        { label: 'Sent', value: detail.sent_count, className: 'text-green-600 dark:text-green-400' },
+                                        { label: 'Failed', value: detail.failed_count, className: detail.failed_count > 0 ? 'text-destructive' : '' },
+                                    ].map(({ label, value, className }) => (
+                                        <div key={label} className="bg-muted/30 rounded-lg border px-4 py-3 text-center">
+                                            <p className="text-muted-foreground text-xs">{label}</p>
+                                            <p className={`text-xl font-semibold ${className ?? ''}`}>{value}</p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Status */}
+                                <div className="flex items-center gap-2">
+                                    <span className="text-muted-foreground text-sm">Status:</span>
+                                    <Badge variant={statusVariant(detail.status as LogStatus)} className="capitalize">
+                                        {statusLabel[detail.status as LogStatus]}
+                                    </Badge>
+                                </div>
+
+                                {/* Email body */}
+                                <div className="space-y-1.5">
+                                    <p className="text-sm font-medium">Email Message</p>
+                                    <div className="bg-muted/20 rounded-lg border px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap">
+                                        {detail.email_body}
+                                    </div>
+                                </div>
+
+                            </>
+                        )}
+                    </div>
                 </SheetContent>
             </Sheet>
         </AppLayout>

@@ -103,6 +103,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['rate-request'])->group(function () {
         Route::get('rate-requests/send', [UserRateRequestController::class, 'index'])->name('rate-requests.send.index');
         Route::post('rate-requests/send', [UserRateRequestController::class, 'store'])->name('rate-requests.send.store');
+        Route::get('rate-requests/send/{log}', [UserRateRequestController::class, 'show'])->name('rate-requests.send.show');
     });
 
     Route::middleware(['admin'])->group(function () {

@@ -36,6 +36,34 @@ class UserRateRequestController extends Controller
         ]);
     }
 
+    public function show(Request $request, RateRequestLog $log)
+    {
+        abort_if($log->user_id !== $request->user()->id, 403);
+
+        $log->load(['state', 'entries']);
+
+        return response()->json([
+            'id'               => $log->id,
+            'state_name'       => $log->state?->state_name,
+            'state_code'       => $log->state?->state_code,
+            'status'           => $log->status,
+            'email_body'       => $log->email_body,
+            'total_recipients' => $log->total_recipients,
+            'sent_count'       => $log->sent_count,
+            'failed_count'     => $log->failed_count,
+            'created_at'       => $log->created_at->toIso8601String(),
+            'entries'          => $log->entries->map(fn ($e) => [
+                'id'            => $e->id,
+                'to_email'      => $e->to_email,
+                'company_name'  => $e->company_name,
+                'mc_number'     => $e->mc_number,
+                'status'        => $e->status,
+                'error_message' => $e->error_message,
+                'sent_at'       => $e->sent_at?->toIso8601String(),
+            ])->values(),
+        ]);
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([
