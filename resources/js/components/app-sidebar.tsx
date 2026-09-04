@@ -10,12 +10,12 @@ import {
     CalendarClock,
     ClipboardList,
     Clock,
+    FileSpreadsheet,
     FileText,
     Filter,
     LayoutGrid,
     MailOpen,
     MailX,
-    MapPin,
     Package,
     Send,
     Settings2,
@@ -56,14 +56,15 @@ export function AppSidebar() {
         ...(role === 'admin'
             ? [
                   { title: 'Blocked Emails', url: '/blocked-emails', icon: ShieldX },
-                  { title: 'Geofence', url: '/geofence', icon: MapPin },
+                  { title: 'Rate Requests', url: '/rate-requests', icon: FileSpreadsheet },
                   { title: 'Customers', url: '/customers', icon: UserRound },
                   { title: 'Users', url: '/users', icon: Users },
                   { title: 'System Settings', url: '/settings/system', icon: Settings2 },
               ]
-            : salaryEnabled
-              ? [{ title: 'Remuneration', url: '/remuneration', icon: Banknote }]
-              : []),
+            : [
+                  { title: 'Rate Requests', url: '/rate-requests/send', icon: FileSpreadsheet },
+                  ...(salaryEnabled ? [{ title: 'Remuneration', url: '/remuneration', icon: Banknote }] : []),
+              ]),
     ];
 
     return (

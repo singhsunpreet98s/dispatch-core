@@ -1,7 +1,10 @@
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import { type AttendanceHoliday, type AttendanceSettings, type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
+import { MapPin } from 'lucide-react';
 import ApiTokenTab from './system/api-token-tab';
 import AttendanceTab from './system/attendance-tab';
 import CampaignsTab, { type CampaignCommandStatus } from './system/campaigns-tab';
@@ -53,6 +56,23 @@ export default function SystemSettings({ logoUrl, companyInfo, featureFlagList, 
                         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
                             <LogoTab logoUrl={logoUrl} timezone={timezone} timezones={timezones} />
                             <CompanyInfoTab companyInfo={companyInfo} />
+                            <Card>
+                                <CardHeader>
+                                    <div className="flex items-center gap-2">
+                                        <MapPin className="h-5 w-5" />
+                                        <CardTitle className="text-base font-semibold">Geofence</CardTitle>
+                                    </div>
+                                    <CardDescription>Manage geofence zones used for attendance location tracking.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Button asChild size="sm">
+                                        <Link href="/geofence">
+                                            <MapPin className="mr-1.5 h-3.5 w-3.5" />
+                                            Open Geofence
+                                        </Link>
+                                    </Button>
+                                </CardContent>
+                            </Card>
                         </div>
                     </TabsContent>
 

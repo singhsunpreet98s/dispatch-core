@@ -446,6 +446,56 @@ class SendGridService
         return $singlesendId;
     }
 
+    /**
+     * Send a one-to-one transactional email via the SendGrid Email API (/v3/mail/send).
+     *
+     * The `from` address is the verified SendGrid sender from config.
+     * Pass `$replyToEmail` to set a Reply-To header (e.g. the requesting user's address).
+     *
+     * @return array{status: int, error?: string}  status 1 = success, 0 = failure
+     */
+    public function sendTransactionalEmail(
+        string $toEmail,
+        string $fromEmail,
+        string $subject,
+        string $htmlContent,
+        ?string $fromName = null,
+    ): array {
+        if (empty($this->apiKey)) {
+            return ['status' => 0, 'error' => 'SendGrid API key is not configured.'];
+        }
+
+        $payload = [
+            'personalizations' => [
+                ['to' => [['email' => $toEmail]]],
+            ],
+            'from'    => array_filter(['email' => $fromEmail, 'name' => $fromName]),
+            'subject' => $subject,
+            'content' => [
+                ['type' => 'text/html', 'value' => $htmlContent],
+            ],
+        ];
+
+        $response = Http::withToken($this->apiKey)
+            ->post(self::BASE_URL . '/mail/send', $payload);
+
+        // SendGrid returns 202 Accepted on success
+        if ($response->successful()) {
+            return ['status' => 1];
+        }
+
+        $errors = $response->json('errors', []);
+        $error  = ! empty($errors) ? $errors[0]['message'] : $response->body();
+
+        \Illuminate\Support\Facades\Log::error('SendGridService::sendTransactionalEmail failed', [
+            'to'     => $toEmail,
+            'status' => $response->status(),
+            'error'  => $error,
+        ]);
+
+        return ['status' => 0, 'error' => $error];
+    }
+
     private function emptyStats(): array
     {
         return [
