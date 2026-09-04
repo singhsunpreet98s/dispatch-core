@@ -39,11 +39,11 @@ class ProcessRateRequest implements ShouldQueue
 
         foreach ($contacts as $contact) {
             $result = $this->sendgrid->sendTransactionalEmail(
-                toEmail:     $contact->email,
-                fromEmail:   $user->email,
-                subject:     $subject,
+                toEmail: $contact->email,
+                fromEmail: $user->email,
+                subject: $subject,
                 htmlContent: $htmlBody,
-                fromName:    $user->name,
+                fromName: $user->name,
             );
 
             $success = $result['status'] === 1;
@@ -87,10 +87,6 @@ class ProcessRateRequest implements ShouldQueue
         return <<<HTML
         <div style="font-family: Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.6;">
             <p>{$escaped}</p>
-            <br>
-            <p style="color: #666; font-size: 12px;">
-                Sent by {$fromName} &lt;{$fromEmail}&gt;
-            </p>
         </div>
         HTML;
     }

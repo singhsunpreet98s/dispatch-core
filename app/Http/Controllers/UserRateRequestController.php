@@ -40,7 +40,6 @@ class UserRateRequestController extends Controller
     {
         $data = $request->validate([
             'state_id'   => ['required', 'integer', Rule::exists('states', 'id')],
-            'subject'    => ['required', 'string', 'max:255'],
             'email_body' => ['required', 'string', 'min:10', 'max:5000'],
         ]);
 
@@ -49,7 +48,6 @@ class UserRateRequestController extends Controller
         $log = RateRequestLog::create([
             'user_id'    => $request->user()->id,
             'state_id'   => $data['state_id'],
-            'subject'    => $data['subject'],
             'email_body' => $data['email_body'],
             'status'     => 'queued',
         ]);

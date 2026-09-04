@@ -69,9 +69,8 @@ export default function RateRequestSend({ logs, states }: Props) {
     const sheetOpenRef = useRef(sheetOpen);
     sheetOpenRef.current = sheetOpen;
 
-    const form = useForm<{ state_id: string; subject: string; email_body: string }>({
+    const form = useForm<{ state_id: string; email_body: string }>({
         state_id: '',
-        subject: '',
         email_body: '',
     });
     const formRef = useRef(form);
@@ -212,20 +211,6 @@ export default function RateRequestSend({ logs, states }: Props) {
                         {form.data.state_id && (
                             <>
                                 <div className="space-y-2">
-                                    <Label htmlFor="subject">
-                                        Subject <span className="text-destructive">*</span>
-                                    </Label>
-                                    <Input
-                                        id="subject"
-                                        value={form.data.subject}
-                                        onChange={(e) => form.setData('subject', e.target.value)}
-                                        placeholder="Rate request for {state_name}…"
-                                        autoFocus
-                                    />
-                                    {form.errors.subject && <p className="text-destructive text-xs">{form.errors.subject}</p>}
-                                </div>
-
-                                <div className="space-y-2">
                                     <Label htmlFor="email-body">Email Message</Label>
                                     <Textarea
                                         id="email-body"
@@ -250,7 +235,7 @@ export default function RateRequestSend({ logs, states }: Props) {
                         </Button>
                         <Button
                             onClick={handleSubmit}
-                            disabled={form.processing || !form.data.state_id || !form.data.subject.trim() || !form.data.email_body.trim()}
+                            disabled={form.processing || !form.data.state_id || !form.data.email_body.trim()}
                         >
                             {form.processing ? (
                                 'Sending…'
