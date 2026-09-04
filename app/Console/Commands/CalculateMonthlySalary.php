@@ -20,7 +20,7 @@ class CalculateMonthlySalary extends Command
     protected $description = 'Calculate monthly salary for all users based on their attendance';
 
     // New attendance thresholds (worked seconds, excluding breaks)
-    private const FULL_DAY_SECONDS  = 7 * 3600 + 40 * 60; // 7h 40m
+    private const FULL_DAY_SECONDS  = 7 * 3600 + 30 * 60; // 7h 30m
     private const SHORT_LEAVE_SECONDS = 6 * 3600;           // 6h
     private const HALF_DAY_SECONDS  = 4 * 3600;             // 4h
 
@@ -326,5 +326,4 @@ class CalculateMonthlySalary extends Command
 
         return collect($days)->unique()->values();
     }
-
 }

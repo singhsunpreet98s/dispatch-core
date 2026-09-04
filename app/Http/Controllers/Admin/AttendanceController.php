@@ -50,7 +50,7 @@ class AttendanceController extends Controller
                     $status = $s->admin_override_status
                         ?? match (true) {
                             $s->clocked_in_at && ! $s->clocked_out_at && $s->date->format('Y-m-d') === $today => 'present',
-                            $workedSecs >= 7 * 3600 + 40 * 60 => 'present',
+                            $workedSecs >= 7 * 3600 + 30 * 60 => 'present',
                             $workedSecs >= 6 * 3600            => 'short_leave',
                             $workedSecs >= 4 * 3600            => 'half_day',
                             default                            => 'absent',
@@ -237,7 +237,7 @@ class AttendanceController extends Controller
                     $dayStatus = $s->admin_override_status;
                 } elseif ($s->clocked_in_at && ! $s->clocked_out_at && $s->date->format('Y-m-d') === $today) {
                     $dayStatus = 'present';
-                } elseif ($workedSecs >= 7 * 3600 + 40 * 60) {
+                } elseif ($workedSecs >= 7 * 3600 + 30 * 60) {
                     $dayStatus = 'present';
                 } elseif ($workedSecs >= 6 * 3600) {
                     $dayStatus = 'short_leave';

@@ -183,7 +183,7 @@ class AttendanceService
             // Use worked seconds (excluding breaks) for status thresholds
             $workedSeconds = $shift->totalWorkedSeconds();
 
-            if ($workedSeconds >= 7 * 3600 + 40 * 60) { // >= 7h 20m
+            if ($workedSeconds >= 7 * 3600 + 30 * 60) { // >= 7h 20m
                 return 'present';
             }
             if ($workedSeconds >= 6 * 3600) { // >= 6h
