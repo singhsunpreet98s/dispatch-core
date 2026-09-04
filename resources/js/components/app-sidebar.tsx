@@ -51,11 +51,11 @@ export function AppSidebar() {
         { title: 'Campaigns', url: '/campaigns', icon: Send },
         { title: 'Schedules', url: '/schedules', icon: CalendarClock },
         { title: 'Carrier Packets', url: '/carrier-packets', icon: Package },
-        { title: 'Unsubscribers', url: '/unsubscribers', icon: MailX },
         { title: 'Email Filter', url: '/email-filter', icon: Filter },
         { title: 'Email Activity', url: '/emails', icon: MailOpen },
         ...(role === 'admin'
             ? [
+                  { title: 'Unsubscribers', url: '/unsubscribers', icon: MailX },
                   { title: 'Blocked Emails', url: '/blocked-emails', icon: ShieldX },
                   ...(rateRequestEnabled ? [{ title: 'Rate Requests', url: '/rate-requests', icon: FileSpreadsheet }] : []),
                   { title: 'Customers', url: '/customers', icon: UserRound },

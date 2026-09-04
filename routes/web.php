@@ -74,8 +74,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
     Route::post('campaigns', [CampaignController::class, 'store'])->name('campaigns.store');
 
-    Route::get('unsubscribers', [UnsubscribersController::class, 'index'])->name('unsubscribers.index');
-    Route::delete('unsubscribers/{id}', [UnsubscribersController::class, 'destroy'])->name('unsubscribers.destroy');
 
     Route::get('email-filter', [FilterEmailController::class, 'index'])->name('email-filter.index');
     Route::post('email-filter/scan', [FilterEmailController::class, 'scan'])->name('email-filter.scan');
@@ -122,6 +120,9 @@ Route::middleware(['auth'])->group(function () {
             Route::patch('attendance/leave/{leave}/reject', [AdminLeaveController::class, 'reject'])->name('attendance.leave.reject');
             Route::patch('attendance/shifts/{shift}/override-status', [AdminAttendanceController::class, 'overrideShiftStatus'])->name('attendance.shifts.override-status');
         });
+
+        Route::get('unsubscribers', [UnsubscribersController::class, 'index'])->name('unsubscribers.index');
+        Route::delete('unsubscribers/{id}', [UnsubscribersController::class, 'destroy'])->name('unsubscribers.destroy');
 
         Route::get('blocked-emails', [BlockedEmailController::class, 'index'])->name('blocked-emails.index');
         Route::post('blocked-emails', [BlockedEmailController::class, 'store'])->name('blocked-emails.store');
