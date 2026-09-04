@@ -1,3 +1,4 @@
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     DropdownMenu,
@@ -82,9 +83,9 @@ export function DailyRecordsTable({
                                 const isOpen = expanded.has(row.id);
                                 const cfg = STATUS_STYLE[row.day_status] ?? STATUS_STYLE.present;
                                 return (
-                                    <>
+                                    <React.Fragment key={row.id}>
                                         {/* Shift row */}
-                                        <TableRow key={row.id} className={`transition-colors hover:bg-muted/20 ${cfg.row}`}>
+                                        <TableRow className={`transition-colors hover:bg-muted/20 ${cfg.row}`}>
                                             <TableCell className="px-4 py-3">
                                                 {row.break_count > 0 && (
                                                     <button
@@ -274,7 +275,7 @@ export function DailyRecordsTable({
                                                 </TableCell>
                                             </TableRow>
                                         )}
-                                    </>
+                                    </React.Fragment>
                                 );
                             })
                         )}

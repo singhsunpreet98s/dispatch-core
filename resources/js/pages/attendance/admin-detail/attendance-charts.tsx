@@ -1,17 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-    Area,
-    AreaChart,
-    CartesianGrid,
-    Cell,
-    Pie,
-    PieChart,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
-} from 'recharts';
-import { dayLabel, fmtSeconds, secToHours, STATUS_BAR_COLOR, STATUS_STYLE } from './helpers';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { dayLabel, fmtSeconds, secToHours } from './helpers';
 import type { ShiftRow } from './types';
 
 function AreaTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
@@ -30,40 +19,12 @@ function AreaTooltip({ active, payload, label }: { active?: boolean; payload?: a
     );
 }
 
-function DonutTooltip({ active, payload }: { active?: boolean; payload?: any[] }) {
-    if (!active || !payload?.length) return null;
-    const p = payload[0];
-    return (
-        <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
-            <p className="flex items-center gap-1.5 font-medium text-foreground">
-                <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ background: p.payload.fill }} />
-                {p.name}: <span className="ml-1">{p.value} day{p.value !== 1 ? 's' : ''}</span>
-            </p>
-        </div>
-    );
-}
-
-export function AttendanceCharts({ shifts }: { shifts: ShiftRow[] }) {
+export function AttendanceCharts({ shifts, rightSlot }: { shifts: ShiftRow[]; rightSlot?: React.ReactNode }) {
     const chartData = shifts.map((s) => ({
         day:    dayLabel(s.date),
-        date:   s.date,
-        status: s.day_status,
         Worked: secToHours(s.total_worked_seconds),
         Break:  secToHours(s.total_break_seconds),
     }));
-
-    const statusCounts = Object.entries(
-        shifts.reduce<Record<string, number>>((acc, s) => {
-            acc[s.day_status] = (acc[s.day_status] ?? 0) + 1;
-            return acc;
-        }, {}),
-    )
-        .filter(([, v]) => v > 0)
-        .map(([key, value]) => ({
-            name:  STATUS_STYLE[key]?.label ?? key,
-            value,
-            fill:  STATUS_BAR_COLOR[key] ?? '#94a3b8',
-        }));
 
     return (
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
@@ -105,44 +66,8 @@ export function AttendanceCharts({ shifts }: { shifts: ShiftRow[] }) {
                 </CardContent>
             </Card>
 
-            {/* Donut chart — attendance breakdown */}
-            <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Attendance breakdown</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <ResponsiveContainer width="100%" height={180}>
-                        <PieChart>
-                            <Pie
-                                data={statusCounts}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={52}
-                                outerRadius={78}
-                                paddingAngle={3}
-                                dataKey="value"
-                                strokeWidth={0}
-                            >
-                                {statusCounts.map((entry, i) => (
-                                    <Cell key={i} fill={entry.fill} />
-                                ))}
-                            </Pie>
-                            <Tooltip content={<DonutTooltip />} />
-                        </PieChart>
-                    </ResponsiveContainer>
-                    <div className="mt-2 flex flex-col gap-1.5">
-                        {statusCounts.map((s) => (
-                            <div key={s.name} className="flex items-center justify-between text-xs">
-                                <span className="flex items-center gap-1.5 text-muted-foreground">
-                                    <span className="h-2 w-2 rounded-full" style={{ background: s.fill }} />
-                                    {s.name}
-                                </span>
-                                <span className="font-medium text-foreground">{s.value}d</span>
-                            </div>
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
+            {/* Right slot — calendar or other content */}
+            {rightSlot && <div className="xl:col-span-1">{rightSlot}</div>}
         </div>
     );
 }

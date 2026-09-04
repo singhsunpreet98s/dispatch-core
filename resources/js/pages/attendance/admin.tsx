@@ -1,21 +1,19 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DatePickerWithRange } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { format, parseISO } from 'date-fns';
 import { ArrowRight, CalendarDays, Clock, Filter, SlidersHorizontal, Users, X } from 'lucide-react';
 import { useState } from 'react';
-import type { DateRange } from 'react-day-picker';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface UserSummaryRow {
     user: { id: number; name: string };
     days_worked: number;
+    effective_days: number;
     total_worked_seconds: number;
     total_break_seconds: number;
     total_breaks: number;
@@ -32,6 +30,14 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Attendance', href: '/attendance/admin' },
 ];
 
+const MONTH_NAMES = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 2022 }, (_, i) => CURRENT_YEAR - i);
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function fmtSeconds(s: number): string {
@@ -40,12 +46,37 @@ function fmtSeconds(s: number): string {
     return `${h}h ${m.toString().padStart(2, '0')}m`;
 }
 
-function fmtDate(iso: string): string {
-    try { return format(parseISO(iso), 'MMM d, yyyy'); } catch { return iso; }
+function countWorkingDays(dateFrom: string, dateTo: string): number {
+    let count = 0;
+    const cur = new Date(dateFrom + 'T00:00:00');
+    const to  = new Date(dateTo   + 'T00:00:00');
+    while (cur <= to) {
+        const dow = cur.getDay();
+        if (dow !== 0 && dow !== 6) count++;
+        cur.setDate(cur.getDate() + 1);
+    }
+    return count;
+}
+
+function fmtEffective(val: number): string {
+    return val % 1 === 0 ? String(val) : val.toFixed(2);
 }
 
 function initials(name: string): string {
     return name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+}
+
+function monthYearFromDate(iso: string): { month: number; year: number } {
+    const d = new Date(iso + 'T00:00:00');
+    return { month: d.getMonth() + 1, year: d.getFullYear() };
+}
+
+function monthStart(year: number, month: number): string {
+    return `${year}-${String(month).padStart(2, '0')}-01`;
+}
+
+function monthEnd(year: number, month: number): string {
+    return new Date(year, month, 0).toISOString().slice(0, 10);
 }
 
 // ─── Stat Tile ────────────────────────────────────────────────────────────────
@@ -71,32 +102,35 @@ function StatTile({ icon, label, value }: { icon: React.ReactNode; label: string
 export default function AttendanceAdmin({ summary, users, filters }: Props) {
     const [sheetOpen, setSheetOpen] = useState(false);
 
+    const active = monthYearFromDate(filters.date_from);
     const [draftUserId, setDraftUserId] = useState<string>(filters.user_id ?? '');
-    const [draftDateRange, setDraftDateRange] = useState<DateRange | undefined>({
-        from: parseISO(filters.date_from),
-        to:   parseISO(filters.date_to),
-    });
+    const [draftMonth, setDraftMonth]   = useState(active.month);
+    const [draftYear, setDraftYear]     = useState(active.year);
 
     const activeUserId = filters.user_id ?? '';
     const userLabel = users.find((u) => String(u.id) === activeUserId)?.name ?? '';
 
     // ── Stats ──────────────────────────────────────────────────────────────
-    const totalWorked = summary.reduce((acc, r) => acc + r.total_worked_seconds, 0);
-    const maxWorked   = Math.max(...summary.map((r) => r.total_worked_seconds), 1);
+    const totalWorked   = summary.reduce((acc, r) => acc + r.total_worked_seconds, 0);
+    const maxWorked     = Math.max(...summary.map((r) => r.total_worked_seconds), 1);
+    const totalWorkDays = countWorkingDays(filters.date_from, filters.date_to);
 
     function openSheet() {
         setDraftUserId(activeUserId);
-        setDraftDateRange({ from: parseISO(filters.date_from), to: parseISO(filters.date_to) });
+        setDraftMonth(active.month);
+        setDraftYear(active.year);
         setSheetOpen(true);
     }
 
     function applyFilters() {
         setSheetOpen(false);
-        const from = draftDateRange?.from ? format(draftDateRange.from, 'yyyy-MM-dd') : filters.date_from;
-        const to   = draftDateRange?.to   ? format(draftDateRange.to,   'yyyy-MM-dd') : filters.date_to;
         router.get(
             route('attendance.admin.index'),
-            { ...(draftUserId ? { user_id: draftUserId } : {}), date_from: from, date_to: to },
+            {
+                ...(draftUserId ? { user_id: draftUserId } : {}),
+                date_from: monthStart(draftYear, draftMonth),
+                date_to:   monthEnd(draftYear, draftMonth),
+            },
             { preserveState: true, replace: true },
         );
     }
@@ -138,10 +172,10 @@ export default function AttendanceAdmin({ summary, users, filters }: Props) {
 
                 {/* ── Active filter strip ── */}
                 <div className="flex flex-wrap items-center gap-2">
-                    {/* Date range — always shown */}
+                    {/* Month/year — always shown */}
                     <span className="inline-flex items-center gap-1.5 rounded-full border bg-muted/60 px-3 py-1 text-xs font-medium">
                         <CalendarDays className="h-3 w-3 text-muted-foreground" />
-                        {fmtDate(filters.date_from)} – {fmtDate(filters.date_to)}
+                        {MONTH_NAMES[active.month - 1]} {active.year}
                     </span>
 
                     {/* User filter — dismissible */}
@@ -157,16 +191,8 @@ export default function AttendanceAdmin({ summary, users, filters }: Props) {
 
                 {/* ── Stat tiles ── */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <StatTile
-                        icon={<Users className="h-5 w-5" />}
-                        label="Employees shown"
-                        value={String(summary.length)}
-                    />
-                    <StatTile
-                        icon={<Clock className="h-5 w-5" />}
-                        label="Total hours worked"
-                        value={fmtSeconds(totalWorked)}
-                    />
+                    <StatTile icon={<Users className="h-5 w-5" />} label="Employees shown" value={String(summary.length)} />
+                    <StatTile icon={<Clock className="h-5 w-5" />} label="Total hours worked" value={fmtSeconds(totalWorked)} />
                     <StatTile
                         icon={<CalendarDays className="h-5 w-5" />}
                         label="Avg per employee"
@@ -177,9 +203,7 @@ export default function AttendanceAdmin({ summary, users, filters }: Props) {
                 {/* ── Table card ── */}
                 <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
                     <CardHeader className="shrink-0 pb-0">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Employee breakdown
-                        </CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Employee breakdown</CardTitle>
                     </CardHeader>
                     <CardContent className="flex min-h-0 flex-1 flex-col p-0">
                         <div className="flex-1 overflow-auto min-h-0">
@@ -187,7 +211,7 @@ export default function AttendanceAdmin({ summary, users, filters }: Props) {
                                 <thead className="sticky top-0 z-10">
                                     <tr className="border-b bg-card text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                                         <th className="px-6 py-3">Employee</th>
-                                        <th className="px-6 py-3">Days</th>
+                                        <th className="px-6 py-3">Days Worked</th>
                                         <th className="px-6 py-3">Time Worked</th>
                                         <th className="px-6 py-3">Break Time</th>
                                         <th className="px-6 py-3">Breaks</th>
@@ -206,7 +230,6 @@ export default function AttendanceAdmin({ summary, users, filters }: Props) {
                                             const pct = Math.round((row.total_worked_seconds / maxWorked) * 100);
                                             return (
                                                 <tr key={row.user.id} className="transition-colors hover:bg-muted/20">
-                                                    {/* Employee */}
                                                     <td className="px-6 py-3">
                                                         <div className="flex items-center gap-3">
                                                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
@@ -215,32 +238,23 @@ export default function AttendanceAdmin({ summary, users, filters }: Props) {
                                                             <span className="font-medium">{row.user.name}</span>
                                                         </div>
                                                     </td>
-
-                                                    {/* Days */}
                                                     <td className="px-6 py-3">
-                                                        <span className="text-sm font-medium">{row.days_worked}</span>
-                                                        <span className="ml-1 text-xs text-muted-foreground">days</span>
+                                                        <span className="text-sm font-medium">{fmtEffective(row.effective_days)}</span>
+                                                        <span className="text-muted-foreground text-xs"> / {totalWorkDays}</span>
+                                                        <p className="text-[11px] text-muted-foreground">{row.days_worked} shift{row.days_worked !== 1 ? 's' : ''}</p>
                                                     </td>
-
-                                                    {/* Time worked + bar */}
                                                     <td className="px-6 py-3">
                                                         <span className="font-mono text-sm">{fmtSeconds(row.total_worked_seconds)}</span>
                                                         <div className="mt-1 h-1 w-24 rounded-full bg-muted">
                                                             <div className="h-1 rounded-full bg-primary/60" style={{ width: `${pct}%` }} />
                                                         </div>
                                                     </td>
-
-                                                    {/* Break time */}
                                                     <td className="px-6 py-3 font-mono text-sm text-muted-foreground">
                                                         {fmtSeconds(row.total_break_seconds)}
                                                     </td>
-
-                                                    {/* Breaks */}
                                                     <td className="px-6 py-3 text-sm text-muted-foreground">
                                                         {row.total_breaks}
                                                     </td>
-
-                                                    {/* Detail */}
                                                     <td className="px-6 py-3 text-right">
                                                         <Button variant="ghost" size="sm" asChild className="gap-1.5 text-xs">
                                                             <Link href={detailHref(row.user.id)}>
@@ -271,7 +285,7 @@ export default function AttendanceAdmin({ summary, users, filters }: Props) {
                     </SheetHeader>
 
                     <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
-                        {/* User */}
+                        {/* Employee */}
                         <div className="space-y-2">
                             <p className="text-sm font-medium">Employee</p>
                             <Select value={draftUserId || 'all'} onValueChange={(v) => setDraftUserId(v === 'all' ? '' : v)}>
@@ -292,18 +306,31 @@ export default function AttendanceAdmin({ summary, users, filters }: Props) {
                             )}
                         </div>
 
-                        {/* Date range */}
+                        {/* Month & Year */}
                         <div className="space-y-2">
-                            <p className="text-sm font-medium">Date range</p>
-                            <DatePickerWithRange
-                                value={draftDateRange}
-                                onChange={setDraftDateRange}
-                                numberOfMonths={1}
-                                placeholder="Pick a date range"
-                                disabled={{ after: new Date() }}
-                                className="w-full"
-                                triggerClassName="w-full"
-                            />
+                            <p className="text-sm font-medium">Month</p>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Select value={String(draftMonth)} onValueChange={(v) => setDraftMonth(Number(v))}>
+                                    <SelectTrigger className="text-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {MONTH_NAMES.map((name, i) => (
+                                            <SelectItem key={i + 1} value={String(i + 1)}>{name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <Select value={String(draftYear)} onValueChange={(v) => setDraftYear(Number(v))}>
+                                    <SelectTrigger className="text-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {YEAR_OPTIONS.map((y) => (
+                                            <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                     </div>
 

@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\FeatureFlag;
 use App\Helpers\AppTimezone;
 use App\Http\Controllers\Controller;
 use App\Models\AppExitEvent;
 use App\Models\AttendanceBreak;
+use App\Models\AttendanceNote;
 use App\Models\AttendanceShift;
+use App\Models\MonthlySalary;
 use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -34,14 +37,37 @@ class AttendanceController extends Controller
             ->orderBy('user_id')
             ->get();
 
+        $today = now(AppTimezone::get())->toDateString();
+
         $summary = $shifts
             ->groupBy('user_id')
-            ->map(function ($userShifts) {
+            ->map(function ($userShifts) use ($today) {
                 $user = $userShifts->first()->user;
+
+                $effectiveDays = $userShifts->sum(function ($s) use ($today) {
+                    $workedSecs = $s->totalWorkedSeconds();
+
+                    $status = $s->admin_override_status
+                        ?? match (true) {
+                            $s->clocked_in_at && ! $s->clocked_out_at && $s->date->format('Y-m-d') === $today => 'present',
+                            $workedSecs >= 7 * 3600 + 40 * 60 => 'present',
+                            $workedSecs >= 6 * 3600            => 'short_leave',
+                            $workedSecs >= 4 * 3600            => 'half_day',
+                            default                            => 'absent',
+                        };
+
+                    return match ($status) {
+                        'present'     => 1.0,
+                        'short_leave' => 0.75,
+                        'half_day'    => 0.5,
+                        default       => 0,
+                    };
+                });
 
                 return [
                     'user'                 => ['id' => $user->id, 'name' => $user->name],
                     'days_worked'          => $userShifts->count(),
+                    'effective_days'       => $effectiveDays,
                     'total_worked_seconds' => $userShifts->sum(fn($s) => $s->totalWorkedSeconds()),
                     'total_break_seconds'  => $userShifts->sum(fn($s) => $s->totalBreakSeconds()),
                     'total_breaks'         => $userShifts->sum(fn($s) => $s->breaks->count()),
@@ -246,11 +272,38 @@ class AttendanceController extends Controller
                     ]),
                 ];
             });
+        $notes = AttendanceNote::where('user_id', $user->id)
+            ->whereBetween('date', [$dateFrom, $dateTo])
+            ->get()
+            ->mapWithKeys(fn($n) => [$n->date->format('Y-m-d') => $n->items ?? []]);
+
+        $salaryEnabled = FeatureFlag::SALARY->isEnabled();
+        $monthlySalary = null;
+        if ($salaryEnabled) {
+            $fromDate      = \Carbon\Carbon::parse($dateFrom);
+            $monthlySalary = MonthlySalary::where('user_id', $user->id)
+                ->where('year', $fromDate->year)
+                ->where('month', $fromDate->month)
+                ->first();
+        }
+
         return Inertia::render('attendance/admin-detail', [
-            'user'     => ['id' => $user->id, 'name' => $user->name],
-            'shifts'   => $shifts,
-            'dateFrom' => $dateFrom,
-            'dateTo'   => $dateTo,
+            'user'          => ['id' => $user->id, 'name' => $user->name],
+            'shifts'        => $shifts,
+            'dateFrom'      => $dateFrom,
+            'dateTo'        => $dateTo,
+            'notes'         => $notes,
+            'salaryEnabled' => $salaryEnabled,
+            'monthlySalary' => $monthlySalary ? [
+                'gross_earned'      => (float) $monthlySalary->gross_earned,
+                'per_month_salary'  => (float) $monthlySalary->per_month_salary,
+                'days_present'      => $monthlySalary->days_present,
+                'days_short_leave'  => $monthlySalary->days_short_leave,
+                'days_half_day'     => $monthlySalary->days_half_day,
+                'days_absent'       => $monthlySalary->days_absent,
+                'extra_earned'      => (float) $monthlySalary->extra_earned,
+                'calculated_at'     => $monthlySalary->calculated_at?->toIso8601String(),
+            ] : null,
         ]);
     }
 

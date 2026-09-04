@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { CalendarDays, Clock, Coffee, Timer } from 'lucide-react';
-import { fmtSeconds } from './helpers';
-import type { ShiftRow } from './types';
+import { CalendarDays, Clock, Coffee, DollarSign, Timer } from 'lucide-react';
+import { countWorkingDays, effectiveDays, fmtSeconds } from './helpers';
+import type { MonthlySalaryData, ShiftRow } from './types';
 
 function StatTile({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
     return (
@@ -20,19 +20,32 @@ function StatTile({ icon, label, value, sub }: { icon: React.ReactNode; label: s
     );
 }
 
-export function StatTilesRow({ shifts }: { shifts: ShiftRow[] }) {
+const fmt = (n: number) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(n);
+
+export function StatTilesRow({
+    shifts, dateFrom, dateTo, salaryEnabled, monthlySalary,
+}: {
+    shifts: ShiftRow[];
+    dateFrom: string;
+    dateTo: string;
+    salaryEnabled: boolean;
+    monthlySalary: MonthlySalaryData | null;
+}) {
     const totalWorked    = shifts.reduce((a, s) => a + s.total_worked_seconds, 0);
     const totalBreakTime = shifts.reduce((a, s) => a + s.total_break_seconds, 0);
     const totalBreaks    = shifts.reduce((a, s) => a + s.break_count, 0);
-    const daysPresent    = shifts.filter((s) => s.day_status === 'present').length;
+
+    const effDays     = effectiveDays(shifts);
+    const workingDays = countWorkingDays(dateFrom, dateTo);
 
     return (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className={`grid grid-cols-2 gap-4 ${salaryEnabled ? 'sm:grid-cols-5' : 'sm:grid-cols-4'}`}>
             <StatTile
                 icon={<CalendarDays className="h-5 w-5" />}
                 label="Days worked"
-                value={String(shifts.length)}
-                sub={`${daysPresent} present`}
+                value={`${effDays % 1 === 0 ? effDays : effDays.toFixed(2)} / ${workingDays}`}
+                sub="present=1 · short=0.75 · half=0.5"
             />
             <StatTile
                 icon={<Clock className="h-5 w-5" />}
@@ -51,6 +64,14 @@ export function StatTilesRow({ shifts }: { shifts: ShiftRow[] }) {
                 value={String(totalBreaks)}
                 sub={`${shifts.length ? (totalBreaks / shifts.length).toFixed(1) : 0} avg/day`}
             />
+            {salaryEnabled && (
+                <StatTile
+                    icon={<DollarSign className="h-5 w-5" />}
+                    label="Gross earned"
+                    value={monthlySalary ? fmt(monthlySalary.gross_earned) : '—'}
+                    sub={monthlySalary ? fmt(monthlySalary.per_month_salary) + ' base' : 'Not calculated yet'}
+                />
+            )}
         </div>
     );
 }

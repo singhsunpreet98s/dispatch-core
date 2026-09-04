@@ -4,14 +4,15 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
+import { AttendanceCalendar } from './attendance-calendar';
 import { AttendanceCharts } from './attendance-charts';
 import { DailyRecordsTable } from './daily-records-table';
 import { EditBreakSheet } from './edit-break-sheet';
 import { fmtDate, initials } from './helpers';
 import { StatTilesRow } from './stat-tiles';
-import type { BreakRow, Props, ShiftRow } from './types';
+import type { BreakRow, NoteItem, Props, ShiftRow } from './types';
 
-export default function AttendanceAdminDetail({ user, shifts, dateFrom, dateTo }: Props) {
+export default function AttendanceAdminDetail({ user, shifts, dateFrom, dateTo, notes, salaryEnabled, monthlySalary }: Props) {
     const tz = ((usePage().props as { appTimezone?: string }).appTimezone) ?? 'UTC';
     const [editingBreak, setEditingBreak] = useState<BreakRow | null>(null);
     const [editingShift, setEditingShift] = useState<ShiftRow | null>(null);
@@ -68,8 +69,11 @@ export default function AttendanceAdminDetail({ user, shifts, dateFrom, dateTo }
                     </div>
                 </div>
 
-                <StatTilesRow shifts={shifts} />
-                <AttendanceCharts shifts={shifts} />
+                <StatTilesRow shifts={shifts} dateFrom={dateFrom} dateTo={dateTo} salaryEnabled={salaryEnabled} monthlySalary={monthlySalary} />
+                <AttendanceCharts
+                    shifts={shifts}
+                    rightSlot={<AttendanceCalendar shifts={shifts} dateFrom={dateFrom} dateTo={dateTo} tz={tz} notes={notes} />}
+                />
                 <DailyRecordsTable
                     shifts={shifts}
                     tz={tz}

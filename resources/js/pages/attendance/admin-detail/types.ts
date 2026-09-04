@@ -25,11 +25,30 @@ export interface ShiftRow {
     breaks: BreakRow[];
 }
 
+export interface NoteItem {
+    text: string;
+    checked: boolean;
+}
+
+export interface MonthlySalaryData {
+    gross_earned: number;
+    per_month_salary: number;
+    days_present: number;
+    days_short_leave: number;
+    days_half_day: number;
+    days_absent: number;
+    extra_earned: number;
+    calculated_at: string | null;
+}
+
 export interface Props {
     user: { id: number; name: string };
     shifts: ShiftRow[];
     dateFrom: string;
     dateTo: string;
+    notes: Record<string, NoteItem[]>;
+    salaryEnabled: boolean;
+    monthlySalary: MonthlySalaryData | null;
 }
 
 export interface EditBreakShiftContext {

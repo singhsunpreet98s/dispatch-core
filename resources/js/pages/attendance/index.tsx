@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
+import { AttendanceHeatmap, MONTH_NAMES } from '@/components/attendance-heatmap';
 import AppLayout from '@/layouts/app-layout';
 import { formatInTz } from '@/lib/tz';
 import { type AttendanceSettings, type AttendanceShift, type BreadcrumbItem, type ChecklistItem, type HeatmapDay, type LeaveRequest } from '@/types';
@@ -30,8 +31,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Attendance', href: '/attendance' },
 ];
 
-const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const DAY_LABELS  = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function formatSeconds(totalSeconds: number): string {
     const h = Math.floor(totalSeconds / 3600);
@@ -112,73 +111,6 @@ function BreakTimer({ startedAt, minBreakMinutes, onEnd, processing }: {
 }
 
 // ── Heatmap ───────────────────────────────────────────────────────────────────
-
-const STATUS_CLASS: Record<string, string> = {
-    future:      'bg-muted opacity-30 cursor-default',
-    weekend:     'bg-muted/60 cursor-default',
-    holiday:     'bg-purple-100 dark:bg-purple-900/30 hover:brightness-95 cursor-pointer',
-    absent:      'bg-red-100 dark:bg-red-900/20 hover:brightness-95 cursor-pointer',
-    half_day:    'bg-orange-200 dark:bg-orange-700/40 hover:brightness-95 cursor-pointer',
-    short_leave: 'bg-yellow-300 dark:bg-yellow-600/50 hover:brightness-95 cursor-pointer',
-    present:     'bg-green-400 dark:bg-green-600/70 hover:brightness-95 cursor-pointer',
-    open:        'bg-blue-400 dark:bg-blue-600/70 animate-pulse cursor-pointer',
-    leave:       'bg-sky-200 dark:bg-sky-700/40 hover:brightness-95 cursor-pointer',
-};
-
-function AttendanceHeatmap({ days, year, month, onDayClick }: {
-    days: HeatmapDay[]; year: number; month: number; onDayClick: (d: HeatmapDay) => void;
-}) {
-    const firstDow = days.length > 0 ? new Date(days[0].date + 'T00:00:00').getDay() : 0;
-
-    return (
-        <div className="w-full">
-            {/* Day-of-week header */}
-            <div className="mb-1 grid grid-cols-7 gap-1">
-                {DAY_LABELS.map((d) => (
-                    <span key={d} className="text-muted-foreground text-center text-[10px]">{d}</span>
-                ))}
-            </div>
-
-            {/* Day cells */}
-            <div className="grid grid-cols-7 gap-1">
-                {Array.from({ length: firstDow }).map((_, i) => <div key={`b${i}`} />)}
-                {days.map((day) => {
-                    const dn = new Date(day.date + 'T00:00:00').getDate();
-                    const clickable = day.status !== 'future' && day.status !== 'weekend';
-                    return (
-                        <button
-                            key={day.date}
-                            title={day.holiday_name ? `Holiday: ${day.holiday_name}` : `${day.date} — ${day.status}`}
-                            onClick={() => clickable && onDayClick(day)}
-                            className={`flex h-8 w-full items-center justify-center rounded text-[11px] font-medium transition-all ${STATUS_CLASS[day.status] ?? 'bg-muted'}`}
-                        >
-                            {dn}
-                        </button>
-                    );
-                })}
-            </div>
-
-            {/* Legend */}
-            <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5">
-                {[
-                    { label: 'Present',     cls: 'bg-green-400 dark:bg-green-600/70' },
-                    { label: 'Short Leave', cls: 'bg-yellow-300 dark:bg-yellow-600/50' },
-                    { label: 'Half Day',    cls: 'bg-orange-200 dark:bg-orange-700/40' },
-                    { label: 'Absent',      cls: 'bg-red-100 dark:bg-red-900/20' },
-                    { label: 'Open',        cls: 'bg-blue-400 dark:bg-blue-600/70' },
-                    { label: 'Holiday',     cls: 'bg-purple-100 dark:bg-purple-900/30' },
-                    { label: 'Leave',       cls: 'bg-sky-200 dark:bg-sky-700/40' },
-                    { label: 'Weekend',     cls: 'bg-muted/60' },
-                ].map((item) => (
-                    <span key={item.label} className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                        <span className={`inline-block h-2.5 w-2.5 rounded-sm ${item.cls}`} />
-                        {item.label}
-                    </span>
-                ))}
-            </div>
-        </div>
-    );
-}
 
 // ── ShiftDetailSheet ──────────────────────────────────────────────────────────
 
@@ -901,6 +833,8 @@ export default function AttendancePage({ heatmapDays, currentShift, settings, ca
                     {/* Daily notes / checklist */}
                     <ChecklistNotes initialItems={todayNote} />
                 </div>
+
+
             </div>
 
             <ShiftDetailSheet day={selectedDay} open={selectedDay !== null} onClose={() => setSelectedDay(null)} tz={tz} />

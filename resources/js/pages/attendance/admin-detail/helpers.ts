@@ -41,6 +41,29 @@ export function initials(name: string): string {
     return name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
 }
 
+export const STATUS_WEIGHT: Record<string, number> = {
+    present:     1.0,
+    short_leave: 0.75,
+    half_day:    0.5,
+    absent:      0,
+};
+
+export function effectiveDays(shifts: { day_status: string }[]): number {
+    return shifts.reduce((acc, s) => acc + (STATUS_WEIGHT[s.day_status] ?? 0), 0);
+}
+
+export function countWorkingDays(dateFrom: string, dateTo: string): number {
+    let count = 0;
+    const cur = new Date(dateFrom + 'T00:00:00');
+    const to  = new Date(dateTo   + 'T00:00:00');
+    while (cur <= to) {
+        const dow = cur.getDay();
+        if (dow !== 0 && dow !== 6) count++;
+        cur.setDate(cur.getDate() + 1);
+    }
+    return count;
+}
+
 export function timeToSeconds(t: string): number {
     const parts = t.split(':');
     return parseInt(parts[0] ?? '0') * 3600 + parseInt(parts[1] ?? '0') * 60 + parseInt(parts[2] ?? '0');
