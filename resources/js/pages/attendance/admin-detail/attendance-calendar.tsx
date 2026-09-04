@@ -1,18 +1,10 @@
 import { AttendanceHeatmap, MONTH_NAMES } from '@/components/attendance-heatmap';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { formatInTz } from '@/lib/tz';
 import type { HeatmapDay } from '@/types';
 import { router } from '@inertiajs/react';
-import { AlertCircle, CheckSquare, ChevronDown, Clock, Coffee, LogIn, LogOut, ShieldCheck, Square, Timer, X } from 'lucide-react';
+import { AlertCircle, CheckSquare, Clock, Coffee, LogIn, LogOut, ShieldCheck, Square, Timer } from 'lucide-react';
 import { useState } from 'react';
 import type { NoteItem, OverrideStatus, ShiftRow } from './types';
 
@@ -75,11 +67,31 @@ function buildCalendarDays(shifts: ShiftRow[], year: number, month: number): Hea
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const OVERRIDE_OPTIONS: { value: OverrideStatus; label: string }[] = [
-    { value: 'present',     label: 'Present' },
-    { value: 'short_leave', label: 'Short Leave' },
-    { value: 'half_day',    label: 'Half Day' },
-    { value: 'absent',      label: 'Absent' },
+const OVERRIDE_OPTIONS: { value: OverrideStatus; label: string; active: string; idle: string }[] = [
+    {
+        value: 'present',
+        label: 'Present',
+        active: 'bg-green-500 text-white border-green-500 dark:bg-green-600 dark:border-green-600',
+        idle:   'border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-900/20',
+    },
+    {
+        value: 'short_leave',
+        label: 'Short Leave',
+        active: 'bg-yellow-500 text-white border-yellow-500 dark:bg-yellow-600 dark:border-yellow-600',
+        idle:   'border-yellow-300 text-yellow-700 hover:bg-yellow-50 dark:border-yellow-700 dark:text-yellow-400 dark:hover:bg-yellow-900/20',
+    },
+    {
+        value: 'half_day',
+        label: 'Half Day',
+        active: 'bg-orange-500 text-white border-orange-500 dark:bg-orange-600 dark:border-orange-600',
+        idle:   'border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20',
+    },
+    {
+        value: 'absent',
+        label: 'Absent',
+        active: 'bg-red-500 text-white border-red-500 dark:bg-red-600 dark:border-red-600',
+        idle:   'border-red-300 text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20',
+    },
 ];
 
 const STATUS_BADGE: Record<string, string> = {
@@ -216,45 +228,33 @@ function AdminShiftDetailSheet({
 
                         {/* Override status */}
                         <div className="rounded-xl border bg-muted/30 px-4 py-3 space-y-2.5">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                Status Override
-                            </p>
-                            <div className="flex items-center gap-2">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
-                                            <ShieldCheck className="h-3.5 w-3.5" />
-                                            {shift.admin_override_status
-                                                ? (STATUS_LABEL[shift.admin_override_status] ?? shift.admin_override_status)
-                                                : 'Override Status'
-                                            }
-                                            <ChevronDown className="h-3.5 w-3.5 opacity-50" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="start">
-                                        {OVERRIDE_OPTIONS.map((opt) => (
-                                            <DropdownMenuItem
-                                                key={opt.value}
-                                                onSelect={() => handleOverride(opt.value)}
-                                                className={shift.admin_override_status === opt.value ? 'font-semibold' : ''}
-                                            >
-                                                {opt.label}
-                                            </DropdownMenuItem>
-                                        ))}
-                                        {shift.admin_override_status && (
-                                            <>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem
-                                                    onSelect={() => handleOverride(null)}
-                                                    className="text-destructive focus:text-destructive"
-                                                >
-                                                    <X className="h-3.5 w-3.5 mr-1.5" />
-                                                    Clear Override
-                                                </DropdownMenuItem>
-                                            </>
-                                        )}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                            <div className="flex items-center justify-between">
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+                                    <ShieldCheck className="h-3 w-3" />
+                                    Status Override
+                                </p>
+                                {shift.admin_override_status && (
+                                    <button
+                                        onClick={() => handleOverride(null)}
+                                        className="text-[10px] text-muted-foreground hover:text-destructive transition-colors underline underline-offset-2"
+                                    >
+                                        Clear
+                                    </button>
+                                )}
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                {OVERRIDE_OPTIONS.map((opt) => {
+                                    const isActive = shift.admin_override_status === opt.value;
+                                    return (
+                                        <button
+                                            key={opt.value}
+                                            onClick={() => handleOverride(isActive ? null : opt.value)}
+                                            className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-all ${isActive ? opt.active : opt.idle}`}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
 
