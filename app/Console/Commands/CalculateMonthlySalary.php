@@ -95,6 +95,9 @@ class CalculateMonthlySalary extends Command
 
                 if ($dateStr > $today) {
                     $status = 'future';
+                } elseif ($shift && $shift->admin_override_status && !($isWeekend || $isHoliday)) {
+                    // Admin override on a working day — handled further down
+                    $status = $shift->admin_override_status;
                 } elseif ($isWeekend || $isHoliday) {
                     // Non-working day — only counts if the employee actually worked
                     if ($shift && $shift->clocked_in_at) {

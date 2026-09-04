@@ -205,11 +205,14 @@ class AttendanceController extends Controller
             ->map(function (AttendanceShift $s) {
                 $totalShift  = $s->totalShiftSeconds();
                 $workedSecs  = $s->totalWorkedSeconds();
-                if ($workedSecs >= 7 * 3600 + 40 * 60) { // >= 7h 20m
+
+                if ($s->admin_override_status) {
+                    $dayStatus = $s->admin_override_status;
+                } elseif ($workedSecs >= 7 * 3600 + 40 * 60) {
                     $dayStatus = 'present';
-                } elseif ($workedSecs >= 6 * 3600) { // >= 6h
+                } elseif ($workedSecs >= 6 * 3600) {
                     $dayStatus = 'short_leave';
-                } elseif ($workedSecs >= 4 * 3600) { // >= 4h
+                } elseif ($workedSecs >= 4 * 3600) {
                     $dayStatus = 'half_day';
                 } else {
                     $dayStatus = 'absent';
@@ -224,6 +227,7 @@ class AttendanceController extends Controller
                     'total_break_seconds'         => $s->totalBreakSeconds(),
                     'total_shift_seconds'         => $totalShift,
                     'day_status'                  => $dayStatus,
+                    'admin_override_status'       => $s->admin_override_status,
                     'break_count'                 => $s->breaks->count(),
                     'auto_closed'                 => $s->auto_closed,
                     'is_late'                     => $s->is_late,
@@ -245,5 +249,19 @@ class AttendanceController extends Controller
             'dateFrom' => $dateFrom,
             'dateTo'   => $dateTo,
         ]);
+    }
+
+    public function overrideShiftStatus(Request $request, AttendanceShift $shift): RedirectResponse
+    {
+        $data = $request->validate([
+            'status' => ['nullable', 'string', 'in:present,absent,half_day,short_leave'],
+        ]);
+
+        $shift->update(['admin_override_status' => $data['status'] ?? null]);
+
+        return back()->with('success', $data['status']
+            ? 'Attendance status overridden.'
+            : 'Attendance override cleared.'
+        );
     }
 }

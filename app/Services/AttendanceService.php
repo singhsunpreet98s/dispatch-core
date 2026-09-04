@@ -169,6 +169,11 @@ class AttendanceService
             return 'future';
         }
 
+        // Admin override takes priority over all computed statuses
+        if ($shift && $shift->admin_override_status) {
+            return $shift->admin_override_status;
+        }
+
         // If worked (shift has clock-in), show work status regardless of weekend/holiday/leave
         if ($shift && $shift->clocked_in_at) {
             if ($dateStr === $today && $shift->isOpen()) {
@@ -223,6 +228,7 @@ class AttendanceService
             'is_late'                     => $shift->is_late,
             'clock_in_outside_geofence'   => $shift->clock_in_outside_geofence,
             'clock_out_outside_geofence'  => $shift->clock_out_outside_geofence,
+            'admin_override_status'       => $shift->admin_override_status,
             'total_worked_seconds'        => $shift->totalWorkedSeconds(),
             'total_break_seconds'         => $shift->totalBreakSeconds(),
             'total_shift_seconds'         => $shift->totalShiftSeconds(),

@@ -113,6 +113,7 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('attendance/holidays/{holiday}', [AttendanceHolidayController::class, 'destroy'])->name('attendance.holidays.destroy');
             Route::patch('attendance/leave/{leave}/approve', [AdminLeaveController::class, 'approve'])->name('attendance.leave.approve');
             Route::patch('attendance/leave/{leave}/reject', [AdminLeaveController::class, 'reject'])->name('attendance.leave.reject');
+            Route::patch('attendance/shifts/{shift}/override-status', [AdminAttendanceController::class, 'overrideShiftStatus'])->name('attendance.shifts.override-status');
         });
 
         Route::get('blocked-emails', [BlockedEmailController::class, 'index'])->name('blocked-emails.index');

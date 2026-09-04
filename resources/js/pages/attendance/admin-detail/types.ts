@@ -5,6 +5,8 @@ export interface BreakRow {
     duration_seconds: number | null;
 }
 
+export type OverrideStatus = 'present' | 'absent' | 'half_day' | 'short_leave';
+
 export interface ShiftRow {
     id: number;
     date: string;
@@ -14,6 +16,7 @@ export interface ShiftRow {
     total_break_seconds: number;
     total_shift_seconds: number;
     day_status: 'present' | 'short_leave' | 'half_day' | 'absent';
+    admin_override_status: OverrideStatus | null;
     break_count: number;
     auto_closed: boolean;
     is_late: boolean;

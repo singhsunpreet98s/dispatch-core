@@ -1,10 +1,25 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatInTz } from '@/lib/tz';
-import { ChevronDown, ChevronRight, Coffee, LogIn, LogOut, MapPin, Pencil, Trash2, X } from 'lucide-react';
+import { router } from '@inertiajs/react';
+import { ChevronDown, ChevronRight, Coffee, LogIn, LogOut, MapPin, Pencil, ShieldCheck, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { dayName, fmtSeconds, STATUS_STYLE } from './helpers';
-import type { BreakRow, ShiftRow } from './types';
+import type { BreakRow, OverrideStatus, ShiftRow } from './types';
+
+const OVERRIDE_OPTIONS: { value: OverrideStatus; label: string }[] = [
+    { value: 'present',     label: 'Present' },
+    { value: 'short_leave', label: 'Short Leave' },
+    { value: 'half_day',    label: 'Half Day' },
+    { value: 'absent',      label: 'Absent' },
+];
 
 export function DailyRecordsTable({
     shifts,
@@ -18,6 +33,14 @@ export function DailyRecordsTable({
     onDeleteBreak: (b: BreakRow) => void;
 }) {
     const [expanded, setExpanded] = useState<Set<number>>(new Set());
+
+    function handleOverride(row: ShiftRow, status: OverrideStatus | null) {
+        router.patch(
+            route('attendance.shifts.override-status', { shift: row.id }),
+            { status },
+            { preserveScroll: true },
+        );
+    }
 
     function toggleExpand(id: number) {
         setExpanded((prev) => {
@@ -44,12 +67,13 @@ export function DailyRecordsTable({
                             <TableHead className="px-4 py-3 font-medium uppercase tracking-wide text-muted-foreground">Break</TableHead>
                             <TableHead className="px-4 py-3 font-medium uppercase tracking-wide text-muted-foreground">Status</TableHead>
                             <TableHead className="px-4 py-3 font-medium uppercase tracking-wide text-muted-foreground">Flags</TableHead>
+                            <TableHead className="px-4 py-3 font-medium uppercase tracking-wide text-muted-foreground">Override</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y">
                         {shifts.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={8} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                                <TableCell colSpan={9} className="px-4 py-12 text-center text-sm text-muted-foreground">
                                     No records for this period.
                                 </TableCell>
                             </TableRow>
@@ -145,12 +169,53 @@ export function DailyRecordsTable({
                                                     )}
                                                 </div>
                                             </TableCell>
+
+                                            {/* Override column */}
+                                            <TableCell className="px-4 py-3">
+                                                <div className="flex items-center gap-2">
+                                                    {row.admin_override_status && (
+                                                        <span className="flex items-center gap-1 rounded-full border border-violet-300 bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 dark:border-violet-700 dark:bg-violet-950/40 dark:text-violet-300">
+                                                            <ShieldCheck className="h-3 w-3" />
+                                                            {STATUS_STYLE[row.admin_override_status]?.label ?? row.admin_override_status}
+                                                        </span>
+                                                    )}
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <button className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground" title="Override attendance status">
+                                                                <ShieldCheck className="h-3.5 w-3.5" />
+                                                            </button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="w-40">
+                                                            {OVERRIDE_OPTIONS.map((opt) => (
+                                                                <DropdownMenuItem
+                                                                    key={opt.value}
+                                                                    onClick={() => handleOverride(row, opt.value)}
+                                                                    className={row.admin_override_status === opt.value ? 'font-semibold' : ''}
+                                                                >
+                                                                    {opt.label}
+                                                                </DropdownMenuItem>
+                                                            ))}
+                                                            {row.admin_override_status && (
+                                                                <>
+                                                                    <DropdownMenuSeparator />
+                                                                    <DropdownMenuItem
+                                                                        onClick={() => handleOverride(row, null)}
+                                                                        className="text-muted-foreground"
+                                                                    >
+                                                                        Clear override
+                                                                    </DropdownMenuItem>
+                                                                </>
+                                                            )}
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            </TableCell>
                                         </TableRow>
 
                                         {/* Break sub-rows */}
                                         {isOpen && row.breaks.length > 0 && (
                                             <TableRow key={`${row.id}-breaks`}>
-                                                <TableCell colSpan={8} className="p-0">
+                                                <TableCell colSpan={9} className="p-0">
                                                     <div className="border-t border-dashed border-border/60 bg-muted/20 px-6 py-3">
                                                         <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                                                             Breaks

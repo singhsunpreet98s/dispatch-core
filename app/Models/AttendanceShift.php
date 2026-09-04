@@ -23,6 +23,7 @@ class AttendanceShift extends Model
         'is_late',
         'clock_in_outside_geofence',
         'clock_out_outside_geofence',
+        'admin_override_status',
     ];
 
     protected $casts = [
