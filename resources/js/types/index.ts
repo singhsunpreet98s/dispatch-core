@@ -20,6 +20,7 @@ export interface NavItem {
     icon?: LucideIcon | null;
     isActive?: boolean;
     exact?: boolean;
+    children?: NavItem[];
 }
 
 export interface Flash {

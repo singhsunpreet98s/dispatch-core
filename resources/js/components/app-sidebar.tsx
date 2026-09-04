@@ -14,6 +14,7 @@ import {
     FileText,
     Filter,
     LayoutGrid,
+    Mail,
     MailOpen,
     MailX,
     Package,
@@ -23,6 +24,7 @@ import {
     Upload,
     UserRound,
     Users,
+    Zap,
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -48,16 +50,34 @@ export function AppSidebar() {
             : []),
         { title: 'Email Lists', url: '/email-lists', icon: Upload },
         { title: 'Templates', url: '/templates', icon: FileText },
-        { title: 'Campaigns', url: '/campaigns', icon: Send },
-        ...(role === 'admin' || role === 'manager' ? [{ title: 'Direct Send', url: '/direct-sends', icon: Send }] : []),
+        ...(role === 'admin' || role === 'manager'
+            ? [
+                  {
+                      title: 'Send Email',
+                      url: '/campaigns',
+                      icon: Send,
+                      children: [
+                          { title: 'Campaigns', url: '/campaigns', icon: Mail },
+                          { title: 'Direct Send', url: '/direct-sends', icon: Zap },
+                      ],
+                  },
+              ]
+            : [{ title: 'Campaigns', url: '/campaigns', icon: Mail }]),
         { title: 'Schedules', url: '/schedules', icon: CalendarClock },
         { title: 'Carrier Packets', url: '/carrier-packets', icon: Package },
         { title: 'Email Filter', url: '/email-filter', icon: Filter },
         { title: 'Email Activity', url: '/emails', icon: MailOpen },
         ...(role === 'admin'
             ? [
-                  { title: 'Unsubscribers', url: '/unsubscribers', icon: MailX },
-                  { title: 'Blocked Emails', url: '/blocked-emails', icon: ShieldX },
+                  {
+                      title: 'Suppressions',
+                      url: '/unsubscribers',
+                      icon: ShieldX,
+                      children: [
+                          { title: 'Unsubscribers', url: '/unsubscribers', icon: MailX },
+                          { title: 'Blocked Emails', url: '/blocked-emails', icon: ShieldX },
+                      ],
+                  },
                   ...(rateRequestEnabled ? [{ title: 'Rate Requests', url: '/rate-requests', icon: FileSpreadsheet }] : []),
                   { title: 'Customers', url: '/customers', icon: UserRound },
                   { title: 'Users', url: '/users', icon: Users },
