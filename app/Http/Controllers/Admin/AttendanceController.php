@@ -197,17 +197,20 @@ class AttendanceController extends Controller
         $dateFrom = $request->date_from ?? now(AppTimezone::get())->startOfMonth()->format('Y-m-d');
         $dateTo   = $request->date_to   ?? now(AppTimezone::get())->endOfMonth()->format('Y-m-d');
 
+        $today  = now(AppTimezone::get())->toDateString();
         $shifts = AttendanceShift::with('breaks')
             ->where('user_id', $user->id)
             ->whereBetween('date', [$dateFrom, $dateTo])
             ->orderBy('date')
             ->get()
-            ->map(function (AttendanceShift $s) {
+            ->map(function (AttendanceShift $s) use ($today) {
                 $totalShift  = $s->totalShiftSeconds();
                 $workedSecs  = $s->totalWorkedSeconds();
 
                 if ($s->admin_override_status) {
                     $dayStatus = $s->admin_override_status;
+                } elseif ($s->clocked_in_at && ! $s->clocked_out_at && $s->date->format('Y-m-d') === $today) {
+                    $dayStatus = 'present';
                 } elseif ($workedSecs >= 7 * 3600 + 40 * 60) {
                     $dayStatus = 'present';
                 } elseif ($workedSecs >= 6 * 3600) {
@@ -259,9 +262,11 @@ class AttendanceController extends Controller
 
         $shift->update(['admin_override_status' => $data['status'] ?? null]);
 
-        return back()->with('success', $data['status']
-            ? 'Attendance status overridden.'
-            : 'Attendance override cleared.'
+        return back()->with(
+            'success',
+            $data['status']
+                ? 'Attendance status overridden.'
+                : 'Attendance override cleared.'
         );
     }
 }
