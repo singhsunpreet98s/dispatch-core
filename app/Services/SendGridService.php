@@ -31,6 +31,7 @@ class SendGridService
             'html_content'           => $htmlContent,
             'generate_plain_content' => true,
             'sender_id'              => $senderId,
+            "ip_pool_id" => "new_192"
         ];
 
         if ($this->unsubscribeGroupId) {
