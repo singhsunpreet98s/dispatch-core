@@ -75,7 +75,8 @@ interface DataTableProps<T> {
 }
 
 function goToPage(page: number) {
-    router.get(window.location.pathname, { page }, { preserveScroll: true, replace: true });
+    const existing = Object.fromEntries(new URLSearchParams(window.location.search));
+    router.get(window.location.pathname, { ...existing, page }, { preserveScroll: true, preserveState: true, replace: true });
 }
 
 export function DataTable<T>({ columns, paginator, rowKey, emptyMessage = 'No records found.', compact = false }: DataTableProps<T>) {
