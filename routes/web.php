@@ -26,6 +26,7 @@ use App\Http\Controllers\UnsubscribeController;
 use App\Http\Controllers\UnsubscribersController;
 use App\Http\Controllers\BlockedEmailController;
 use App\Http\Controllers\FilterEmailController;
+use App\Http\Controllers\DatabaseBackupController;
 use App\Http\Controllers\DirectSendController;
 use App\Http\Controllers\RateRequestController;
 use App\Http\Controllers\UserRateRequestController;
@@ -153,6 +154,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
         Route::put('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
         Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
+
+        Route::get('backups', [DatabaseBackupController::class, 'index'])->name('backups.index');
+        Route::get('backups/{backup}/download', [DatabaseBackupController::class, 'download'])->name('backups.download');
+        Route::delete('backups/{backup}', [DatabaseBackupController::class, 'destroy'])->name('backups.destroy');
 
         Route::get('users', [UserController::class, 'index'])->name('users.index');
         Route::get('users/senders', [UserController::class, 'senders'])->name('users.senders');

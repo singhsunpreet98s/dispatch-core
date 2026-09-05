@@ -10,6 +10,7 @@ import {
     CalendarClock,
     ClipboardList,
     Clock,
+    Database,
     FileSpreadsheet,
     FileText,
     Filter,
@@ -81,6 +82,7 @@ export function AppSidebar() {
                   ...(rateRequestEnabled ? [{ title: 'Rate Requests', url: '/rate-requests', icon: FileSpreadsheet }] : []),
                   { title: 'Customers', url: '/customers', icon: UserRound },
                   { title: 'Users', url: '/users', icon: Users },
+                  { title: 'Database Backups', url: '/backups', icon: Database },
                   { title: 'System Settings', url: '/settings/system', icon: Settings2 },
               ]
             : [

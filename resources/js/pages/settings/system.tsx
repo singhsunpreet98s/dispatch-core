@@ -7,6 +7,7 @@ import { Head, Link } from '@inertiajs/react';
 import { MapPin } from 'lucide-react';
 import ApiTokenTab from './system/api-token-tab';
 import AttendanceTab from './system/attendance-tab';
+import BackupTab, { type BackupSettings } from './system/backup-tab';
 import CampaignsTab, { type CampaignCommandStatus } from './system/campaigns-tab';
 import CompanyInfoTab, { type CompanyInfo } from './system/company-info-tab';
 import { type FeatureFlag } from './system/feature-flags-tab';
@@ -24,6 +25,7 @@ interface Props {
     timezone: string;
     timezones: string[];
     apiToken: string | null;
+    backupSettings: BackupSettings;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -31,7 +33,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'System Settings', href: '/settings/system' },
 ];
 
-export default function SystemSettings({ logoUrl, companyInfo, featureFlagList, attendanceSettings, holidays, commandStatus, timezone, timezones, apiToken }: Props) {
+export default function SystemSettings({ logoUrl, companyInfo, featureFlagList, attendanceSettings, holidays, commandStatus, timezone, timezones, apiToken, backupSettings }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="System Settings" />
@@ -49,6 +51,7 @@ export default function SystemSettings({ logoUrl, companyInfo, featureFlagList, 
                         <TabsTrigger value="attendance">Attendance</TabsTrigger>
                         <TabsTrigger value="holidays">Holidays</TabsTrigger>
                         <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
+                        <TabsTrigger value="backup">Backup</TabsTrigger>
                         <TabsTrigger value="api-token">API Token</TabsTrigger>
                     </TabsList>
 
@@ -90,6 +93,10 @@ export default function SystemSettings({ logoUrl, companyInfo, featureFlagList, 
 
                     <TabsContent value="campaigns" className="mt-4">
                         <CampaignsTab commandStatus={commandStatus} />
+                    </TabsContent>
+
+                    <TabsContent value="backup" className="mt-4">
+                        <BackupTab backupSettings={backupSettings} />
                     </TabsContent>
 
                     <TabsContent value="api-token" className="mt-4">

@@ -56,6 +56,13 @@ class SystemSettingController extends Controller
             'timezone'           => AppTimezone::get(),
             'timezones'          => \DateTimeZone::listIdentifiers(),
             'apiToken'           => SystemSetting::get('api_bearer_token'),
+            'backupSettings'     => [
+                'has_app_key'           => (bool) SystemSetting::get('dropbox_app_key'),
+                'has_app_secret'        => (bool) SystemSetting::get('dropbox_app_secret'),
+                'backup_retention_days' => (int) SystemSetting::get('backup_retention_days', 10),
+                'dropbox_status'        => \App\Services\DropboxService::tokenStatus(),
+                'callback_url'          => url('/settings/system/dropbox/callback'),
+            ],
         ]);
     }
 

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\DatabaseBackupController;
+use App\Http\Controllers\DropboxOAuthController;
 use App\Http\Controllers\Settings\AppearanceController;
 use App\Http\Controllers\Settings\AttendanceSettingController;
 use App\Http\Controllers\Settings\PasswordController;
@@ -41,5 +43,13 @@ Route::middleware('auth')->group(function () {
 
         Route::post('settings/system/api-token', [SystemSettingController::class, 'generateApiToken'])->name('system-settings.api-token.generate');
         Route::delete('settings/system/api-token', [SystemSettingController::class, 'revokeApiToken'])->name('system-settings.api-token.revoke');
+
+        Route::patch('settings/system/backup', [DatabaseBackupController::class, 'updateSettings'])->name('system-settings.backup');
+
+        Route::get('settings/system/dropbox/connect', [DropboxOAuthController::class, 'redirect'])->name('dropbox.connect');
+        Route::delete('settings/system/dropbox', [DropboxOAuthController::class, 'disconnect'])->name('dropbox.disconnect');
     });
+
+    // Dropbox OAuth callback — outside admin middleware because Dropbox redirects back here directly
+    Route::get('settings/system/dropbox/callback', [DropboxOAuthController::class, 'callback'])->name('dropbox.callback');
 });

@@ -14,3 +14,5 @@ Schedule::command('salary:calculate-monthly')->monthlyOn(1, '12:00');
 
 Schedule::command('campaigns:check-schedules')->everyMinute();
 Schedule::command('campaigns:dispatch-queue')->everyMinute();
+
+Schedule::command('db:backup')->dailyAt('23:59')->timezone('UTC');
