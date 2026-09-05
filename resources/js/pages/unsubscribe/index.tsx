@@ -1,20 +1,27 @@
 import { Button } from '@/components/ui/button';
 import { type SharedData } from '@/types';
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { CheckCircle, MailX, RefreshCw } from 'lucide-react';
+import { AlertCircle, CheckCircle, MailX, RefreshCw } from 'lucide-react';
 
 interface Props {
     userId: number | null;
     email: string | null;
     senderName: string | null;
+    unsubscribed: boolean;
     resubscribed: boolean;
     valid: boolean;
 }
 
-export default function UnsubscribePage({ userId, email, senderName, resubscribed, valid }: Props) {
+export default function UnsubscribePage({ userId, email, senderName, unsubscribed, resubscribed, valid }: Props) {
     const { logoUrl } = usePage<SharedData>().props;
 
+    const unsubForm = useForm({ user_id: userId ?? 0, email: email ?? '' });
     const resubForm = useForm({ user_id: userId ?? 0, email: email ?? '' });
+
+    function handleUnsubscribe(e: React.FormEvent) {
+        e.preventDefault();
+        unsubForm.post(route('unsubscribe.confirm'));
+    }
 
     function handleResubscribe(e: React.FormEvent) {
         e.preventDefault();
@@ -51,7 +58,7 @@ export default function UnsubscribePage({ userId, email, senderName, resubscribe
                                 ) : ''}.
                             </p>
                         </div>
-                    ) : (
+                    ) : unsubscribed ? (
                         <div className="text-center">
                             <CheckCircle className="mx-auto mb-4 h-12 w-12 text-gray-400" />
                             <h1 className="mb-2 text-xl font-semibold text-gray-900">You've been unsubscribed</h1>
@@ -72,6 +79,35 @@ export default function UnsubscribePage({ userId, email, senderName, resubscribe
                                     <RefreshCw className="h-3 w-3" />
                                     {resubForm.processing ? 'Processing…' : 'Subscribe again'}
                                 </Button>
+                            </form>
+                        </div>
+                    ) : (
+                        <div className="text-center">
+                            <AlertCircle className="mx-auto mb-4 h-12 w-12 text-orange-400" />
+                            <h1 className="mb-2 text-xl font-semibold text-gray-900">Unsubscribe</h1>
+                            <p className="mb-6 text-sm text-gray-500">
+                                Click the button below to unsubscribe{' '}
+                                <span className="font-medium text-gray-800">{email}</span>
+                                {senderName ? (
+                                    <> from emails sent by <span className="font-medium text-gray-800">{senderName}</span></>
+                                ) : ' from future emails'}.
+                            </p>
+                            <form onSubmit={handleUnsubscribe}>
+                                <input type="hidden" name="user_id" value={userId ?? ''} />
+                                <input type="hidden" name="email" value={email ?? ''} />
+                                <Button
+                                    type="submit"
+                                    variant="destructive"
+                                    disabled={unsubForm.processing}
+                                    className="w-full"
+                                >
+                                    {unsubForm.processing ? 'Processing…' : 'Unsubscribe'}
+                                </Button>
+                                {unsubForm.hasErrors && (
+                                    <p className="mt-3 text-xs text-red-500">
+                                        {Object.values(unsubForm.errors)[0]}
+                                    </p>
+                                )}
                             </form>
                         </div>
                     )}
