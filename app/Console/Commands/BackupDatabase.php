@@ -26,7 +26,11 @@ class BackupDatabase extends Command
 
         $now      = Carbon::now('UTC');
         $filename = 'backup_' . $now->format('Y-m-d_H-i-s') . '.sql';
-        $tempPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $filename;
+        $tempDir  = storage_path('app/backups-tmp');
+        if (! is_dir($tempDir)) {
+            mkdir($tempDir, 0700, true);
+        }
+        $tempPath = $tempDir . DIRECTORY_SEPARATOR . $filename;
 
         $backup = DatabaseBackup::create([
             'filename'    => $filename,
@@ -86,22 +90,21 @@ class BackupDatabase extends Command
 
     private function dumpMysql(array $config, string $outputPath): void
     {
-        $host     = escapeshellarg($config['host'] ?? '127.0.0.1');
-        $port     = (int) ($config['port'] ?? 3306);
-        $database = escapeshellarg($config['database']);
-        $username = escapeshellarg($config['username']);
-        $password = $config['password'] ?? '';
-        $out      = escapeshellarg($outputPath);
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=%s',
+            $config['host'] ?? '127.0.0.1',
+            (int) ($config['port'] ?? 3306),
+            $config['database'],
+            $config['charset'] ?? 'utf8mb4',
+        );
 
-        $passwordFlag = $password ? '-p' . escapeshellarg($password) : '';
+        $dump = new \Ifsnop\Mysqldump\Mysqldump(
+            $dsn,
+            $config['username'],
+            $config['password'] ?? '',
+        );
 
-        $cmd = "mysqldump --host={$host} --port={$port} --user={$username} {$passwordFlag} {$database} > {$out} 2>&1";
-
-        exec($cmd, $output, $code);
-
-        if ($code !== 0) {
-            throw new RuntimeException('mysqldump failed: ' . implode("\n", $output));
-        }
+        $dump->start($outputPath);
     }
 
     private function dumpSqlite(array $config, string $outputPath): void
@@ -112,39 +115,49 @@ class BackupDatabase extends Command
             throw new RuntimeException("SQLite file not found: {$database}");
         }
 
-        $db     = escapeshellarg($database);
-        $out    = escapeshellarg($outputPath);
-        $cmd    = "sqlite3 {$db} .dump > {$out} 2>&1";
-
-        exec($cmd, $output, $code);
-
-        if ($code !== 0) {
-            // Fallback: copy the raw SQLite file as .sql
-            if (! copy($database, $outputPath)) {
-                throw new RuntimeException('Failed to copy SQLite database file.');
-            }
+        if (! copy($database, $outputPath)) {
+            throw new RuntimeException('Failed to copy SQLite database file.');
         }
     }
 
     private function dumpPgsql(array $config, string $outputPath): void
     {
-        $host     = escapeshellarg($config['host'] ?? '127.0.0.1');
-        $port     = (int) ($config['port'] ?? 5432);
-        $database = escapeshellarg($config['database']);
-        $username = escapeshellarg($config['username']);
-        $out      = escapeshellarg($outputPath);
+        $connection = config('database.default');
+        $pdo        = DB::connection($connection)->getPdo();
 
-        $env = '';
-        if (! empty($config['password'])) {
-            $env = 'PGPASSWORD=' . escapeshellarg($config['password']) . ' ';
+        $fh = fopen($outputPath, 'w');
+        if (! $fh) {
+            throw new RuntimeException("Cannot open temp file for writing: {$outputPath}");
         }
 
-        $cmd = "{$env}pg_dump --host={$host} --port={$port} --username={$username} {$database} > {$out} 2>&1";
+        try {
+            fwrite($fh, "-- dispatch-core PostgreSQL dump\n");
+            fwrite($fh, "-- Generated: " . date('Y-m-d H:i:s') . " UTC\n\n");
 
-        exec($cmd, $output, $code);
+            $tables = $pdo->query(
+                "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
+            )->fetchAll(\PDO::FETCH_COLUMN);
 
-        if ($code !== 0) {
-            throw new RuntimeException('pg_dump failed: ' . implode("\n", $output));
+            foreach ($tables as $table) {
+                $rows = $pdo->query("SELECT * FROM \"{$table}\"")->fetchAll(\PDO::FETCH_ASSOC);
+                if (! empty($rows)) {
+                    $columns = '"' . implode('", "', array_keys($rows[0])) . '"';
+                    fwrite($fh, "INSERT INTO \"{$table}\" ({$columns}) VALUES\n");
+
+                    $lastIdx = count($rows) - 1;
+                    foreach ($rows as $idx => $row) {
+                        $values = array_map(function ($val) use ($pdo) {
+                            return $val === null ? 'NULL' : $pdo->quote((string) $val);
+                        }, array_values($row));
+
+                        $separator = ($idx === $lastIdx) ? ';' : ',';
+                        fwrite($fh, '(' . implode(', ', $values) . ')' . $separator . "\n");
+                    }
+                    fwrite($fh, "\n");
+                }
+            }
+        } finally {
+            fclose($fh);
         }
     }
 
