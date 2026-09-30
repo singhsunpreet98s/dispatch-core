@@ -271,6 +271,21 @@ class SendGridService
     }
 
     /**
+     * Remove an email address from the configured SendGrid suppression/unsubscribe group.
+     * No-ops silently when no unsubscribe group ID is configured.
+     */
+    public function removeFromSuppressionGroup(string $email): void
+    {
+        if (empty($this->apiKey) || ! $this->unsubscribeGroupId) {
+            return;
+        }
+
+        Http::withToken($this->apiKey)
+            ->delete(self::BASE_URL . "/asm/groups/{$this->unsubscribeGroupId}/suppressions/" . urlencode($email));
+        // Failure is non-fatal — the address may not be in the group
+    }
+
+    /**
      * Delete a SendGrid Marketing Contacts list by its ID.
      *
      * @throws \RuntimeException on API failure
@@ -310,6 +325,43 @@ class SendGridService
         }
 
         return $response->json('id');
+    }
+
+    /**
+     * Delete contacts from SendGrid's global contacts store by their email addresses.
+     * Looks up their SendGrid IDs first, then issues the delete.
+     * Non-fatal — silently skips emails that don't exist in SendGrid.
+     */
+    public function deleteContactsByEmails(array $emails): void
+    {
+        if (empty($this->apiKey) || empty($emails)) {
+            return;
+        }
+
+        // Resolve email → SendGrid contact ID
+        $response = Http::withToken($this->apiKey)
+            ->post(self::BASE_URL . '/marketing/contacts/search/emails', [
+                'emails' => array_values($emails),
+            ]);
+
+        if (! $response->successful()) {
+            return;
+        }
+
+        $contactIds = [];
+        foreach ($response->json('result', []) as $entry) {
+            $id = $entry['contact']['id'] ?? null;
+            if ($id) {
+                $contactIds[] = $id;
+            }
+        }
+
+        if (empty($contactIds)) {
+            return;
+        }
+
+        Http::withToken($this->apiKey)
+            ->delete(self::BASE_URL . '/marketing/contacts?' . http_build_query(['ids' => implode(',', $contactIds)]));
     }
 
     /**

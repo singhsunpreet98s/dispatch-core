@@ -50,14 +50,23 @@ class EmailListController extends Controller
         $uploadedFile = $request->file('file');
         $originalName = $uploadedFile->getClientOriginalName();
         $listName     = $request->input('list_name');
+        $userId       = auth()->id();
 
-        // Duplicate filename guard
-        if (EmailList::where('user_id', auth()->id())->where('original_name', $originalName)->exists()) {
+        // If another user already owns a list with this name, block the upload
+        $otherUserList = EmailList::where('list_name', $listName)
+            ->where('user_id', '!=', $userId)
+            ->first();
+
+        if ($otherUserList) {
             return back()->with(
                 'error',
-                "You have already uploaded a file named \"{$originalName}\". Delete the existing file or rename before re-uploading."
+                "A list named \"{$listName}\" already exists and belongs to another user. Please choose a different name."
             );
         }
+
+        $existingList = EmailList::where('list_name', $listName)
+            ->where('user_id', $userId)
+            ->first();
 
         $storedPath = $this->fileStorage->store($uploadedFile);
 
@@ -72,7 +81,39 @@ class EmailListController extends Controller
                 return back()->with('error', 'No valid email addresses were found in the uploaded file. Please check the file and try again.');
             }
 
-            // Create SendGrid marketing list and upload contacts
+            if ($existingList) {
+                // Same user, same list name — override contacts in the existing SendGrid list
+
+                // Compute which emails were removed so we can delete them from SendGrid
+                $oldEmails = $existingList->contacts()->pluck('email')->all();
+                $newEmails = array_column($contacts, 'email');
+                $removedEmails = array_values(array_diff($oldEmails, $newEmails));
+
+                try {
+                    $this->sendGrid->addContactsToList($existingList->sendgrid_list_id, $contacts);
+                    if (! empty($removedEmails)) {
+                        $this->sendGrid->deleteContactsByEmails($removedEmails);
+                    }
+                } catch (\RuntimeException $e) {
+                    $this->fileStorage->delete($storedPath);
+
+                    return back()->with('error', 'Portal sync failed: ' . $e->getMessage());
+                }
+
+                $this->fileStorage->delete($existingList->stored_path, $existingList->disk);
+                $existingList->contacts()->delete();
+                $existingList->update([
+                    'original_name' => $originalName,
+                    'stored_path'   => $storedPath,
+                    'size'          => $uploadedFile->getSize(),
+                    'email_count'   => count($contacts),
+                ]);
+                $this->emailExtraction->persistContacts($existingList->id, $contacts);
+
+                return back()->with('success', "Updated successfully — " . count($contacts) . " contact(s) synced to Portal list \"{$listName}\".");
+            }
+
+            // New list — create in SendGrid and store locally
             try {
                 $sendgridListId = $this->sendGrid->createMarketingList($listName);
                 $this->sendGrid->addContactsToList($sendgridListId, $contacts);
@@ -83,7 +124,7 @@ class EmailListController extends Controller
             }
 
             $emailList = EmailList::create([
-                'user_id'           => auth()->id(),
+                'user_id'           => $userId,
                 'original_name'     => $originalName,
                 'list_name'         => $listName,
                 'stored_path'       => $storedPath,

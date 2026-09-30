@@ -292,7 +292,8 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
                         <FileDropzone
                             file={uploadForm.data.file}
                             onFileSelect={(f) => {
-                                uploadForm.setData('file', f);
+                                const nameWithoutExt = f.name.replace(/\.[^/.]+$/, '');
+                                uploadForm.setData({ file: f, list_name: nameWithoutExt });
                                 setUploadError(null);
                             }}
                             onFileClear={() => {
