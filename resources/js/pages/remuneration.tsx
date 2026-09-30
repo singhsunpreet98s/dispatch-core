@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +7,6 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type MonthlySalary, type SalaryBreakdownEntry, type Salary, type SalaryHistory } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
 import { ChevronDown, ChevronRight, Printer, TrendingDown, TrendingUp } from 'lucide-react';
-import { useState } from 'react';
 
 interface Props {
     salary: Salary | null;
@@ -53,6 +53,7 @@ const STATUS_BADGE: Record<string, string> = {
     absent:             'border-red-500 text-red-600',
     half_day:           'border-orange-500 text-orange-600',
     short_leave:        'border-yellow-500 text-yellow-600',
+    leave_paid:         'border-blue-500 text-blue-600',
     leave_unpaid:       'border-red-400 text-red-500',
     extra_present:      'border-green-600 text-green-700',
     extra_half_day:     'border-green-500 text-green-600',
@@ -63,19 +64,21 @@ const STATUS_LABEL: Record<string, string> = {
     absent:             'Absent',
     half_day:           'Half Day',
     short_leave:        'Short Leave',
+    leave_paid:         'Paid Leave',
     leave_unpaid:       'Unpaid Leave',
     extra_present:      'Extra Day',
     extra_half_day:     'Extra Half Day',
     extra_short_leave:  'Extra Short',
 };
 
-function fmtDay(dateStr: string): string {
+function fmtDay(dateStr: string | null): string {
+    if (!dateStr) return '—';
     return new Intl.DateTimeFormat('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }).format(
         new Date(dateStr + 'T00:00:00'),
     );
 }
 
-const EXTRA_STATUSES = new Set(['extra_present', 'extra_half_day', 'extra_short_leave']);
+const EXTRA_STATUSES = new Set(['extra_present', 'extra_half_day', 'extra_short_leave', 'leave_paid']);
 
 function DeductionBreakdown({ entries, perDay }: { entries: SalaryBreakdownEntry[]; perDay: number }) {
     const deductions = entries.filter((e) => !EXTRA_STATUSES.has(e.status));
@@ -97,8 +100,8 @@ function DeductionBreakdown({ entries, perDay }: { entries: SalaryBreakdownEntry
                 <div>
                     <p className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">Deductions</p>
                     <div className="space-y-1.5">
-                        {deductions.map((e) => (
-                            <div key={e.date} className="flex items-center justify-between gap-4 text-xs">
+                        {deductions.map((e, i) => (
+                            <div key={e.date ?? `deduction-${i}`} className="flex items-center justify-between gap-4 text-xs">
                                 <span className="w-28 shrink-0 font-medium">{fmtDay(e.date)}</span>
                                 <Badge variant="outline" className={`shrink-0 text-[10px] ${STATUS_BADGE[e.status]}`}>
                                     {STATUS_LABEL[e.status]}
@@ -117,8 +120,8 @@ function DeductionBreakdown({ entries, perDay }: { entries: SalaryBreakdownEntry
                 <div>
                     <p className="mb-2 text-xs font-medium uppercase tracking-wide text-green-600">Add-ons</p>
                     <div className="space-y-1.5">
-                        {extras.map((e) => (
-                            <div key={e.date} className="flex items-center justify-between gap-4 text-xs">
+                        {extras.map((e, i) => (
+                            <div key={e.date ?? `extra-${i}`} className="flex items-center justify-between gap-4 text-xs">
                                 <span className="w-28 shrink-0 font-medium">{fmtDay(e.date)}</span>
                                 <Badge variant="outline" className={`shrink-0 text-[10px] ${STATUS_BADGE[e.status]}`}>
                                     {STATUS_LABEL[e.status]}
@@ -171,9 +174,8 @@ function MonthlyPayTable({ records }: { records: MonthlySalary[] }) {
                                 const perDay = workingDays > 0 ? parseNum(r.per_month_salary) / workingDays : 0;
 
                                 return (
-                                    <>
+                                    <React.Fragment key={r.id}>
                                         <TableRow
-                                            key={r.id}
                                             className={hasDeductions ? 'cursor-pointer hover:bg-muted/50' : ''}
                                             onClick={() => hasDeductions && setExpanded(isExpanded ? null : r.id)}
                                         >
@@ -218,13 +220,13 @@ function MonthlyPayTable({ records }: { records: MonthlySalary[] }) {
                                             </TableCell>
                                         </TableRow>
                                         {isExpanded && (
-                                            <tr key={`${r.id}-breakdown`}>
+                                            <tr>
                                                 <td colSpan={10} className="p-0">
                                                     <DeductionBreakdown entries={r.breakdown ?? []} perDay={perDay} />
                                                 </td>
                                             </tr>
                                         )}
-                                    </>
+                                    </React.Fragment>
                                 );
                             })}
                         </TableBody>

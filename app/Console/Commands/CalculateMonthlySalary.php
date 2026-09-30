@@ -4,13 +4,11 @@ namespace App\Console\Commands;
 
 use App\Helpers\AppTimezone;
 use App\Models\FeatureFlag;
-use App\Models\LeaveRequest;
 use App\Models\MonthlySalary;
 use App\Models\Salary;
 use App\Services\AttendanceService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
 
 class CalculateMonthlySalary extends Command
 {
@@ -79,12 +77,6 @@ class CalculateMonthlySalary extends Command
 
             $shifts = $attendance->getMonthShifts($user, $year, $month);
 
-            // Load approved leave days for this user this month
-            $approvedLeaveDays = $this->getApprovedLeaveDays($user->id, $year, $month);
-
-            // Leave quota: 1 paid leave per month (consumed in calendar order)
-            $paidLeaveQuota = self::PAID_LEAVES_PER_MONTH;
-
             $dayMap = [];
             for ($d = 1; $d <= $totalDays; $d++) {
                 $date      = Carbon::create($year, $month, $d);
@@ -96,10 +88,8 @@ class CalculateMonthlySalary extends Command
                 if ($dateStr > $today) {
                     $status = 'future';
                 } elseif ($shift && $shift->admin_override_status && !($isWeekend || $isHoliday)) {
-                    // Admin override on a working day — handled further down
                     $status = $shift->admin_override_status;
                 } elseif ($isWeekend || $isHoliday) {
-                    // Non-working day — only counts if the employee actually worked
                     if ($shift && $shift->clocked_in_at) {
                         $workedSeconds = $shift->totalWorkedSeconds();
                         if ($workedSeconds >= self::FULL_DAY_SECONDS) {
@@ -115,7 +105,6 @@ class CalculateMonthlySalary extends Command
                         $status = 'nonworking';
                     }
                 } elseif ($shift && $shift->clocked_in_at) {
-                    // Attendance status is based on worked seconds (excluding breaks)
                     $workedSeconds = $shift->totalWorkedSeconds();
                     if ($workedSeconds >= self::FULL_DAY_SECONDS) {
                         $status = 'present';
@@ -125,14 +114,6 @@ class CalculateMonthlySalary extends Command
                         $status = 'half_day';
                     } else {
                         $status = 'absent';
-                    }
-                } elseif ($approvedLeaveDays->contains($dateStr)) {
-                    // No shift but approved leave — consume paid quota
-                    if ($paidLeaveQuota > 0) {
-                        $status = 'leave_paid';
-                        $paidLeaveQuota--;
-                    } else {
-                        $status = 'leave_unpaid';
                     }
                 } else {
                     $status = 'absent';
@@ -145,16 +126,15 @@ class CalculateMonthlySalary extends Command
             }
 
             // Tally and compute gross
-            $daysPresent     = 0;
-            $daysHalfDay     = 0;
-            $daysShortLeave  = 0;
-            $daysAbsent      = 0;
-            $daysLeavePaid   = 0;
-            $daysLeaveUnpaid = 0;
-            $daysExtra       = 0;
-            $extraEarned     = 0.0;
-            $gross           = 0.0;
-            $breakdown       = [];
+            $daysPresent    = 0;
+            $daysHalfDay    = 0;
+            $daysShortLeave = 0;
+            $daysAbsent     = 0;
+            $daysLeavePaid  = 0;
+            $daysExtra      = 0;
+            $extraEarned    = 0.0;
+            $regularEarned  = 0.0;
+            $breakdown      = [];
 
             foreach ($dayMap as $dateStr => $info) {
                 if ($info['status'] === 'future') {
@@ -168,7 +148,6 @@ class CalculateMonthlySalary extends Command
                         $daysExtra++;
                         $earned       = $perDay;
                         $extraEarned += $earned;
-                        $gross       += $earned;
                         $breakdown[] = [
                             'date'      => $dateStr,
                             'status'    => 'extra_present',
@@ -181,7 +160,6 @@ class CalculateMonthlySalary extends Command
                         $daysExtra++;
                         $earned       = round($perDay * 0.75, 2);
                         $extraEarned += $earned;
-                        $gross       += $earned;
                         $breakdown[] = [
                             'date'      => $dateStr,
                             'status'    => 'extra_short_leave',
@@ -194,7 +172,6 @@ class CalculateMonthlySalary extends Command
                         $daysExtra++;
                         $earned       = round($perDay * 0.5, 2);
                         $extraEarned += $earned;
-                        $gross       += $earned;
                         $breakdown[] = [
                             'date'      => $dateStr,
                             'status'    => 'extra_half_day',
@@ -204,7 +181,6 @@ class CalculateMonthlySalary extends Command
                             'reason'    => 'Extra Day — worked on weekend/holiday (half, 50%)',
                         ];
                     }
-                    // nonworking with no/insufficient shift → no pay, skip
                     continue;
                 }
 
@@ -212,11 +188,11 @@ class CalculateMonthlySalary extends Command
 
                 if ($status === 'present') {
                     $daysPresent++;
-                    $gross += $perDay;
+                    $regularEarned += $perDay;
                 } elseif ($status === 'half_day') {
                     $daysHalfDay++;
-                    $earned = round($perDay * 0.5, 2);
-                    $gross += $earned;
+                    $earned         = round($perDay * 0.5, 2);
+                    $regularEarned += $earned;
                     $breakdown[] = [
                         'date'      => $dateStr,
                         'status'    => 'half_day',
@@ -227,8 +203,8 @@ class CalculateMonthlySalary extends Command
                     ];
                 } elseif ($status === 'short_leave') {
                     $daysShortLeave++;
-                    $earned = round($perDay * 0.75, 2);
-                    $gross += $earned;
+                    $earned         = round($perDay * 0.75, 2);
+                    $regularEarned += $earned;
                     $breakdown[] = [
                         'date'      => $dateStr,
                         'status'    => 'short_leave',
@@ -236,20 +212,6 @@ class CalculateMonthlySalary extends Command
                         'earned'    => $earned,
                         'deduction' => round($perDay - $earned, 2),
                         'reason'    => 'Short Leave — worked > 6h, ¼ day deducted',
-                    ];
-                } elseif ($status === 'leave_paid') {
-                    $daysLeavePaid++;
-                    $gross += $perDay;
-                    // no breakdown entry — paid leave is treated as present
-                } elseif ($status === 'leave_unpaid') {
-                    $daysLeaveUnpaid++;
-                    $breakdown[] = [
-                        'date'      => $dateStr,
-                        'status'    => 'leave_unpaid',
-                        'per_day'   => round($perDay, 2),
-                        'earned'    => 0.0,
-                        'deduction' => round($perDay, 2),
-                        'reason'    => 'Unpaid Leave — paid leave quota already used this month',
                     ];
                 } elseif ($status === 'absent') {
                     $daysAbsent++;
@@ -264,6 +226,27 @@ class CalculateMonthlySalary extends Command
                 }
             }
 
+            // Automatic paid leave: always add 1 paid day, capped so regular pay
+            // never exceeds full monthly salary.
+            $paidLeaveAmount = min(
+                self::PAID_LEAVES_PER_MONTH * $perDay,
+                max(0.0, $perMonth - $regularEarned)
+            );
+
+            if ($paidLeaveAmount > 0) {
+                $daysLeavePaid = 1;
+                $breakdown[]   = [
+                    'date'      => null,
+                    'status'    => 'leave_paid',
+                    'per_day'   => round($perDay, 2),
+                    'earned'    => round($paidLeaveAmount, 2),
+                    'deduction' => 0.0,
+                    'reason'    => 'Paid Leave — automatic 1 paid leave/month',
+                ];
+            }
+
+            $gross = round($regularEarned + $paidLeaveAmount, 2) + round($extraEarned, 2);
+
             MonthlySalary::updateOrCreate(
                 ['user_id' => $user->id, 'year' => $year, 'month' => $month],
                 [
@@ -275,10 +258,10 @@ class CalculateMonthlySalary extends Command
                     'days_short_leave'  => $daysShortLeave,
                     'days_absent'       => $daysAbsent,
                     'days_leave_paid'   => $daysLeavePaid,
-                    'days_leave_unpaid' => $daysLeaveUnpaid,
+                    'days_leave_unpaid' => 0,
                     'days_extra'        => $daysExtra,
                     'extra_earned'      => round($extraEarned, 2),
-                    'gross_earned'      => round($gross, 2),
+                    'gross_earned'      => $gross,
                     'breakdown'         => $breakdown,
                     'calculated_at'     => now(),
                 ]
@@ -293,37 +276,4 @@ class CalculateMonthlySalary extends Command
         return Command::SUCCESS;
     }
 
-    /**
-     * Returns all working days (as Y-m-d strings) covered by the user's
-     * approved leave requests in the given month.
-     */
-    private function getApprovedLeaveDays(int $userId, int $year, int $month): Collection
-    {
-        $monthStart = Carbon::create($year, $month, 1)->startOfDay();
-        $monthEnd   = $monthStart->copy()->endOfMonth();
-
-        $leaves = LeaveRequest::where('user_id', $userId)
-            ->where('status', 'approved')
-            ->where('date_from', '<=', $monthEnd)
-            ->where('date_to', '>=', $monthStart)
-            ->get();
-
-        $days = [];
-        foreach ($leaves as $leave) {
-            $from = $leave->date_from->max($monthStart);
-            $to   = $leave->date_to->min($monthEnd);
-            $cur  = $from->copy();
-            while ($cur->lte($to)) {
-                // Only count working days (Mon–Fri); salary command will
-                // naturally skip weekends/holidays in its own loop anyway,
-                // but this keeps the collection clean.
-                if (!in_array($cur->dayOfWeek, [0, 6])) {
-                    $days[] = $cur->format('Y-m-d');
-                }
-                $cur->addDay();
-            }
-        }
-
-        return collect($days)->unique()->values();
-    }
 }

@@ -139,8 +139,8 @@ export interface Salary {
 }
 
 export interface SalaryBreakdownEntry {
-    date: string;
-    status: 'absent' | 'half_day' | 'short_leave' | 'leave_unpaid' | 'extra_present' | 'extra_half_day' | 'extra_short_leave';
+    date: string | null;
+    status: 'absent' | 'half_day' | 'short_leave' | 'leave_paid' | 'leave_unpaid' | 'extra_present' | 'extra_half_day' | 'extra_short_leave';
     per_day: number;
     earned: number;
     deduction: number;
