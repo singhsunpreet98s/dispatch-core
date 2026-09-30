@@ -92,7 +92,7 @@ class EmailListController extends Controller
                 try {
                     $this->sendGrid->addContactsToList($existingList->sendgrid_list_id, $contacts);
                     if (! empty($removedEmails)) {
-                        $this->sendGrid->deleteContactsByEmails($removedEmails);
+                        $this->sendGrid->removeContactsFromList($existingList->sendgrid_list_id, $removedEmails);
                     }
                 } catch (\RuntimeException $e) {
                     $this->fileStorage->delete($storedPath);

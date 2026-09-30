@@ -328,6 +328,42 @@ class SendGridService
     }
 
     /**
+     * Remove contacts from a specific SendGrid list without deleting them globally.
+     * Looks up their SendGrid IDs first, then removes only from the given list.
+     * Non-fatal — silently skips emails that don't exist in SendGrid.
+     */
+    public function removeContactsFromList(string $listId, array $emails): void
+    {
+        if (empty($this->apiKey) || empty($emails)) {
+            return;
+        }
+
+        $response = Http::withToken($this->apiKey)
+            ->post(self::BASE_URL . '/marketing/contacts/search/emails', [
+                'emails' => array_values($emails),
+            ]);
+
+        if (! $response->successful()) {
+            return;
+        }
+
+        $contactIds = [];
+        foreach ($response->json('result', []) as $entry) {
+            $id = $entry['contact']['id'] ?? null;
+            if ($id) {
+                $contactIds[] = $id;
+            }
+        }
+
+        if (empty($contactIds)) {
+            return;
+        }
+
+        Http::withToken($this->apiKey)
+            ->delete(self::BASE_URL . '/marketing/lists/' . $listId . '/contacts?' . http_build_query(['contact_ids' => implode(',', $contactIds)]));
+    }
+
+    /**
      * Delete contacts from SendGrid's global contacts store by their email addresses.
      * Looks up their SendGrid IDs first, then issues the delete.
      * Non-fatal — silently skips emails that don't exist in SendGrid.
