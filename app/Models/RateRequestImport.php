@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RateRequestImport extends Model
 {
-    protected $fillable = ['state_id', 'original_name', 'email_count'];
+    protected $fillable = ['city_id', 'original_name', 'email_count'];
 
-    public function state(): BelongsTo
+    public function city(): BelongsTo
     {
-        return $this->belongsTo(State::class);
+        return $this->belongsTo(RateRequestCity::class, 'city_id');
     }
 
     public function contacts(): HasMany

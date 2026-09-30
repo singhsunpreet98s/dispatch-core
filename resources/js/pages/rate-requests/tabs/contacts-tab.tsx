@@ -8,20 +8,18 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Deferred, router, useForm } from '@inertiajs/react';
-import { FileUp, Plus, Search, Trash2 } from 'lucide-react';
+import { FileUp, MapPin, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-export interface State {
+export interface City {
     id: number;
-    state_code: string;
-    state_name: string;
+    name: string;
 }
 
 export interface RateRequestContact {
     id: number;
-    state_id: number;
-    state_code: string | null;
-    state_name: string | null;
+    city_id: number | null;
+    city_name: string | null;
     email: string;
     company_name: string | null;
     mc_number: string | null;
@@ -30,51 +28,53 @@ export interface RateRequestContact {
 
 interface Props {
     contacts?: Paginator<RateRequestContact>;
-    filters: { state_id: string | number; search: string };
-    states: State[];
+    filters: { city_id: string | number; search: string };
+    cities: City[];
 }
 
 function formatDate(dateStr: string) {
     return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(dateStr));
 }
 
-type SheetMode = 'add' | 'upload' | null;
+type SheetMode = 'add' | 'upload' | 'addCity' | null;
 
-export default function ContactsTab({ contacts, filters, states }: Props) {
+export default function ContactsTab({ contacts, filters, cities }: Props) {
     const [sheetMode, setSheetMode] = useState<SheetMode>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deletingRecord, setDeletingRecord] = useState<RateRequestContact | null>(null);
 
-    const [stateFilter, setStateFilter] = useState(filters.state_id ? String(filters.state_id) : '');
+    const [cityFilter, setCityFilter] = useState(filters.city_id ? String(filters.city_id) : '');
     const [search, setSearch] = useState(filters.search ?? '');
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const searchRef = useRef(search);
     searchRef.current = search;
-    const stateFilterRef = useRef(stateFilter);
-    stateFilterRef.current = stateFilter;
+    const cityFilterRef = useRef(cityFilter);
+    cityFilterRef.current = cityFilter;
 
-    const addForm = useForm<{ state_id: string; email: string; company_name: string; mc_number: string }>({
-        state_id: '',
+    const addForm = useForm<{ city_id: string; email: string; company_name: string; mc_number: string }>({
+        city_id: '',
         email: '',
         company_name: '',
         mc_number: '',
     });
 
-    const importForm = useForm<{ state_id: string; file: File | null }>({
-        state_id: '',
+    const importForm = useForm<{ city_id: string; file: File | null }>({
+        city_id: '',
         file: null,
     });
+
+    const addCityForm = useForm<{ name: string }>({ name: '' });
 
     const deleteForm = useForm({});
 
     useEffect(() => {
-        router.get(route('rate-requests.index'), { state_id: stateFilter, search: searchRef.current }, { preserveState: true, replace: true });
-    }, [stateFilter]);
+        router.get(route('rate-requests.index'), { city_id: cityFilter, search: searchRef.current }, { preserveState: true, replace: true });
+    }, [cityFilter]);
 
     useEffect(() => {
         if (searchTimer.current) clearTimeout(searchTimer.current);
         searchTimer.current = setTimeout(() => {
-            router.get(route('rate-requests.index'), { state_id: stateFilterRef.current, search }, { preserveState: true, replace: true });
+            router.get(route('rate-requests.index'), { city_id: cityFilterRef.current, search }, { preserveState: true, replace: true });
         }, 400);
         return () => {
             if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -86,11 +86,13 @@ export default function ContactsTab({ contacts, filters, states }: Props) {
         addForm.clearErrors();
         importForm.reset();
         importForm.clearErrors();
+        addCityForm.reset();
+        addCityForm.clearErrors();
         setSheetMode(mode);
     }
 
     function handleSheetClose(open: boolean) {
-        if (!open && !addForm.processing && !importForm.processing) {
+        if (!open && !addForm.processing && !importForm.processing && !addCityForm.processing) {
             setSheetMode(null);
         }
     }
@@ -108,6 +110,11 @@ export default function ContactsTab({ contacts, filters, states }: Props) {
         });
     }
 
+    function handleAddCitySubmit(e: React.FormEvent) {
+        e.preventDefault();
+        addCityForm.post(route('rate-requests.cities.store'), { onSuccess: () => setSheetMode(null) });
+    }
+
     function handleDelete() {
         if (!deletingRecord) return;
         deleteForm.delete(route('rate-requests.destroy', deletingRecord.id), {
@@ -120,9 +127,9 @@ export default function ContactsTab({ contacts, filters, states }: Props) {
 
     const columns: Column<RateRequestContact>[] = [
         {
-            key: 'state_name',
-            header: 'State',
-            render: (r) => <span className="font-medium">{r.state_name ?? r.state_code ?? r.state_id}</span>,
+            key: 'city_name',
+            header: 'City',
+            render: (r) => <span className="font-medium">{r.city_name ?? r.city_id ?? '—'}</span>,
         },
         {
             key: 'email',
@@ -170,6 +177,10 @@ export default function ContactsTab({ contacts, filters, states }: Props) {
     return (
         <>
             <div className="flex items-center justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => openSheet('addCity')}>
+                    <MapPin className="mr-2 h-4 w-4" />
+                    Add City
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => openSheet('upload')}>
                     <FileUp className="mr-2 h-4 w-4" />
                     Upload File
@@ -188,17 +199,17 @@ export default function ContactsTab({ contacts, filters, states }: Props) {
                         </CardTitle>
                         <div className="flex items-center gap-2">
                             <Select
-                                value={stateFilter || 'all'}
-                                onValueChange={(v) => setStateFilter(v === 'all' ? '' : v)}
+                                value={cityFilter || 'all'}
+                                onValueChange={(v) => setCityFilter(v === 'all' ? '' : v)}
                             >
-                                <SelectTrigger className="w-44">
-                                    <SelectValue placeholder="All states" />
+                                <SelectTrigger className="w-52">
+                                    <SelectValue placeholder="All cities" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">All states</SelectItem>
-                                    {states.map((s) => (
-                                        <SelectItem key={s.id} value={String(s.id)}>
-                                            {s.state_name}
+                                    <SelectItem value="all">All cities</SelectItem>
+                                    {cities.map((c) => (
+                                        <SelectItem key={c.id} value={String(c.id)}>
+                                            {c.name}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -237,23 +248,23 @@ export default function ContactsTab({ contacts, filters, states }: Props) {
 
                     <form onSubmit={handleAddSubmit} className="flex flex-1 flex-col gap-5 overflow-y-auto px-1 py-6">
                         <div className="space-y-2">
-                            <Label>State</Label>
+                            <Label>City</Label>
                             <Select
-                                value={addForm.data.state_id}
-                                onValueChange={(v) => addForm.setData('state_id', v)}
+                                value={addForm.data.city_id}
+                                onValueChange={(v) => addForm.setData('city_id', v)}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select state" />
+                                    <SelectValue placeholder="Select city" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {states.map((s) => (
-                                        <SelectItem key={s.id} value={String(s.id)}>
-                                            {s.state_name}
+                                    {cities.map((c) => (
+                                        <SelectItem key={c.id} value={String(c.id)}>
+                                            {c.name}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
-                            {addForm.errors.state_id && <p className="text-destructive text-xs">{addForm.errors.state_id}</p>}
+                            {addForm.errors.city_id && <p className="text-destructive text-xs">{addForm.errors.city_id}</p>}
                         </div>
 
                         <div className="space-y-2">
@@ -312,31 +323,32 @@ export default function ContactsTab({ contacts, filters, states }: Props) {
                         <SheetTitle>Upload File</SheetTitle>
                         <SheetDescription>
                             Upload a CSV or Excel file with columns: <strong>email</strong>, <strong>company_name</strong> (optional),{' '}
-                            <strong>mc_number</strong> (optional). Select the state these contacts belong to.
+                            <strong>mc_number</strong> (optional). Select the city these contacts belong to.{' '}
+                            <strong>All existing contacts for the selected city will be replaced.</strong>
                         </SheetDescription>
                     </SheetHeader>
 
                     <form onSubmit={handleImportSubmit} className="flex flex-1 flex-col gap-5 overflow-y-auto px-1 py-6">
                         <div className="space-y-2">
                             <Label>
-                                State <span className="text-destructive">*</span>
+                                City <span className="text-destructive">*</span>
                             </Label>
                             <Select
-                                value={importForm.data.state_id}
-                                onValueChange={(v) => importForm.setData('state_id', v)}
+                                value={importForm.data.city_id}
+                                onValueChange={(v) => importForm.setData('city_id', v)}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select state" />
+                                    <SelectValue placeholder="Select city" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {states.map((s) => (
-                                        <SelectItem key={s.id} value={String(s.id)}>
-                                            {s.state_name}
+                                    {cities.map((c) => (
+                                        <SelectItem key={c.id} value={String(c.id)}>
+                                            {c.name}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
-                            {importForm.errors.state_id && <p className="text-destructive text-xs">{importForm.errors.state_id}</p>}
+                            {importForm.errors.city_id && <p className="text-destructive text-xs">{importForm.errors.city_id}</p>}
                         </div>
 
                         <FileDropzone
@@ -354,6 +366,41 @@ export default function ContactsTab({ contacts, filters, states }: Props) {
                         </Button>
                         <Button onClick={handleImportSubmit} disabled={importForm.processing}>
                             {importForm.processing ? 'Uploading…' : 'Upload'}
+                        </Button>
+                    </SheetFooter>
+                </SheetContent>
+            </Sheet>
+
+            {/* Add City Sheet */}
+            <Sheet open={sheetMode === 'addCity'} onOpenChange={handleSheetClose}>
+                <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
+                    <SheetHeader>
+                        <SheetTitle>Add City</SheetTitle>
+                        <SheetDescription>Add a new city to the rate request contacts list.</SheetDescription>
+                    </SheetHeader>
+
+                    <form onSubmit={handleAddCitySubmit} className="flex flex-1 flex-col gap-5 overflow-y-auto px-1 py-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="city-name">
+                                City Name <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                                id="city-name"
+                                value={addCityForm.data.name}
+                                onChange={(e) => addCityForm.setData('name', e.target.value)}
+                                placeholder="e.g. Denver"
+                                autoFocus
+                            />
+                            {addCityForm.errors.name && <p className="text-destructive text-xs">{addCityForm.errors.name}</p>}
+                        </div>
+                    </form>
+
+                    <SheetFooter className="border-t pt-4">
+                        <Button type="button" variant="outline" onClick={() => setSheetMode(null)} disabled={addCityForm.processing}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleAddCitySubmit} disabled={addCityForm.processing}>
+                            {addCityForm.processing ? 'Adding…' : 'Add City'}
                         </Button>
                     </SheetFooter>
                 </SheetContent>

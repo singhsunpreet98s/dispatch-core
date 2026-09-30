@@ -14,17 +14,15 @@ import { useEffect, useRef, useState } from 'react';
 
 type LogStatus = 'queued' | 'processing' | 'completed' | 'failed';
 
-interface State {
+interface City {
     id: number;
-    state_code: string;
-    state_name: string;
+    name: string;
 }
 
 interface RateRequestLog {
     id: number;
-    state_id: number;
-    state_code: string | null;
-    state_name: string | null;
+    city_id: number | null;
+    city_name: string | null;
     email_body: string;
     total_recipients: number;
     sent_count: number;
@@ -44,13 +42,12 @@ interface LogEntry {
 }
 
 interface LogDetail extends RateRequestLog {
-    state_name: string | null;
     entries: LogEntry[];
 }
 
 interface Props {
     logs?: Paginator<RateRequestLog>;
-    states: State[];
+    cities: City[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -76,7 +73,7 @@ const statusLabel: Record<LogStatus, string> = {
     failed: 'Failed',
 };
 
-export default function RateRequestSend({ logs, states }: Props) {
+export default function RateRequestSend({ logs, cities }: Props) {
     const { flash } = usePage<{ flash: { success?: string; error?: string } }>().props;
 
     const [sheetOpen, setSheetOpen] = useState(false);
@@ -102,8 +99,8 @@ export default function RateRequestSend({ logs, states }: Props) {
         }
     }
 
-    const form = useForm<{ state_id: string; email_body: string }>({
-        state_id: '',
+    const form = useForm<{ city_id: string; email_body: string }>({
+        city_id: '',
         email_body: '',
     });
     const formRef = useRef(form);
@@ -129,13 +126,13 @@ export default function RateRequestSend({ logs, states }: Props) {
         form.post(route('rate-requests.send.store'));
     }
 
-    const selectedState = states.find((s) => String(s.id) === form.data.state_id);
+    const selectedCity = cities.find((c) => String(c.id) === form.data.city_id);
 
     const columns: Column<RateRequestLog>[] = [
         {
-            key: 'state_name',
-            header: 'State',
-            render: (r) => <span className="font-medium">{r.state_name ?? r.state_code ?? r.state_id}</span>,
+            key: 'city_name',
+            header: 'City',
+            render: (r) => <span className="font-medium">{r.city_name ?? r.city_id ?? '—'}</span>,
         },
         {
             key: 'status',
@@ -190,7 +187,7 @@ export default function RateRequestSend({ logs, states }: Props) {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-semibold">Rate Requests</h1>
-                        <p className="text-muted-foreground text-sm">Send rate requests to carriers and brokers by state</p>
+                        <p className="text-muted-foreground text-sm">Send rate requests to carriers and brokers by city</p>
                     </div>
                     <Button size="sm" onClick={() => setSheetOpen(true)}>
                         <Plus className="mr-2 h-4 w-4" />
@@ -215,35 +212,35 @@ export default function RateRequestSend({ logs, states }: Props) {
                     <SheetHeader>
                         <SheetTitle>New Rate Request</SheetTitle>
                         <SheetDescription>
-                            Select a state, write your message, and send it to all contacts in that state. The email will be sent from your account.
+                            Select a city, write your message, and send it to all contacts in that city. The email will be sent from your account.
                         </SheetDescription>
                     </SheetHeader>
 
                     <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5 overflow-y-auto px-1 py-6">
                         <div className="space-y-2">
-                            <Label>State</Label>
+                            <Label>City</Label>
                             <Select
-                                value={form.data.state_id}
+                                value={form.data.city_id}
                                 onValueChange={(v) => {
-                                    form.setData('state_id', v);
-                                    form.clearErrors('state_id');
+                                    form.setData('city_id', v);
+                                    form.clearErrors('city_id');
                                 }}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select state" />
+                                    <SelectValue placeholder="Select city" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {states.map((s) => (
-                                        <SelectItem key={s.id} value={String(s.id)}>
-                                            {s.state_name}
+                                    {cities.map((c) => (
+                                        <SelectItem key={c.id} value={String(c.id)}>
+                                            {c.name}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
-                            {form.errors.state_id && <p className="text-destructive text-xs">{form.errors.state_id}</p>}
+                            {form.errors.city_id && <p className="text-destructive text-xs">{form.errors.city_id}</p>}
                         </div>
 
-                        {form.data.state_id && (
+                        {form.data.city_id && (
                             <>
                                 <div className="space-y-2">
                                     <Label htmlFor="email-body">Email Message</Label>
@@ -257,7 +254,7 @@ export default function RateRequestSend({ logs, states }: Props) {
                                     />
                                     {form.errors.email_body && <p className="text-destructive text-xs">{form.errors.email_body}</p>}
                                     <p className="text-muted-foreground text-xs">
-                                        This message will be sent to all contacts in {selectedState?.state_name} from your email address.
+                                        This message will be sent to all contacts in {selectedCity?.name} from your email address.
                                     </p>
                                 </div>
                             </>
@@ -268,7 +265,7 @@ export default function RateRequestSend({ logs, states }: Props) {
                         <Button type="button" variant="outline" onClick={() => handleSheetClose(false)} disabled={form.processing}>
                             Cancel
                         </Button>
-                        <Button onClick={handleSubmit} disabled={form.processing || !form.data.state_id || !form.data.email_body.trim()}>
+                        <Button onClick={handleSubmit} disabled={form.processing || !form.data.city_id || !form.data.email_body.trim()}>
                             {form.processing ? (
                                 'Sending…'
                             ) : (
@@ -281,13 +278,14 @@ export default function RateRequestSend({ logs, states }: Props) {
                     </SheetFooter>
                 </SheetContent>
             </Sheet>
-            {/* ── Detail sheet ── */}
+
+            {/* Detail sheet */}
             <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
                 <SheetContent side="right" className="flex flex-col sm:max-w-2xl">
                     <SheetHeader>
                         <SheetTitle>Rate Request Detail</SheetTitle>
                         <SheetDescription>
-                            {detail ? `${detail.state_name ?? detail.state_code} — ${formatDate(detail.created_at)}` : ' '}
+                            {detail ? `${detail.city_name ?? detail.city_id} — ${formatDate(detail.created_at)}` : ' '}
                         </SheetDescription>
                     </SheetHeader>
 
@@ -296,7 +294,6 @@ export default function RateRequestSend({ logs, states }: Props) {
 
                         {detail && !detailLoading && (
                             <>
-                                {/* Stats row */}
                                 <div className="grid grid-cols-3 gap-3">
                                     {[
                                         { label: 'Recipients', value: detail.total_recipients },
@@ -310,7 +307,6 @@ export default function RateRequestSend({ logs, states }: Props) {
                                     ))}
                                 </div>
 
-                                {/* Status */}
                                 <div className="flex items-center gap-2">
                                     <span className="text-muted-foreground text-sm">Status:</span>
                                     <Badge variant={statusVariant(detail.status as LogStatus)} className="capitalize">
@@ -318,14 +314,12 @@ export default function RateRequestSend({ logs, states }: Props) {
                                     </Badge>
                                 </div>
 
-                                {/* Email body */}
                                 <div className="space-y-1.5">
                                     <p className="text-sm font-medium">Email Message</p>
                                     <div className="bg-muted/20 rounded-lg border px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap">
                                         {detail.email_body}
                                     </div>
                                 </div>
-
                             </>
                         )}
                     </div>

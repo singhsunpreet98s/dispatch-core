@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Deferred, router } from '@inertiajs/react';
 import { Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { type State } from './contacts-tab';
+import { type City } from './contacts-tab';
 
 type LogStatus = 'queued' | 'processing' | 'completed' | 'failed';
 
@@ -14,9 +14,8 @@ export interface RateRequestLog {
     id: number;
     user_name: string | null;
     user_email: string | null;
-    state_id: number;
-    state_code: string | null;
-    state_name: string | null;
+    city_id: number | null;
+    city_name: string | null;
     total_recipients: number;
     sent_count: number;
     failed_count: number;
@@ -26,8 +25,8 @@ export interface RateRequestLog {
 
 interface Props {
     logs?: Paginator<RateRequestLog>;
-    filters?: { state_id: string | number; status: string; search: string };
-    states?: State[];
+    filters?: { city_id: string | number; status: string; search: string };
+    cities?: City[];
 }
 
 function formatDate(dateStr: string) {
@@ -50,26 +49,26 @@ const statusLabel: Record<LogStatus, string> = {
 
 const ALL_STATUSES: LogStatus[] = ['queued', 'processing', 'completed', 'failed'];
 
-export default function SentRequestsTab({ logs, filters, states }: Props) {
+export default function SentRequestsTab({ logs, filters, cities }: Props) {
     const hasFilters = !!filters;
 
-    const [stateFilter, setStateFilter] = useState(filters?.state_id ? String(filters.state_id) : '');
+    const [cityFilter, setCityFilter] = useState(filters?.city_id ? String(filters.city_id) : '');
     const [statusFilter, setStatusFilter] = useState(filters?.status ?? '');
     const [search, setSearch] = useState(filters?.search ?? '');
 
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const searchRef = useRef(search);
     searchRef.current = search;
-    const stateFilterRef = useRef(stateFilter);
-    stateFilterRef.current = stateFilter;
+    const cityFilterRef = useRef(cityFilter);
+    cityFilterRef.current = cityFilter;
     const statusFilterRef = useRef(statusFilter);
     statusFilterRef.current = statusFilter;
 
-    function pushFilters(overrides: Partial<{ state_id: string; status: string; search: string }> = {}) {
+    function pushFilters(overrides: Partial<{ city_id: string; status: string; search: string }> = {}) {
         router.get(
             route('rate-requests.history'),
             {
-                state_id: stateFilterRef.current,
+                city_id: cityFilterRef.current,
                 status: statusFilterRef.current,
                 search: searchRef.current,
                 ...overrides,
@@ -80,8 +79,8 @@ export default function SentRequestsTab({ logs, filters, states }: Props) {
 
     useEffect(() => {
         if (!hasFilters) return;
-        pushFilters({ state_id: stateFilter });
-    }, [stateFilter]);
+        pushFilters({ city_id: cityFilter });
+    }, [cityFilter]);
 
     useEffect(() => {
         if (!hasFilters) return;
@@ -107,9 +106,9 @@ export default function SentRequestsTab({ logs, filters, states }: Props) {
             ),
         },
         {
-            key: 'state_name',
-            header: 'State',
-            render: (r) => <span className="font-medium">{r.state_name ?? r.state_code ?? r.state_id}</span>,
+            key: 'city_name',
+            header: 'City',
+            render: (r) => <span className="font-medium">{r.city_name ?? r.city_id ?? '—'}</span>,
         },
         {
             key: 'status',
@@ -156,15 +155,15 @@ export default function SentRequestsTab({ logs, filters, states }: Props) {
                     </CardTitle>
                     {hasFilters && (
                         <div className="flex items-center gap-2">
-                            <Select value={stateFilter || 'all'} onValueChange={(v) => setStateFilter(v === 'all' ? '' : v)}>
-                                <SelectTrigger className="w-44">
-                                    <SelectValue placeholder="All states" />
+                            <Select value={cityFilter || 'all'} onValueChange={(v) => setCityFilter(v === 'all' ? '' : v)}>
+                                <SelectTrigger className="w-52">
+                                    <SelectValue placeholder="All cities" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">All states</SelectItem>
-                                    {states?.map((s) => (
-                                        <SelectItem key={s.id} value={String(s.id)}>
-                                            {s.state_name}
+                                    <SelectItem value="all">All cities</SelectItem>
+                                    {cities?.map((c) => (
+                                        <SelectItem key={c.id} value={String(c.id)}>
+                                            {c.name}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

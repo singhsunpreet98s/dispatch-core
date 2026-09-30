@@ -15,10 +15,10 @@ class ProcessRateRequest implements ShouldQueue
 
     public function handle(RateRequestSubmitted $event): void
     {
-        $log  = $event->log->load(['user', 'state']);
+        $log  = $event->log->load(['user', 'city']);
         $user = $log->user;
 
-        $contacts = RateRequestContact::where('state_id', $log->state_id)->get();
+        $contacts = RateRequestContact::where('city_id', $log->city_id)->get();
 
         if ($contacts->isEmpty()) {
             $log->update(['status' => 'completed']);
@@ -30,8 +30,8 @@ class ProcessRateRequest implements ShouldQueue
             'total_recipients' => $contacts->count(),
         ]);
 
-        $stateName = $log->state?->state_name ?? $log->state_id;
-        $subject   = "Rate Request — {$stateName}";
+        $cityName = $log->city?->name ?? $log->city_id;
+        $subject  = "Rate Request — {$cityName}";
         $htmlBody  = $this->buildEmailHtml($log->email_body, $user->name, $user->email);
 
         $sentCount   = 0;

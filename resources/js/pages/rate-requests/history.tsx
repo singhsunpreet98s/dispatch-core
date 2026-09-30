@@ -4,13 +4,13 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
-import { type State } from './tabs/contacts-tab';
+import { type City } from './tabs/contacts-tab';
 import SentRequestsTab, { type RateRequestLog } from './tabs/sent-requests-tab';
 
 interface Props {
     logs: Paginator<RateRequestLog>;
-    filters: { state_id: string | number; status: string; search: string };
-    states: State[];
+    filters: { city_id: string | number; status: string; search: string };
+    cities: City[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -19,7 +19,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'History', href: '/rate-requests/history' },
 ];
 
-export default function RateRequestsHistory({ logs, filters, states }: Props) {
+export default function RateRequestsHistory({ logs, filters, cities }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Rate Requests History" />
@@ -38,7 +38,7 @@ export default function RateRequestsHistory({ logs, filters, states }: Props) {
                     </div>
                 </div>
 
-                <SentRequestsTab logs={logs} filters={filters} states={states} />
+                <SentRequestsTab logs={logs} filters={filters} cities={cities} />
             </div>
         </AppLayout>
     );

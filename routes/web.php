@@ -141,6 +141,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('rate-requests', [RateRequestController::class, 'index'])->name('rate-requests.index');
             Route::get('rate-requests/history', [RateRequestController::class, 'history'])->name('rate-requests.history');
             Route::post('rate-requests', [RateRequestController::class, 'store'])->name('rate-requests.store');
+            Route::post('rate-requests/cities', [RateRequestController::class, 'storeCity'])->name('rate-requests.cities.store');
             Route::post('rate-requests/import', [RateRequestController::class, 'import'])->name('rate-requests.import');
             Route::delete('rate-requests/{rateRequestContact}', [RateRequestController::class, 'destroy'])->name('rate-requests.destroy');
         });

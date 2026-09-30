@@ -10,7 +10,7 @@ class RateRequestLog extends Model
 {
     protected $fillable = [
         'user_id',
-        'state_id',
+        'city_id',
         'email_body',
         'total_recipients',
         'sent_count',
@@ -23,9 +23,9 @@ class RateRequestLog extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function state(): BelongsTo
+    public function city(): BelongsTo
     {
-        return $this->belongsTo(State::class);
+        return $this->belongsTo(RateRequestCity::class, 'city_id');
     }
 
     public function entries(): HasMany

@@ -4,12 +4,12 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { History } from 'lucide-react';
-import ContactsTab, { type RateRequestContact, type State } from './tabs/contacts-tab';
+import ContactsTab, { type City, type RateRequestContact } from './tabs/contacts-tab';
 
 interface Props {
     contacts?: Paginator<RateRequestContact>;
-    filters: { state_id: string | number; search: string };
-    states: State[];
+    filters: { city_id: string | number; search: string };
+    cities: City[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -17,7 +17,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Rate Requests', href: '/rate-requests' },
 ];
 
-export default function RateRequestsIndex({ contacts, filters, states }: Props) {
+export default function RateRequestsIndex({ contacts, filters, cities }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Rate Requests" />
@@ -36,7 +36,7 @@ export default function RateRequestsIndex({ contacts, filters, states }: Props) 
                     </Button>
                 </div>
 
-                <ContactsTab contacts={contacts} filters={filters} states={states} />
+                <ContactsTab contacts={contacts} filters={filters} cities={cities} />
             </div>
         </AppLayout>
     );
