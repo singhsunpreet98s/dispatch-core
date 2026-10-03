@@ -2,23 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\DB;
+use App\Mail\BreakReminderMail;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Mail;
 
 class DemoController extends Controller
 {
     public function index()
     {
-        // $rows = DB::table('cache')->orderBy('key')->get();
+        $employee = (object) [
+            'name'  => 'John Doe',
+            'email' => 'singhsunpreet98s@gmail.com',
+        ];
 
-        // $result = [];
-        // foreach ($rows as $row) {
-        //     $result[$row->key] = [
-        //         'value'      => unserialize($row->value),
-        //         'expires_at' => date('Y-m-d H:i:s', $row->expiration),
-        //         'expired'    => $row->expiration < time(),
-        //     ];
-        // }
+        $break = (object) [
+            'started_at' => Carbon::now()->subMinutes(45),
+            'ended_at'   => null,
+        ];
 
-        // dd($result);
+        Mail::to($employee->email)->send(new BreakReminderMail($employee, $break, 3));
     }
 }

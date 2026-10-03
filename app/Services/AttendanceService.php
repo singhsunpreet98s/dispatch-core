@@ -18,11 +18,14 @@ class AttendanceService
     public function settings(): array
     {
         return [
-            'clock_in_start'    => SystemSetting::get('attendance_clock_in_start', ''),
-            'clock_in_end'      => SystemSetting::get('attendance_clock_in_end', ''),
-            'shift_end'         => SystemSetting::get('attendance_shift_end', ''),
-            'min_break_minutes' => (int) SystemSetting::get('attendance_min_break_minutes', 15),
-            'ip_whitelist'      => SystemSetting::get('attendance_ip_whitelist', ''),
+            'clock_in_start'                      => SystemSetting::get('attendance_clock_in_start', ''),
+            'clock_in_end'                        => SystemSetting::get('attendance_clock_in_end', ''),
+            'shift_end'                           => SystemSetting::get('attendance_shift_end', ''),
+            'min_break_minutes'                   => (int) SystemSetting::get('attendance_min_break_minutes', 15),
+            'ip_whitelist'                        => SystemSetting::get('attendance_ip_whitelist', ''),
+            'break_reminder_threshold_minutes'    => (int) SystemSetting::get('attendance_break_reminder_threshold_minutes', 30),
+            'break_reminder_interval_minutes'     => (int) SystemSetting::get('attendance_break_reminder_interval_minutes', 10),
+            'break_reminder_max_emails'           => (int) SystemSetting::get('attendance_break_reminder_max_emails', 10),
         ];
     }
 

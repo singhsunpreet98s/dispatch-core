@@ -105,6 +105,9 @@ export interface AttendanceSettings {
     current_ip: string;
     geofences: AttendanceGeofenceOption[];
     geofence_ids: number[];
+    break_reminder_threshold_minutes: number;
+    break_reminder_interval_minutes: number;
+    break_reminder_max_emails: number;
 }
 
 export interface DashboardUser {

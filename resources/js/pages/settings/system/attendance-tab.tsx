@@ -23,6 +23,9 @@ export default function AttendanceTab({ attendanceSettings }: Props) {
         min_break_minutes: attendanceSettings.min_break_minutes,
         ip_whitelist: attendanceSettings.ip_whitelist,
         geofence_ids: attendanceSettings.geofence_ids as number[],
+        break_reminder_threshold_minutes: attendanceSettings.break_reminder_threshold_minutes,
+        break_reminder_interval_minutes: attendanceSettings.break_reminder_interval_minutes,
+        break_reminder_max_emails: attendanceSettings.break_reminder_max_emails,
     });
 
     const [geofenceOpen, setGeofenceOpen] = useState(false);
@@ -122,6 +125,67 @@ export default function AttendanceTab({ attendanceSettings }: Props) {
                             {attendanceForm.errors.min_break_minutes && (
                                 <p className="text-destructive text-xs">{attendanceForm.errors.min_break_minutes}</p>
                             )}
+                        </div>
+                    </div>
+
+                    {/* Break reminder settings */}
+                    <div>
+                        <p className="mb-3 text-sm font-medium">Break Reminder Emails</p>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="break_reminder_threshold_minutes">Trigger after (minutes)</Label>
+                                <Input
+                                    id="break_reminder_threshold_minutes"
+                                    type="number"
+                                    min={1}
+                                    max={480}
+                                    value={attendanceForm.data.break_reminder_threshold_minutes}
+                                    onChange={(e) =>
+                                        attendanceForm.setData('break_reminder_threshold_minutes', parseInt(e.target.value, 10) || 30)
+                                    }
+                                    className="max-w-[120px]"
+                                />
+                                <p className="text-muted-foreground text-xs">Send first reminder after this many minutes of open break.</p>
+                                {attendanceForm.errors.break_reminder_threshold_minutes && (
+                                    <p className="text-destructive text-xs">{attendanceForm.errors.break_reminder_threshold_minutes}</p>
+                                )}
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="break_reminder_interval_minutes">Reminder interval (minutes)</Label>
+                                <Input
+                                    id="break_reminder_interval_minutes"
+                                    type="number"
+                                    min={1}
+                                    max={60}
+                                    value={attendanceForm.data.break_reminder_interval_minutes}
+                                    onChange={(e) =>
+                                        attendanceForm.setData('break_reminder_interval_minutes', parseInt(e.target.value, 10) || 10)
+                                    }
+                                    className="max-w-[120px]"
+                                />
+                                <p className="text-muted-foreground text-xs">How often to repeat the reminder email.</p>
+                                {attendanceForm.errors.break_reminder_interval_minutes && (
+                                    <p className="text-destructive text-xs">{attendanceForm.errors.break_reminder_interval_minutes}</p>
+                                )}
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="break_reminder_max_emails">Max reminders</Label>
+                                <Input
+                                    id="break_reminder_max_emails"
+                                    type="number"
+                                    min={1}
+                                    max={50}
+                                    value={attendanceForm.data.break_reminder_max_emails}
+                                    onChange={(e) =>
+                                        attendanceForm.setData('break_reminder_max_emails', parseInt(e.target.value, 10) || 10)
+                                    }
+                                    className="max-w-[120px]"
+                                />
+                                <p className="text-muted-foreground text-xs">Stop sending after this many reminders per break.</p>
+                                {attendanceForm.errors.break_reminder_max_emails && (
+                                    <p className="text-destructive text-xs">{attendanceForm.errors.break_reminder_max_emails}</p>
+                                )}
+                            </div>
                         </div>
                     </div>
 

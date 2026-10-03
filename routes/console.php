@@ -9,6 +9,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('attendance:close-open-shifts')->everyMinute();
+Schedule::command('attendance:send-break-reminders')->everyMinute();
 
 Schedule::command('salary:calculate-monthly')->monthlyOn(1, '12:00');
 

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AttendanceBreak extends Model
 {
-    protected $fillable = ['attendance_shift_id', 'started_at', 'ended_at', 'session_locked'];
+    protected $fillable = ['attendance_shift_id', 'started_at', 'ended_at', 'session_locked', 'reminder_count'];
 
     protected $casts = [
         'started_at'     => 'datetime',
