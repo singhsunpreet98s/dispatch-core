@@ -10,6 +10,7 @@ Artisan::command('inspire', function () {
 
 Schedule::command('attendance:close-open-shifts')->everyMinute();
 Schedule::command('attendance:send-break-reminders')->everyMinute();
+Schedule::command('attendance:send-clock-in-reminders')->everyMinute();
 
 Schedule::command('salary:calculate-monthly')->monthlyOn(1, '12:00');
 

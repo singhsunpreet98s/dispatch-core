@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\BreakReminderMail;
-use Carbon\Carbon;
+use App\Mail\ClockInReminderMail;
 use Illuminate\Support\Facades\Mail;
 
 class DemoController extends Controller
@@ -15,11 +14,6 @@ class DemoController extends Controller
             'email' => 'singhsunpreet98s@gmail.com',
         ];
 
-        $break = (object) [
-            'started_at' => Carbon::now()->subMinutes(45),
-            'ended_at'   => null,
-        ];
-
-        Mail::to($employee->email)->send(new BreakReminderMail($employee, $break, 3));
+        Mail::to($employee->email)->send(new ClockInReminderMail($employee, 2, 30));
     }
 }
