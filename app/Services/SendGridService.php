@@ -31,14 +31,15 @@ class SendGridService
             'html_content'           => $htmlContent,
             'generate_plain_content' => true,
             'sender_id'              => $senderId,
-            "ip_pool_id" => "new_192"
+            "ip_pool" => "old_167",
+            "suppression_group_id" => -1,
         ];
 
-        if ($this->unsubscribeGroupId) {
-            $config['suppression_group_id'] = $this->unsubscribeGroupId;
-        } else {
-            $config['custom_unsubscribe_url'] = config('app.url') . '/unsubscribe';
-        }
+        // if ($this->unsubscribeGroupId) {
+        //     $config['suppression_group_id'] = $this->unsubscribeGroupId;
+        // } else {
+        //     $config['custom_unsubscribe_url'] = config('app.url') . '/unsubscribe';
+        // }
 
         return $config;
     }
