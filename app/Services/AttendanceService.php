@@ -327,13 +327,15 @@ class AttendanceService
             ->whereNull('clocked_out_at')
             ->get();
 
+        $shiftEndUtc = $shiftEndTime->copy()->utc();
+
         foreach ($openShifts as $shift) {
             $shift->breaks
                 ->filter(fn($b) => $b->ended_at === null)
-                ->each(fn($b) => $b->update(['ended_at' => $shiftEndTime]));
+                ->each(fn($b) => $b->update(['ended_at' => $shiftEndUtc]));
 
             $shift->update([
-                'clocked_out_at' => $shiftEndTime,
+                'clocked_out_at' => $shiftEndUtc,
                 'auto_closed'    => true,
             ]);
         }
