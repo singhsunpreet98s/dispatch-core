@@ -289,6 +289,10 @@ class SendGridService
     /**
      * Delete a SendGrid Marketing Contacts list by its ID.
      *
+     * The contacts themselves are kept in the global Marketing Contacts store —
+     * only the list and its memberships go away (delete_contacts=false must be a
+     * query param; SendGrid ignores a DELETE body).
+     *
      * @throws \RuntimeException on API failure
      */
     public function deleteMarketingList(string $listId): void
@@ -298,9 +302,12 @@ class SendGridService
         }
 
         $response = Http::withToken($this->apiKey)
-            ->delete(self::BASE_URL . '/marketing/lists/' . $listId, [
-                'delete_contacts' => false,
-            ]);
+            ->delete(self::BASE_URL . '/marketing/lists/' . $listId . '?delete_contacts=false');
+
+        // A list that's already gone is not an error for our purposes
+        if ($response->status() === 404) {
+            return;
+        }
 
         if (! $response->successful()) {
             throw new \RuntimeException('Failed to delete SendGrid list: ' . $response->body());

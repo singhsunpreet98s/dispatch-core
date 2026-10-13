@@ -82,18 +82,26 @@ class EmailListController extends Controller
             }
 
             if ($existingList) {
-                // Same user, same list name — override contacts in the existing SendGrid list
+                // Same user, same list name — fully replace the Portal list so the new
+                // file is the single source of truth. The old list is deleted (contacts
+                // themselves stay in the Portal contacts store) and recreated by name.
+                if ($existingList->sendgrid_list_id) {
+                    try {
+                        $this->sendGrid->deleteMarketingList($existingList->sendgrid_list_id);
+                    } catch (\RuntimeException $e) {
+                        $this->fileStorage->delete($storedPath);
 
-                // Compute which emails were removed so we can delete them from SendGrid
-                $oldEmails = $existingList->contacts()->pluck('email')->all();
-                $newEmails = array_column($contacts, 'email');
-                $removedEmails = array_values(array_diff($oldEmails, $newEmails));
+                        return back()->with('error', 'Could not replace the existing Portal list: ' . $e->getMessage());
+                    }
+
+                    // Old Portal list is gone — don't leave a stale ID behind if the
+                    // recreate below fails.
+                    $existingList->update(['sendgrid_list_id' => null]);
+                }
 
                 try {
-                    $this->sendGrid->addContactsToList($existingList->sendgrid_list_id, $contacts);
-                    if (! empty($removedEmails)) {
-                        $this->sendGrid->removeContactsFromList($existingList->sendgrid_list_id, $removedEmails);
-                    }
+                    $sendgridListId = $this->sendGrid->createMarketingList($listName);
+                    $this->sendGrid->addContactsToList($sendgridListId, $contacts);
                 } catch (\RuntimeException $e) {
                     $this->fileStorage->delete($storedPath);
 
@@ -103,10 +111,11 @@ class EmailListController extends Controller
                 $this->fileStorage->delete($existingList->stored_path, $existingList->disk);
                 $existingList->contacts()->delete();
                 $existingList->update([
-                    'original_name' => $originalName,
-                    'stored_path'   => $storedPath,
-                    'size'          => $uploadedFile->getSize(),
-                    'email_count'   => count($contacts),
+                    'original_name'    => $originalName,
+                    'stored_path'      => $storedPath,
+                    'size'             => $uploadedFile->getSize(),
+                    'email_count'      => count($contacts),
+                    'sendgrid_list_id' => $sendgridListId,
                 ]);
                 $this->emailExtraction->persistContacts($existingList->id, $contacts);
 
