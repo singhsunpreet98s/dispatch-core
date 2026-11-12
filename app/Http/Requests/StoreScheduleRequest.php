@@ -13,15 +13,22 @@ class StoreScheduleRequest extends FormRequest
 
     public function rules(): array
     {
-        $isCustom = $this->input('type') === 'custom';
+        $type     = $this->input('type');
+        $isCustom = $type === 'custom';
+        $isOneTime = $type === 'one_time';
 
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'type' => ['required', 'in:daily,custom'],
-            'template_id' => ['required', 'integer', 'exists:email_templates,id'],
+            'name'          => ['required', 'string', 'max:255'],
+            'type'          => ['required', 'in:daily,custom,one_time'],
+            'template_id'   => ['required', 'integer', 'exists:email_templates,id'],
             'email_list_id' => ['required', 'integer', 'exists:email_lists,id'],
-            'triggers' => ['required', 'array', 'min:1'],
-            'triggers.*.time' => ['required', 'date_format:H:i'],
+            'triggers'      => ['required', 'array', 'min:1', $isOneTime ? 'max:1' : 'min:1'],
+            'triggers.*.send_at' => $isOneTime
+                ? ['required', 'date']
+                : ['nullable'],
+            'triggers.*.time' => $isOneTime
+                ? ['nullable']
+                : ['required', 'date_format:H:i'],
             'triggers.*.weekday' => $isCustom
                 ? ['required', 'integer', 'min:0', 'max:6']
                 : ['nullable', 'integer', 'min:0', 'max:6'],
@@ -31,11 +38,12 @@ class StoreScheduleRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'triggers.required' => 'At least one trigger is required.',
-            'triggers.min' => 'At least one trigger is required.',
-            'triggers.*.time.required' => 'Each trigger must have a time.',
-            'triggers.*.time.date_format' => 'Time must be in HH:MM format.',
-            'triggers.*.weekday.required' => 'Each custom trigger must have a weekday.',
+            'triggers.required'              => 'At least one trigger is required.',
+            'triggers.min'                   => 'At least one trigger is required.',
+            'triggers.*.time.required'       => 'Each trigger must have a time.',
+            'triggers.*.time.date_format'    => 'Time must be in HH:MM format.',
+            'triggers.*.weekday.required'    => 'Each custom trigger must have a weekday.',
+            'triggers.*.send_at.required'    => 'A send date and time is required.',
         ];
     }
 }

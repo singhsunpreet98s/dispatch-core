@@ -16,13 +16,14 @@ import { useState } from 'react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type ScheduleType = 'daily' | 'custom';
+type ScheduleType = 'daily' | 'custom' | 'one_time';
 type ScheduleStatus = 'active' | 'paused';
 
 interface Trigger {
     id?: number;
     weekday: number | null;
-    time: string;
+    time: string | null;
+    send_at?: string | null;
 }
 
 interface Template {
@@ -74,6 +75,9 @@ function formatDate(d: string) {
 }
 
 function triggerLabel(t: Trigger): string {
+    if (t.send_at) {
+        return `Once on ${new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(t.send_at))}`;
+    }
     if (t.weekday === null) return `Daily at ${t.time}`;
     return `${WEEKDAYS[t.weekday]} at ${t.time}`;
 }
@@ -83,6 +87,7 @@ function triggerLabel(t: Trigger): string {
 interface TriggerInput {
     weekday: string;
     time: string;
+    send_at: string;
 }
 
 interface TriggerRowProps {
@@ -90,11 +95,33 @@ interface TriggerRowProps {
     index: number;
     type: ScheduleType;
     canRemove: boolean;
+    error?: string;
     onChange: (index: number, field: keyof TriggerInput, value: string) => void;
     onRemove: (index: number) => void;
 }
 
-function TriggerRow({ trigger, index, type, canRemove, onChange, onRemove }: TriggerRowProps) {
+function nowLocalString() {
+    const d = new Date();
+    d.setSeconds(0, 0);
+    return d.toISOString().slice(0, 16);
+}
+
+function TriggerRow({ trigger, index, type, canRemove, error, onChange, onRemove }: TriggerRowProps) {
+    if (type === 'one_time') {
+        return (
+            <div className="space-y-1">
+                <Input
+                    type="datetime-local"
+                    value={trigger.send_at}
+                    min={nowLocalString()}
+                    onChange={(e) => onChange(index, 'send_at', e.target.value)}
+                    className={`w-full${error ? ' border-destructive' : ''}`}
+                />
+                {error && <p className="text-destructive text-xs">{error}</p>}
+            </div>
+        );
+    }
+
     return (
         <div className="flex items-center gap-2">
             {type === 'custom' && (
@@ -140,6 +167,12 @@ interface ScheduleFormData {
     [key: string]: unknown;
 }
 
+function defaultTriggerForType(type: ScheduleType): TriggerInput {
+    if (type === 'one_time') return { weekday: '', time: '', send_at: '' };
+    if (type === 'custom') return { weekday: '1', time: '09:00', send_at: '' };
+    return { weekday: '', time: '09:00', send_at: '' };
+}
+
 export default function SchedulesIndex({ schedules, templates, emailLists, isAdmin }: Props) {
     const { auth } = usePage<SharedData>().props;
     const senderConfigured = !!auth.user.sendgrid_contact_id;
@@ -154,7 +187,7 @@ export default function SchedulesIndex({ schedules, templates, emailLists, isAdm
         type: 'daily',
         template_id: '',
         email_list_id: '',
-        triggers: [{ weekday: '', time: '09:00' }],
+        triggers: [{ weekday: '', time: '09:00', send_at: '' }],
     });
 
     const deleteForm = useForm({});
@@ -162,7 +195,7 @@ export default function SchedulesIndex({ schedules, templates, emailLists, isAdm
     // ── Triggers local state helpers ──────────────────────────────────────────
 
     function addTrigger() {
-        form.setData('triggers', [...form.data.triggers, { weekday: '', time: '09:00' }]);
+        form.setData('triggers', [...form.data.triggers, defaultTriggerForType(form.data.type)]);
     }
 
     function removeTrigger(i: number) {
@@ -178,14 +211,14 @@ export default function SchedulesIndex({ schedules, templates, emailLists, isAdm
     }
 
     function resetTriggersForType(type: ScheduleType) {
-        form.setData({ ...form.data, type, triggers: [{ weekday: type === 'custom' ? '1' : '', time: '09:00' }] });
+        form.setData({ ...form.data, type, triggers: [defaultTriggerForType(type)] });
     }
 
     // ── Open sheet ────────────────────────────────────────────────────────────
 
     function openCreate() {
         form.reset();
-        form.setData({ name: '', type: 'daily', template_id: '', email_list_id: '', triggers: [{ weekday: '', time: '09:00' }] });
+        form.setData({ name: '', type: 'daily', template_id: '', email_list_id: '', triggers: [{ weekday: '', time: '09:00', send_at: '' }] });
         form.clearErrors();
         setEditingSchedule(null);
         setFormMode('create');
@@ -200,7 +233,8 @@ export default function SchedulesIndex({ schedules, templates, emailLists, isAdm
             email_list_id: String(s.email_list_id),
             triggers: s.triggers.map((t) => ({
                 weekday: t.weekday !== null ? String(t.weekday) : '',
-                time: t.time,
+                time: t.time ?? '',
+                send_at: t.send_at ?? '',
             })),
         });
         form.clearErrors();
@@ -255,7 +289,11 @@ export default function SchedulesIndex({ schedules, templates, emailLists, isAdm
         {
             key: 'type',
             header: 'Type',
-            render: (s) => <Badge variant={s.type === 'daily' ? 'secondary' : 'outline'}>{s.type === 'daily' ? 'Daily' : 'Custom'}</Badge>,
+            render: (s) => (
+                <Badge variant={s.type === 'daily' ? 'secondary' : s.type === 'one_time' ? 'default' : 'outline'}>
+                    {s.type === 'daily' ? 'Daily' : s.type === 'one_time' ? 'One Time' : 'Custom'}
+                </Badge>
+            ),
         },
         {
             key: 'template',
@@ -412,14 +450,14 @@ export default function SchedulesIndex({ schedules, templates, emailLists, isAdm
                         <div className="space-y-2">
                             <Label>Schedule Type</Label>
                             <div className="flex gap-2">
-                                {(['daily', 'custom'] as ScheduleType[]).map((t) => (
+                                {(['daily', 'custom', 'one_time'] as ScheduleType[]).map((t) => (
                                     <button
                                         key={t}
                                         type="button"
                                         onClick={() => resetTriggersForType(t)}
                                         className={`flex-1 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${form.data.type === t ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:bg-muted/40'}`}
                                     >
-                                        {t === 'daily' ? 'Daily' : 'Custom Weekdays'}
+                                        {t === 'daily' ? 'Daily' : t === 'custom' ? 'Custom Weekdays' : 'One Time'}
                                     </button>
                                 ))}
                             </div>
@@ -479,10 +517,14 @@ export default function SchedulesIndex({ schedules, templates, emailLists, isAdm
                         {/* Triggers */}
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                                <Label>{form.data.type === 'daily' ? 'Send Times' : 'Weekday & Time Slots'}</Label>
-                                <Button type="button" variant="outline" size="sm" onClick={addTrigger}>
-                                    <Plus className="mr-1 h-3.5 w-3.5" /> Add
-                                </Button>
+                                <Label>
+                                    {form.data.type === 'daily' ? 'Send Times' : form.data.type === 'one_time' ? 'Send Date & Time' : 'Weekday & Time Slots'}
+                                </Label>
+                                {form.data.type !== 'one_time' && (
+                                    <Button type="button" variant="outline" size="sm" onClick={addTrigger}>
+                                        <Plus className="mr-1 h-3.5 w-3.5" /> Add
+                                    </Button>
+                                )}
                             </div>
 
                             <div className="space-y-2">
@@ -493,6 +535,11 @@ export default function SchedulesIndex({ schedules, templates, emailLists, isAdm
                                         index={i}
                                         type={form.data.type}
                                         canRemove={form.data.triggers.length > 1}
+                                        error={
+                                            (form.errors as Record<string, string>)[`triggers.${i}.send_at`] ||
+                                            (form.errors as Record<string, string>)[`triggers.${i}.time`] ||
+                                            (form.errors as Record<string, string>)[`triggers.${i}.weekday`]
+                                        }
                                         onChange={updateTrigger}
                                         onRemove={removeTrigger}
                                     />

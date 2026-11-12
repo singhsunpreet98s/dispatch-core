@@ -7,6 +7,7 @@ use App\Models\EmailList;
 use App\Services\EmailExtractionService;
 use App\Services\FileStorageService;
 use App\Services\SendGridService;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class EmailListController extends Controller
@@ -17,16 +18,30 @@ class EmailListController extends Controller
         private SendGridService $sendGrid,
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
+        $isAdmin = $user->isAdmin();
+        $search = $request->string('search')->trim()->value();
 
-        $query = $user->isAdmin()
-            ? EmailList::with('user:id,name,email')->orderBy('created_at', 'desc')
-            : EmailList::where('user_id', $user->id)->orderBy('created_at', 'desc');
+        $query = EmailList::query()
+            ->when($isAdmin, fn ($q) => $q->with('user:id,name,email'))
+            ->when(! $isAdmin, fn ($q) => $q->where('user_id', $user->id))
+            ->when($search !== '', fn ($q) => $q->where(function ($q) use ($search, $isAdmin) {
+                $q->where('list_name', 'like', "%{$search}%")
+                    ->orWhere('original_name', 'like', "%{$search}%");
+
+                // Admins see every list, so let them find one by who uploaded it
+                if ($isAdmin) {
+                    $q->orWhereHas('user', fn ($u) => $u
+                        ->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%"));
+                }
+            }))
+            ->orderBy('created_at', 'desc');
 
         return Inertia::render('email-lists/index', [
-            'emailLists' => Inertia::defer(fn() => $query->paginate(15, [
+            'emailLists' => Inertia::defer(fn () => $query->paginate(15, [
                 'id',
                 'user_id',
                 'original_name',
@@ -36,8 +51,9 @@ class EmailListController extends Controller
                 'email_count',
                 'sendgrid_list_id',
                 'created_at',
-            ])),
-            'isAdmin'    => $user->isAdmin(),
+            ])->withQueryString()),
+            'isAdmin' => $isAdmin,
+            'filters' => ['search' => $search],
         ]);
     }
 
@@ -49,8 +65,8 @@ class EmailListController extends Controller
 
         $uploadedFile = $request->file('file');
         $originalName = $uploadedFile->getClientOriginalName();
-        $listName     = $request->input('list_name');
-        $userId       = auth()->id();
+        $listName = $request->input('list_name');
+        $userId = auth()->id();
 
         // If another user already owns a list with this name, block the upload
         $otherUserList = EmailList::where('list_name', $listName)
@@ -91,7 +107,7 @@ class EmailListController extends Controller
                     } catch (\RuntimeException $e) {
                         $this->fileStorage->delete($storedPath);
 
-                        return back()->with('error', 'Could not replace the existing Portal list: ' . $e->getMessage());
+                        return back()->with('error', 'Could not replace the existing Portal list: '.$e->getMessage());
                     }
 
                     // Old Portal list is gone — don't leave a stale ID behind if the
@@ -105,21 +121,21 @@ class EmailListController extends Controller
                 } catch (\RuntimeException $e) {
                     $this->fileStorage->delete($storedPath);
 
-                    return back()->with('error', 'Portal sync failed: ' . $e->getMessage());
+                    return back()->with('error', 'Portal sync failed: '.$e->getMessage());
                 }
 
                 $this->fileStorage->delete($existingList->stored_path, $existingList->disk);
                 $existingList->contacts()->delete();
                 $existingList->update([
-                    'original_name'    => $originalName,
-                    'stored_path'      => $storedPath,
-                    'size'             => $uploadedFile->getSize(),
-                    'email_count'      => count($contacts),
+                    'original_name' => $originalName,
+                    'stored_path' => $storedPath,
+                    'size' => $uploadedFile->getSize(),
+                    'email_count' => count($contacts),
                     'sendgrid_list_id' => $sendgridListId,
                 ]);
                 $this->emailExtraction->persistContacts($existingList->id, $contacts);
 
-                return back()->with('success', "Updated successfully — " . count($contacts) . " contact(s) synced to Portal list \"{$listName}\".");
+                return back()->with('success', 'Updated successfully — '.count($contacts)." contact(s) synced to Portal list \"{$listName}\".");
             }
 
             // New list — create in SendGrid and store locally
@@ -129,18 +145,18 @@ class EmailListController extends Controller
             } catch (\RuntimeException $e) {
                 $this->fileStorage->delete($storedPath);
 
-                return back()->with('error', 'Portal sync failed: ' . $e->getMessage());
+                return back()->with('error', 'Portal sync failed: '.$e->getMessage());
             }
 
             $emailList = EmailList::create([
-                'user_id'           => $userId,
-                'original_name'     => $originalName,
-                'list_name'         => $listName,
-                'stored_path'       => $storedPath,
-                'disk'              => 'local',
-                'size'              => $uploadedFile->getSize(),
-                'email_count'       => count($contacts),
-                'sendgrid_list_id'  => $sendgridListId,
+                'user_id' => $userId,
+                'original_name' => $originalName,
+                'list_name' => $listName,
+                'stored_path' => $storedPath,
+                'disk' => 'local',
+                'size' => $uploadedFile->getSize(),
+                'email_count' => count($contacts),
+                'sendgrid_list_id' => $sendgridListId,
             ]);
 
             $this->emailExtraction->persistContacts($emailList->id, $contacts);
@@ -174,7 +190,7 @@ class EmailListController extends Controller
             try {
                 $this->sendGrid->deleteMarketingList($emailList->sendgrid_list_id);
             } catch (\RuntimeException $e) {
-                return back()->with('error', 'Could not delete Portal list — deletion cancelled: ' . $e->getMessage());
+                return back()->with('error', 'Could not delete Portal list — deletion cancelled: '.$e->getMessage());
             }
         }
 

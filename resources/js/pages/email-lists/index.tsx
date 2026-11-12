@@ -3,16 +3,16 @@ import { FileDropzone } from '@/components/file-dropzone';
 import { SenderNotConfiguredBanner } from '@/components/sender-not-configured-banner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Deferred, Head, useForm, usePage } from '@inertiajs/react';
-import { CheckCircle2, Download, FileSpreadsheet, Mail, Plus, Trash2 } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useEffect, useState } from 'react';
+import { Deferred, Head, router, useForm, usePage } from '@inertiajs/react';
+import { CheckCircle2, Download, FileSpreadsheet, Mail, Plus, Search, Trash2, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface EmailListFile {
     id: number;
@@ -29,6 +29,7 @@ interface EmailListFile {
 interface Props {
     emailLists?: Paginator<EmailListFile>;
     isAdmin: boolean;
+    filters: { search: string };
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -59,7 +60,7 @@ function formatDate(dateStr: string) {
     }).format(new Date(dateStr));
 }
 
-export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
+export default function EmailListsIndex({ emailLists, isAdmin, filters }: Props) {
     const { flash, auth } = usePage<SharedData>().props;
     const senderConfigured = !!auth.user.sendgrid_contact_id;
 
@@ -68,8 +69,42 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
     const [deletingFile, setDeletingFile] = useState<EmailListFile | null>(null);
     const [deleteError, setDeleteError] = useState<string | null>(null);
 
+    const [search, setSearch] = useState(filters.search ?? '');
+    const [searching, setSearching] = useState(false);
+    const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const didMount = useRef(false);
+
     const uploadForm = useForm<{ list_name: string; file: File | null }>({ list_name: '', file: null });
     const deleteForm = useForm<{ delete_from_sendgrid: boolean }>({ delete_from_sendgrid: false });
+
+    // Debounced server-side search — partial reload so the table doesn't fall
+    // back to its deferred skeleton on every keystroke
+    useEffect(() => {
+        if (!didMount.current) {
+            didMount.current = true;
+            return;
+        }
+
+        if (searchTimer.current) clearTimeout(searchTimer.current);
+        searchTimer.current = setTimeout(() => {
+            router.get(
+                route('email-lists.index'),
+                { search: search.trim() || undefined },
+                {
+                    only: ['emailLists', 'filters'],
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                    onStart: () => setSearching(true),
+                    onFinish: () => setSearching(false),
+                },
+            );
+        }, 400);
+
+        return () => {
+            if (searchTimer.current) clearTimeout(searchTimer.current);
+        };
+    }, [search]);
 
     // Close the sheet when upload succeeds
     useEffect(() => {
@@ -242,19 +277,46 @@ export default function EmailListsIndex({ emailLists, isAdmin }: Props) {
                 {/* Files table */}
                 <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
                     <CardHeader className="shrink-0">
-                        <CardTitle className="text-base font-semibold">
-                            {isAdmin ? 'All Uploaded Files' : 'Your Files'}
-                            {emailLists?.total !== undefined && ` (${emailLists.total})`}
-                        </CardTitle>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <CardTitle className="text-base font-semibold">
+                                {isAdmin ? 'All Uploaded Files' : 'Your Files'}
+                                {emailLists?.total !== undefined && ` (${emailLists.total})`}
+                            </CardTitle>
+                            <div className="relative w-full sm:w-72">
+                                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                                <Input
+                                    placeholder={isAdmin ? 'Search list, file, or uploader…' : 'Search by list or file name…'}
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="pr-9 pl-9"
+                                />
+                                {search && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearch('')}
+                                        className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2 rounded p-1"
+                                        title="Clear search"
+                                    >
+                                        <X className="h-3.5 w-3.5" />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                     </CardHeader>
                     <CardContent className="flex min-h-0 flex-1 flex-col p-0">
                         <Deferred data="emailLists" fallback={<DataTableSkeleton columns={7} />}>
-                            <DataTable
-                                columns={columns}
-                                paginator={emailLists!}
-                                rowKey={(f) => f.id}
-                                emptyMessage='No files uploaded yet. Click "Upload File" to get started.'
-                            />
+                            <div className={`flex min-h-0 flex-1 flex-col transition-opacity ${searching ? 'opacity-50' : ''}`}>
+                                <DataTable
+                                    columns={columns}
+                                    paginator={emailLists!}
+                                    rowKey={(f) => f.id}
+                                    emptyMessage={
+                                        filters.search
+                                            ? `No lists match "${filters.search}".`
+                                            : 'No files uploaded yet. Click "Upload File" to get started.'
+                                    }
+                                />
+                            </div>
                         </Deferred>
                     </CardContent>
                 </Card>

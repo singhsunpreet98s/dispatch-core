@@ -87,10 +87,11 @@ class ScheduleController extends Controller
         DB::table('schedule_triggers')->insert(
             array_map(fn ($t) => [
                 'schedule_id' => $scheduleId,
-                'weekday' => isset($t['weekday']) && $t['weekday'] !== '' ? (int) $t['weekday'] : null,
-                'time' => $t['time'],
-                'created_at' => $now,
-                'updated_at' => $now,
+                'weekday'     => isset($t['weekday']) && $t['weekday'] !== '' ? (int) $t['weekday'] : null,
+                'time'        => isset($t['time']) && $t['time'] !== '' ? $t['time'] : null,
+                'send_at'     => isset($t['send_at']) && $t['send_at'] !== '' ? $t['send_at'] : null,
+                'created_at'  => $now,
+                'updated_at'  => $now,
             ], $triggers)
         );
     }

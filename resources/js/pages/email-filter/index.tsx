@@ -393,7 +393,7 @@ function ResultPanel({ result, isAdmin, filename, onReset }: ResultPanelProps) {
 
             {/* Actions */}
             <div className="flex flex-col gap-2.5">
-                <a href={route('email-filter.download')} download="filtered-emails.csv">
+                <a href={route('email-filter.download')} download={`${filename.replace(/\.[^.]+$/, '')}_${new Date().toISOString().slice(0, 10)}.csv`}>
                     <Button className="w-full gap-2" size="lg">
                         <Download className="h-4 w-4" />
                         Download filtered list

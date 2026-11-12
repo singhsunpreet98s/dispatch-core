@@ -24,16 +24,21 @@ class CheckSchedules extends Command
 
         Schedule::with(['triggers'])
             ->where('status', 'active')
-            ->each(function (Schedule $schedule) use ($currentMinute, $currentWeekday, $queuedAt, &$queued) {
+            ->each(function (Schedule $schedule) use ($now, $currentMinute, $currentWeekday, $queuedAt, &$queued) {
                 foreach ($schedule->triggers as $trigger) {
-                    if ($trigger->time !== $currentMinute) {
-                        continue;
-                    }
-
-                    // daily: weekday is null — always matches
-                    // custom: weekday must match today
-                    if ($trigger->weekday !== null && $trigger->weekday !== $currentWeekday) {
-                        continue;
+                    if ($trigger->send_at !== null) {
+                        // one_time: match the exact minute of the stored datetime
+                        if (! $trigger->send_at->isSameMinute($now)) {
+                            continue;
+                        }
+                    } else {
+                        // daily / custom
+                        if ($trigger->time !== $currentMinute) {
+                            continue;
+                        }
+                        if ($trigger->weekday !== null && $trigger->weekday !== $currentWeekday) {
+                            continue;
+                        }
                     }
 
                     $alreadyQueued = ScheduleDispatchQueue::where('schedule_trigger_id', $trigger->id)
@@ -52,6 +57,11 @@ class CheckSchedules extends Command
                     ]);
 
                     $queued++;
+
+                    // Auto-pause one-time schedules after they fire
+                    if ($schedule->type === 'one_time') {
+                        $schedule->update(['status' => 'paused']);
+                    }
                 }
             });
 
